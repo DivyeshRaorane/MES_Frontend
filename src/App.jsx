@@ -4,7 +4,7 @@ import { Route,Routes } from 'react-router'
 import LoginPage from './pages/login/ui/login'
 import Layout from './components/layout'
 import Dashboard from './pages/dashboard/ui/dashboard'
-import PerformWipAcceptance from './pages/performWip/ui/performWitAcce'
+import PerformAcceptance from './components/preformAcceptance/ui/preformAcceptance'
 import DrwaSpoolEntry from './pages/drawSpoolEntry/ui/drawSpoolEntry'
 import DrawManagementPage from './components/drawmanagement'
 import PTEntry from './pages/proofTestEntry/ui/ptEntry'
@@ -43,7 +43,7 @@ function App() {
         <Route element={<Layout/>}>
         <Route path='dashboard' element={<Dashboard/>}/>
         <Route path='drawmange' element={<DrawManagementPage/>}/>
-        <Route path='drawmange/allowance' element={<PerformWipAcceptance/>}/>
+        <Route path='drawmange/acceptance' element={<PerformAcceptance/>}/>
         <Route path='drawmange/drawspoolentry' element={<DrwaSpoolEntry/>}/>
         <Route path='drawmange/drawbrakanalysis' element={<DrawBrakAnalysis/>}/>
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
