@@ -33,6 +33,7 @@ import LongTermEntry from './pages/longTermEntry/ui/longTermEntry'
 import ComplaintRegister from './pages/complaintReg/ui/cRegister'
 import ComplaintStatusMonitor from './pages/complaintTable/ui/complaintTable'
 import ComplaintClosure from './pages/complaintClosure/ui/complainClosure'
+import HandleJoining from './pages/handleJoining/ui/handleJoining'
 
 function App() {
 
@@ -47,7 +48,7 @@ function App() {
         <Route path='drawmange/drawspoolentry' element={<DrwaSpoolEntry/>}/>
         <Route path='drawmange/drawbrakanalysis' element={<DrawBrakAnalysis/>}/>
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
-        <Route path='drawmange/gwlperformjoinhandling' element={<GWLPerformHandleJoining/>}/>
+        <Route path='drawmange/handlejoining' element={<HandleJoining/>}/>
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>

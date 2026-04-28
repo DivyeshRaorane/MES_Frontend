@@ -124,7 +124,16 @@ const PreformAcceptance = () => {
                           <label htmlFor="diaVariation" className="text-xs font-medium text-slate-600">Dia Variation</label>
                           <Field name="diaVariation" id="diaVariation" className={`${inputClasses} text-sm p-2`} />
                        </div>
-                       
+                       <div className="space-y-1">
+                          <label htmlFor="cutOff" className="text-xs font-medium text-slate-600">Cut Off</label>
+                          <Field name="cutOff" id="cutOff" className={`${inputClasses} text-sm p-2`} />
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                       <div className="space-y-1">
+                          <label htmlFor="mfd" className="text-xs font-medium text-slate-600">MFD</label>
+                          <Field name="mfd" id="mfd" className={`${inputClasses} text-sm p-2`} />
+                       </div>
                     </div>
                 </div>
               </div>
