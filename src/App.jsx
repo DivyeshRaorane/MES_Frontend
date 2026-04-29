@@ -34,6 +34,7 @@ import ComplaintRegister from './pages/complaintReg/ui/cRegister'
 import ComplaintStatusMonitor from './pages/complaintTable/ui/complaintTable'
 import ComplaintClosure from './pages/complaintClosure/ui/complainClosure'
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
+import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
 
 function App() {
 
@@ -45,10 +46,11 @@ function App() {
         <Route path='dashboard' element={<Dashboard/>}/>
         <Route path='drawmange' element={<DrawManagementPage/>}/>
         <Route path='drawmange/acceptance' element={<PerformAcceptance/>}/>
+        <Route path='drawmange/handlejoining' element={<HandleJoining/>}/>
+        <Route path='drawmange/allocation' element={<PrerformAllocation/>}/>
         <Route path='drawmange/drawspoolentry' element={<DrwaSpoolEntry/>}/>
         <Route path='drawmange/drawbrakanalysis' element={<DrawBrakAnalysis/>}/>
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
-        <Route path='drawmange/handlejoining' element={<HandleJoining/>}/>
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>

@@ -89,6 +89,7 @@ const Sidebar = ()=>{
                     <div className="ml-9 mt-1 space-y-1 border-l border-slate-700">
                       <SubNavItem label="Preform Acceptance" active={location.pathname == '/drawmange/acceptance'} onClick={()=>navigate('/drawmange/acceptance')} />
                       <SubNavItem label="Handle Joining" active={location.pathname == '/drawmange/handlejoining'} onClick={()=>navigate('/drawmange/handlejoining')} />
+                      <SubNavItem label="Preform Allocation" active={location.pathname == '/drawmange/allocation'} onClick={()=>navigate('/drawmange/allocation')} />
                       <SubNavItem label="Draw Spool Entry" active={location.pathname == '/drawmange/drawspoolentry'} onClick={()=>navigate('/drawmange/drawspoolentry')} />
                       <SubNavItem label="Draw Break Analysis" active={location.pathname == '/drawmange/drawbrakanalysis'} onClick={()=>navigate('/drawmange/drawbrakanalysis')} />
                       <SubNavItem label="Draw Plan Shift" active={location.pathname == '/drawmange/drawshiftplan'} onClick={()=>navigate('/drawmange/drawshiftplan')} />
