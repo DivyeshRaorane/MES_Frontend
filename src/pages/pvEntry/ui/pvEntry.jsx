@@ -1,213 +1,200 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Formik, Form, Field } from 'formik';
 import { 
-  Plus, 
-  Trash2, 
-  Save, 
-  Database, 
-  RotateCcw, 
-  Search,
-  ChevronDown,
-  Info
+  Scan, User, Calendar, Clock, BookOpen, MessageSquare, 
+  Save, LogOut, FileText, Activity, Hash, ChevronRight, CheckCircle2
 } from 'lucide-react';
 
-// --- Reusable UI Elements for PV Entry ---
-
-const Card = ({ children, title, icon: Icon }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-indigo-600 mb-6 overflow-hidden">
-    {title && (
-      <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon size={16} className="text-indigo-600" />}
-          <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-700">{title}</h3>
-        </div>
-        <div className="flex gap-1">
-          <div className="w-2 h-2 rounded-full bg-slate-200"></div>
-          <div className="w-2 h-2 rounded-full bg-slate-200"></div>
-        </div>
-      </div>
-    )}
-    <div className="p-5">{children}</div>
-  </div>
-);
-
-const InputField = ({ label, type = "text", value, onChange, placeholder = "", className = "" }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-0.5">{label}</label>
-    <input 
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="text-[12px] border border-slate-200 rounded-lg px-3 h-9 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-slate-50/30"
-    />
-  </div>
-);
-
-const SelectField = ({ label, options = [], value, onChange, className = "" }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight ml-0.5">{label}</label>
-    <div className="relative">
-      <select 
-        value={value}
-        onChange={onChange}
-        className="w-full text-[12px] border border-slate-200 rounded-lg px-3 h-9 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white appearance-none"
-      >
-        <option value="">-- Select --</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-      <ChevronDown size={14} className="absolute right-3 top-2.5 text-slate-400 pointer-events-none" />
-    </div>
-  </div>
-);
-
-// --- Main PV Entry Component ---
-
 const PVEntry = () => {
-  const [rows, setRows] = useState([
-    { id: 1, barcode: '', length: '', grade: '', color: '', identifier: '', remark: '' }
-  ]);
+  const today = new Date().toISOString().split('T')[0];
 
-  const addRow = () => {
-    setRows([...rows, { id: Date.now(), barcode: '', length: '', grade: '', color: '', identifier: '', remark: '' }]);
-  };
-
-  const removeRow = (id) => {
-    if (rows.length > 1) {
-      setRows(rows.filter(row => row.id !== id));
-    }
+  const initialValues = {
+    verificationType: 'online', // 'online' or 're-pv'
+    fiberType: 'Nat or Col', // Auto-fetched
+    colType: '',
+    pvOpr: '',
+    scanBarcode: '',
+    qtyInNo: '0',
+    qtyInKms: '0.00',
+    dateTime: today,
+    shift: '',
+    pvInstruction: '',
+    pvRemarks: '',
+    fromDate: today,
+    toDate: today,
+    entryTable: Array(6).fill({
+      barcode: '', fid: '', lenKm: '', status: '', opr: '', date: '', d2Status: '', grade: '', fType: '', bobbinType: '', bobbinCol: '', remarks: ''
+    })
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 p-4 lg:p-8 font-sans text-slate-900">
+      <div className="max-w-[1600px] mx-auto space-y-6">
         
-        {/* Module Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-4">
-            <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200">
-              <Database className="text-white" size={24} />
+            <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-100">
+              <Activity size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">PV Entry</h2>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Process Verification & Gas Batch Tracking</p>
+              <h1 className="text-xl font-black text-slate-800 tracking-tight">PV Entry</h1>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">Physical Verification System</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-bold uppercase text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-              <RotateCcw size={14} /> Clear Form
-            </button>
-            <button className="flex items-center gap-2 bg-indigo-600 px-6 py-2 rounded-xl text-[10px] font-bold uppercase text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-              <Save size={14} /> Save Entries
-            </button>
-          </div>
-        </div>
-
-        {/* PV Configuration Header */}
-        <Card title="PV Configuration & Batch Details" icon={Info}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <SelectField label="PV Type" options={['Standard', 'Experimental', 'High Tensile']} />
-            <SelectField label="Shift Incharge" options={['Rahul Sharma', 'Anil Kumar', 'S. Meena']} />
-            <SelectField label="Operator" options={['Operator 01', 'Operator 02', 'Operator 03']} />
-            <SelectField label="Gas Material" options={['Helium (He)', 'Nitrogen (N2)', 'Argon (Ar)']} />
-            
-            <InputField label="Gas Batch No." placeholder="Enter Batch ID..." />
-            <SelectField label="Color Type" options={['Natural', 'Ring Marked', 'Solid']} />
-            <SelectField label="Select Color" options={['Blue', 'Orange', 'Green', 'Brown', 'Slate', 'White']} />
-            <div className="flex flex-col gap-1.5">
-               <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight ml-0.5">Quick Scan Barcode</label>
-               <div className="relative">
-                  <input className="w-full text-[12px] border-2 border-indigo-100 rounded-lg px-3 h-9 focus:border-indigo-500 outline-none transition-all pr-10" placeholder="Scan Fiber ID..." />
-                  <Search size={16} className="absolute right-3 top-2.5 text-indigo-400" />
-               </div>
+          <div className="flex items-center gap-6 mt-4 md:mt-0">
+            <div className="h-10 w-[1px] bg-slate-200 hidden md:block" />
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase">Verification Mode</p>
+              <div className="flex gap-4 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input type="radio" name="verificationType" className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500" defaultChecked />
+                  <span className="text-xs font-bold text-slate-600 group-hover:text-indigo-600 transition-colors">Online PV</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input type="radio" name="verificationType" className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500" />
+                  <span className="text-xs font-bold text-slate-600 group-hover:text-indigo-600 transition-colors">Re-PV</span>
+                </label>
+              </div>
             </div>
           </div>
-        </Card>
+        </header>
 
-        {/* PV Data Table */}
-        <Card title="Fiber Processing List" icon={Plus}>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12">No.</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 min-w-[150px]">Barcode / Fiber ID</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-32">Length (m)</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-28">Grade</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-32">Fiber Color</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-32">Identifier</th>
-                  <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Remarks</th>
-                  <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-16">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((row, index) => (
-                  <tr key={row.id} className="hover:bg-indigo-50/30 transition-colors group">
-                    <td className="px-4 py-3 text-[11px] font-bold text-slate-400">{index + 1}</td>
-                    <td className="px-4 py-3">
-                      <input className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[12px] focus:border-indigo-400 outline-none" placeholder="Scan..." />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[12px] focus:border-indigo-400 outline-none" placeholder="0.00" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <select className="w-full h-8 bg-white border border-slate-200 rounded px-1 text-[11px] focus:border-indigo-400 outline-none">
-                        <option>A</option><option>B</option><option>C</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <input className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[12px] focus:border-indigo-400 outline-none" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[12px] focus:border-indigo-400 outline-none" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-[12px] focus:border-indigo-400 outline-none" placeholder="Add note..." />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button 
-                        onClick={() => removeRow(row.id)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Formik initialValues={initialValues} onSubmit={(values) => console.log(values)}>
+          {({ values }) => (
+            <Form className="space-y-6">
+              
+              {/* Parameter Selection Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                
+                {/* Main Inputs */}
+                <div className="xl:col-span-9 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                  <InputGroup label="Fiber Type" name="fiberType" icon={Activity} readOnly variant="yellow" />
+                  <div className="hidden lg:block" /> {/* Spacer */}
+                  
+                  {/* Qty Highlights */}
+                  <div className="row-span-2 space-y-4">
+                    <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Qty in No</span>
+                      <Field name="qtyInNo" className="bg-transparent text-2xl font-black text-orange-600 outline-none w-full text-center" />
+                    </div>
+                    <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Qty in KMs</span>
+                      <Field name="qtyInKms" className="bg-transparent text-2xl font-black text-orange-600 outline-none w-full text-center" />
+                    </div>
+                  </div>
 
-          <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
-            <div className="text-[10px] font-bold text-slate-400 uppercase">
-              Total Processed: <span className="text-indigo-600">{rows.length} Units</span>
-            </div>
-            <button 
-              onClick={addRow}
-              className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-900 transition-all shadow-md"
-            >
-              <Plus size={14} /> Add Fiber Row
-            </button>
-          </div>
-        </Card>
+                  <InputGroup label="If Col Then Col Type" name="colType" icon={Hash} variant="yellow" />
+                  <InputGroup label="Date & Time" name="dateTime" type="date" icon={Calendar} variant="yellow" />
+                  
+                  <InputGroup label="PV Opr" name="pvOpr" icon={User} variant="yellow" />
+                  <InputGroup label="Shift" name="shift" icon={Clock} variant="yellow" />
+                  
+                  <InputGroup label="Scan Barcode" name="scanBarcode" icon={Scan} variant="yellow" placeholder="Scan now..." />
+                  <InputGroup label="PV Instruction" name="pvInstruction" icon={BookOpen} variant="yellow" />
+                  
+                  <div className="md:col-span-2">
+                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">PV Remarks</label>
+                     <div className="mt-1 relative">
+                        <div className="absolute left-3 top-3 text-slate-400"><MessageSquare size={16} /></div>
+                        <Field as="textarea" name="pvRemarks" className="w-full pl-10 pr-4 py-3 bg-orange-50/30 border border-orange-100 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-orange-500/5 transition-all min-h-[80px]" />
+                     </div>
+                  </div>
+                </div>
 
-        {/* Submission Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-           <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-4">
-              <div className="bg-emerald-500 p-2.5 rounded-lg text-white"><Save size={18}/></div>
-              <div>
-                <p className="text-[10px] font-black text-emerald-600 uppercase">Status</p>
-                <p className="text-xs font-bold text-emerald-800 tracking-tight">Ready for Submission</p>
+                {/* Sidebar Actions & Reporting */}
+                <div className="xl:col-span-3 space-y-6">
+                  <div className="bg-slate-900 p-6 rounded-[2.5rem] shadow-xl text-white space-y-4">
+                    <button type="submit" className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95">
+                      <Save size={18} /> Save Entry
+                    </button>
+                    <button type="button" className="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 py-4 rounded-2xl font-bold transition-all border border-white/10">
+                      <LogOut size={18} /> Exit System
+                    </button>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-[2.5rem] shadow-lg border border-slate-100 space-y-4">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                      <FileText size={12} /> Reporting Range
+                    </span>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="bg-yellow-50/50 p-3 rounded-xl border border-yellow-100">
+                        <label className="text-[9px] font-black text-yellow-600 uppercase">From Date</label>
+                        <Field type="date" name="fromDate" className="w-full bg-transparent text-xs font-bold outline-none" />
+                      </div>
+                      <div className="bg-yellow-50/50 p-3 rounded-xl border border-yellow-100">
+                        <label className="text-[9px] font-black text-yellow-600 uppercase">To Date</label>
+                        <Field type="date" name="toDate" className="w-full bg-transparent text-xs font-bold outline-none" />
+                      </div>
+                    </div>
+                    <button type="button" className="w-full py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-700 transition-colors">
+                      Generate Report
+                    </button>
+                  </div>
+                </div>
               </div>
-           </div>
-           {/*<div className="bg-slate-800 p-4 rounded-xl flex items-center gap-4 text-white">
-              <div className="bg-white/10 p-2.5 rounded-lg text-white"><Database size={18}/></div>
-              <div>
-                <p className="text-[10px] font-bold text-white/50 uppercase">Records</p>
-                <p className="text-xs font-bold tracking-tight">Waiting to Sync to SAP</p>
+
+              {/* Data Table Section */}
+              <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
+                <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Entry Verification Log</h3>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/80">
+                        {["Sr No", "Barcode", "FID", "Len in km", "PV Status", "PV Opr", "PV Date & Time", "Grade", "F-type", "PV Remarks"].map((header) => (
+                          <th key={header} className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-100 last:border-0">{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {values.entryTable.map((_, i) => (
+                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors group">
+                          <td className="px-4 py-2 text-xs font-bold text-slate-400 text-center">{i + 1}</td>
+                          {Array(9).fill(0).map((_, cellIndex) => (
+                            <td key={cellIndex} className="px-2 py-1 border-r border-slate-50 last:border-0">
+                              <Field className="w-full bg-transparent p-2 text-xs font-medium outline-none focus:bg-white rounded transition-colors" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-           </div>*/}
+
+            </Form>
+          )}
+        </Formik>
+      </div>
+    </div>
+  );
+};
+
+const InputGroup = ({ label, icon: Icon, variant, ...props }) => {
+  const getStyles = () => {
+    if (variant === 'yellow') return "bg-yellow-50/50 border-yellow-100 focus:border-yellow-400 focus:ring-yellow-500/5";
+    return "bg-slate-50 border-slate-200 focus:border-indigo-400 focus:ring-indigo-500/5";
+  };
+
+  return (
+    <div className="space-y-1.5 group">
+      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+          <Icon size={16} />
         </div>
+        <Field 
+          {...props} 
+          className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-sm font-semibold transition-all outline-none ${getStyles()}`}
+        />
       </div>
     </div>
   );

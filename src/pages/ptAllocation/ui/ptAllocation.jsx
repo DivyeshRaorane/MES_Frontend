@@ -1,59 +1,40 @@
 import React, { useState } from 'react';
+import { Formik, Form, Field } from 'formik';
 import { 
-  ChevronDown, 
-  RefreshCcw, 
-  LayoutGrid,
-  Search,
-  Settings,
-  Bell,
-  Download,
-  CheckCircle2,
-  AlertCircle,
-  Zap,
-  Filter,
-  Layers,
-  Activity,
-  User,
-  Clock
+  ChevronDown, RefreshCcw, LayoutGrid, Search, Settings, 
+  Bell, Download, CheckCircle2, AlertCircle, Zap, 
+  Filter, Layers, Activity, User, Clock, Scan, Calendar, Save
 } from 'lucide-react';
 
-import FormField from '../../../components/formInputs';
-
 const PTAllocation = () => {
-  const [data] = useState([
-    { id: 1, dtNo: "DT07", barcode: "DTB0003711", spoolId: "TEF123038072", identifier: "A", drawnLen: 624.82, totalPt: 473.98, bal: 150.84, remarks: "pt complet" },
-    { id: 2, dtNo: "DT05", barcode: "CA10003300", spoolId: "TEFC22434051", identifier: "B", drawnLen: 803.04, totalPt: 723.403, bal: 79.637, remarks: "" },
-    { id: 3, dtNo: "DT04", barcode: "DTB0015292", spoolId: "TEF623068042", identifier: "A", drawnLen: 802.84, totalPt: 746.051, bal: 56.789, remarks: "P" },
-    { id: 4, dtNo: "DT07", barcode: "DTB0016134", spoolId: "TEF623328072", identifier: "A", drawnLen: 977.65, totalPt: 921.844, bal: 55.806, remarks: "P" },
-    { id: 5, dtNo: "DT02", barcode: "DTB0016522", spoolId: "TEF623322021", identifier: "A", drawnLen: 658.53, totalPt: 604.407, bal: 54.123, remarks: "" },
-    { id: 6, dtNo: "DT03", barcode: "DTB0017217", spoolId: "TEF723050030", identifier: "A", drawnLen: 397.55, totalPt: 359.924, bal: 37.626, remarks: "" },
-    { id: 7, dtNo: "DT07", barcode: "DTB0017569", spoolId: "TEF723024070", identifier: "A", drawnLen: 573.80, totalPt: 521.833, bal: 51.967, remarks: "" },
-    { id: 8, dtNo: "DT03", barcode: "DTB0020770", spoolId: "TEFA23039030", identifier: "B", drawnLen: 337.28, totalPt: 286.761, bal: 50.519, remarks: "CWA error, LD at all points" },
-    { id: 9, dtNo: "DT04", barcode: "DTB0021932", spoolId: "TEFA23248045", identifier: "B", drawnLen: 99.39, totalPt: 0, bal: 99.39, remarks: "" },
-    { id: 10, dtNo: "DT10", barcode: "DTB0021938", spoolId: "TEFA23317102", identifier: "B", drawnLen: 423.78, totalPt: 368.758, bal: 55.022, remarks: "okk" },
+  // Mock data for the table based on the new image columns
+  const [activeQueue] = useState([
+    { id: 1, ptMachine: "MC-01", preformId: "PR-102", drawLen: 800.5, ptDone: 450.2, balance: 350.3, nextSpool: "SP-99", nextLen: 600 },
+    { id: 2, ptMachine: "MC-02", preformId: "PR-105", drawLen: 950.0, ptDone: 950.0, balance: 0, nextSpool: "SP-102", nextLen: 450 },
   ]);
 
-  const [selectedRows, setSelectedRows] = useState([]);
+  const today = new Date().toISOString().split('T')[0];
 
-  const toggleRow = (id) => {
-    setSelectedRows(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+  const initialValues = {
+    scanBarcode: '',
+    preformId: 'PR-AUTO-778', // Mock auto-fetched
+    drawLength: '1250.45',    // Mock auto-fetched
+    ptMachineNo: '',
+    allocatedBy: '',
+    date: today,
+    dtNo: 'DT-09',            // Mock auto-fetched
+    ptStrain: '',
+    spoolNo: 'SPL-4402'       // Mock auto-fetched
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] p-4 lg:p-8 font-sans text-slate-900 overflow-x-hidden">
-      
-      {/* Dynamic Background Accents */}
-      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none"></div>
-      <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[100px] rounded-full -ml-40 -mb-40 pointer-events-none"></div>
-
+    <div className="min-h-screen bg-[#F4F7FA] p-4 lg:p-8 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto relative z-10">
         
-        {/* Simplified Premium Header */}
+        {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200 border border-white">
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-white">
               <Zap size={28} className="text-blue-600 fill-blue-50" />
             </div>
             <div>
@@ -63,199 +44,158 @@ const PTAllocation = () => {
               </h1>
               <p className="text-slate-500 font-medium text-xs flex items-center gap-2 mt-0.5">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                Connected to Production Node
+                Production Environment Active
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button className="p-2.5 bg-white text-slate-400 hover:text-blue-600 rounded-xl border border-slate-200 transition-all shadow-sm">
-              <Bell size={18} />
-            </button>
-            <button className="p-2.5 bg-white text-slate-400 hover:text-blue-600 rounded-xl border border-slate-200 transition-all shadow-sm">
-              <Settings size={18} />
-            </button>
-          </div>
         </header>
 
-        {/* EYE-PROTECTIVE Filter Panel */}
-        <section className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200/40 mb-8 overflow-hidden">
-          {/* Subtle Gradient Header for the Panel */}
-          <div className="bg-gradient-to-r from-slate-50 to-white px-8 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-blue-500" />
-              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Master Parameters</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-bold text-slate-400">Environment: <span className="text-blue-500">Live Production</span></span>
-            </div>
-          </div>
+        {/* Formik Entry Section */}
+        <Formik
+          initialValues={initialValues}
+          onSubmit={(values) => console.log(values)}
+        >
+          {() => (
+            <Form className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
+              {/* Main Form Panel */}
+              <div className="xl:col-span-3 bg-white rounded-[2rem] shadow-xl border border-slate-200/40 overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-50 to-white px-8 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers size={16} className="text-blue-500" />
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Allocation Entry</span>
+                  </div>
+                </div>
 
-          <div className="p-8">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Main Fields Grid */}
-              <div className="flex-grow grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-6 gap-y-5">
-                <FormField label="PT Machine" type="select" options={["MC-ALPHA", "MC-BETA", "MC-GAMMA"]} icon={Layers} />
-                <FormField label="Operator" type="select" options={["Tapas Mondal", "Bappa Namata"]} icon={User} />
-                <FormField label="Supervisor" type="select" options={["Saurav Pandey", "Dumne Venkatesh"]} icon={User} />
-                <FormField label="Fiber Identifier" placeholder="Scan or Type..." icon={Search} />
-                
-                <FormField label="PT WIP (m)" value="15,536.63" icon={Activity} />
-                <FormField label="Rejected Spool" type="select" options={["None", "Fault-01", "Fault-02"]} icon={AlertCircle} />
-                <div className="xl:col-span-2">
-                  <FormField label="Rejection Remark" placeholder="Enter detailed observation..." icon={AlertCircle} />
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <CustomInput label="Scan Draw Spool Barcode" name="scanBarcode" icon={Scan} placeholder="Scan..." />
+                    <CustomInput label="Preform ID" name="preformId" icon={Activity} readOnly />
+                    <CustomInput label="Draw Length" name="drawLength" icon={RefreshCcw} readOnly />
+                    <CustomSelect label="Select PT Machine No" name="ptMachineNo" options={["MC-01", "MC-02", "MC-03"]} icon={Settings} />
+                    <CustomInput label="Allocated By" name="allocatedBy" icon={User} placeholder="Enter name..." />
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <CustomInput label="Date" name="date" icon={Calendar} type="date" />
+                    <CustomInput label="DT No" name="dtNo" icon={HashIcon} readOnly />
+                    <CustomSelect label="Select PT Strain" name="ptStrain" options={["Strain 1", "Strain 2"]} icon={Activity} />
+                    <CustomInput label="Spool No" name="spoolNo" icon={Layers} readOnly />
+                    
+                    <button type="submit" className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 group">
+                      <Save size={18} />
+                      Save Allocation
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Clean Action Sidebar */}
-              <div className="lg:w-56 flex flex-col justify-center gap-3 border-l border-slate-100 lg:pl-8">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 group">
-                  <RefreshCcw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
-                  Apply & Sync
-                </button>
-                <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border border-slate-200/50">
-                  <Filter size={16} />
-                  Reset View
+              {/* Sidebar Reports Panel */}
+              <div className="bg-slate-800 rounded-[2rem] p-6 text-white shadow-xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Quick Report</h3>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400">From Date</label>
+                    <input type="date" className="w-full bg-slate-700 border-none rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400">To Date</label>
+                    <input type="date" className="w-full bg-slate-700 border-none rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <button type="button" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 py-3 rounded-xl text-sm font-bold transition-all mt-6">
+                  Generate Report
                 </button>
               </div>
-            </div>
-          </div>
-        </section>
+            </Form>
+          )}
+        </Formik>
 
-        {/* Data Presentation Layer */}
-        <section className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200/40 overflow-hidden">
+        {/* Data Table Section */}
+        <section className="bg-white rounded-[2rem] shadow-xl border border-slate-200/40 overflow-hidden">
           <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-white/50 backdrop-blur-sm">
-            <div className="flex items-center gap-4">
-              <h3 className="text-lg font-black text-slate-800 tracking-tight">Active Queue</h3>
-              <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md">{data.length} Batches Found</span>
-            </div>
-            
-            <button className="flex items-center gap-2 text-slate-600 hover:text-blue-600 px-4 py-2 rounded-lg text-xs font-bold transition-all border border-slate-200 hover:border-blue-200">
-              <Download size={14} />
-              Export CSV
-            </button>
+             <h3 className="text-lg font-black text-slate-800 tracking-tight">Allocation Queue</h3>
+             <div className="flex gap-2">
+                <button className="flex items-center gap-2 text-slate-600 hover:text-blue-600 px-4 py-2 rounded-lg text-xs font-bold transition-all border border-slate-200">
+                  <RefreshCcw size={14} /> Refresh
+                </button>
+                <button className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all">
+                  <Download size={14} /> Export
+                </button>
+             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50">
-                  <th className="p-5 w-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                    </div>
-                  </th>
-                  {[
-                    "DT NO", "Barcode", "Spool Identifier", "ID", "Drawn Len", 
-                    "Total PT", "Balance", "Remarks", "Commit"
-                  ].map((header) => (
-                    <th key={header} className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {header}
-                    </th>
+                  {["PT Machine", "Preform ID", "Draw Len", "PT Done", "Balance", "Next Allocated Spool", "Next Spool Draw Len"].map((h) => (
+                    <th key={h} className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.map((row) => (
-                  <tr 
-                    key={row.id} 
-                    className={`hover:bg-blue-50/40 transition-all duration-200 group ${selectedRows.includes(row.id) ? 'bg-blue-50/80' : ''}`}
-                  >
-                    <td className="p-5 text-center">
-                      <div className="flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedRows.includes(row.id)}
-                          onChange={() => toggleRow(row.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-5">
-                      <span className="bg-slate-50 text-slate-700 px-2 py-1 rounded-md font-bold text-[11px] border border-slate-100">
-                        {row.dtNo}
+                {activeQueue.map((row) => (
+                  <tr key={row.id} className="hover:bg-blue-50/40 transition-all group">
+                    <td className="px-6 py-4 font-bold text-blue-600 text-sm">{row.ptMachine}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-700">{row.preformId}</td>
+                    <td className="px-6 py-4 font-mono text-xs">{row.drawLen}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-500">{row.ptDone}</td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs font-black ${row.balance === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {row.balance}
                       </span>
                     </td>
-                    <td className="px-4 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-700 tracking-tight">{row.barcode}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-5 text-[12px] font-medium text-slate-500 font-mono italic">{row.spoolId}</td>
-                    <td className="px-4 py-5">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${
-                        row.identifier === 'A' 
-                          ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                          : 'bg-amber-50 text-amber-600 border border-amber-100'
-                      }`}>
-                        {row.identifier}
-                      </div>
-                    </td>
-                    <td className="px-4 py-5 text-xs font-mono font-bold text-slate-600">{row.drawnLen.toFixed(2)}</td>
-                    <td className="px-4 py-5 text-xs font-mono text-slate-400">{row.totalPt.toFixed(2)}</td>
-                    <td className="px-4 py-5">
-                      <div className="flex flex-col gap-1">
-                        <span className={`text-xs font-black ${row.bal < 100 ? 'text-rose-500' : 'text-slate-800'}`}>
-                          {row.bal.toFixed(2)}
-                        </span>
-                        <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                           <div 
-                            className={`h-full rounded-full transition-all duration-500 ${row.bal < 100 ? 'bg-rose-400' : 'bg-blue-400'}`} 
-                            style={{ width: `${Math.min(100, (row.bal / row.drawnLen) * 100)}%` }}
-                           ></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-5">
-                      {row.remarks ? (
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-100/50 px-2 py-1 rounded-md border border-slate-100 max-w-[120px] truncate">
-                          <AlertCircle size={12} className="text-orange-400 flex-shrink-0" />
-                          {row.remarks}
-                        </div>
-                      ) : (
-                        <span className="text-[10px] text-slate-300 font-bold uppercase">None</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-5">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 bg-emerald-500 text-white rounded-lg shadow-md shadow-emerald-200 hover:scale-110 active:scale-95 transition-all">
-                          <CheckCircle2 size={14} />
-                        </button>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 text-xs text-slate-600 font-medium">{row.nextSpool}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-400">{row.nextLen}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {/* Simple Statistics Footer */}
-          <div className="p-6 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Yield %</span>
-              <span className="text-lg font-black text-slate-700 tracking-tight">98.4%</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avg Cycle</span>
-              <span className="text-lg font-black text-slate-700 tracking-tight">14.2m</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Health</span>
-              <span className="text-lg font-black text-emerald-500 tracking-tight">Stable</span>
-            </div>
-            <div className="flex justify-end items-center gap-2">
-               {[1, 2, 3].map(i => (
-                 <button key={i} className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${i === 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-500'}`}>
-                  {i}
-                 </button>
-               ))}
-            </div>
-          </div>
         </section>
-
       </div>
     </div>
   );
 };
+
+// Helper Components for clean UI
+const CustomInput = ({ label, icon: Icon, ...props }) => (
+  <div className="space-y-1.5 group">
+    <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-tight">{label}</label>
+    <div className="relative">
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+        <Icon size={16} />
+      </div>
+      <Field 
+        {...props} 
+        className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-400 transition-all outline-none ${props.readOnly ? 'cursor-not-allowed opacity-70 bg-slate-100' : ''}`}
+      />
+    </div>
+  </div>
+);
+
+const CustomSelect = ({ label, icon: Icon, options, name }) => (
+  <div className="space-y-1.5">
+    <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-tight">{label}</label>
+    <div className="relative">
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <Icon size={16} />
+      </div>
+      <Field as="select" name={name} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:bg-white focus:border-blue-400 transition-all outline-none appearance-none">
+        <option value="">Select Option</option>
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </Field>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
+  </div>
+);
+
+const HashIcon = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" />
+  </svg>
+);
 
 export default PTAllocation;

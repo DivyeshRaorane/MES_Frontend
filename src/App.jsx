@@ -35,6 +35,9 @@ import ComplaintStatusMonitor from './pages/complaintTable/ui/complaintTable'
 import ComplaintClosure from './pages/complaintClosure/ui/complainClosure'
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
 import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
+import D2Issue from './pages/d2Egeing/ui/d2egeing'
+import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
+import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
 
 function App() {
 
@@ -57,7 +60,9 @@ function App() {
         <Route path='prooftesting/ptbreakanalysis' element={<PTBreakAnalysis/>}/>
         <Route path='quality/qcentry' element={<QCEntryScreen/>}/>
         <Route path='quality/pventry' element={<PVEntry/>}/>
-        <Route path='quality/d2egeing' element={<D2Egeing/>}/>
+        <Route path='quality/d2issue' element={<D2Issue/>}/>
+        <Route path='quality/d2gasconeentry' element={<D2gas_ConeEntry/>}/>
+        <Route path='quality/d2recieving' element={<D2Recieving/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
         <Route path='dispatch/boxscanningentry' element={<BoxScanningEntry/>}/>
         <Route path='dispatch/fgfiberallocation' element={<FGFiberAllocation/>}/>

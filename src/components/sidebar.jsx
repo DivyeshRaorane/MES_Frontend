@@ -155,7 +155,9 @@ const Sidebar = ()=>{
                     <div className="ml-9 mt-1 space-y-1 border-l border-slate-700">
                       <SubNavItem label="Quality Entry" active={location.pathname === '/quality/qcentry'} onClick={() => navigate('/quality/qcentry')} />
                       <SubNavItem label="PV Entry" active={location.pathname === '/quality/pventry'} onClick={() => navigate('/quality/pventry')} />
-                      <SubNavItem label="D2 Egeing" active={location.pathname === '/quality/d2egeing'} onClick={() => navigate('/quality/d2egeing')} />
+                      <SubNavItem label="D2 Issue" active={location.pathname === '/quality/d2issue'} onClick={() => navigate('/quality/d2issue')} />
+                      <SubNavItem label="D2 Gas Entry" active={location.pathname === '/quality/d2gasconeentry'} onClick={() => navigate('/quality/d2gasconeentry')} />
+                      <SubNavItem label="D2 Recieving" active={location.pathname === '/quality/d2recieving'} onClick={() => navigate('/quality/d2recieving')} />
                       <SubNavItem label="H2 Egeing" active={location.pathname === '/quality/h2egeing'} onClick={() => navigate('/quality/h2egeing')} />
                       <SubNavItem label="Quality Report" active={location.pathname== '/underdev'} onClick={() => navigate('/underdev')} />
                     </div>

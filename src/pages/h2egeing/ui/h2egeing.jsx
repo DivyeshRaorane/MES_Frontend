@@ -1,223 +1,205 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useFormik } from 'formik';
 import { 
-  Pipette, 
+  Scan, 
+  Layers, 
+  ClipboardCheck, 
+  AlertCircle, 
   Save, 
-  RotateCcw, 
-  Clock, 
-  Thermometer, 
-  Droplets, 
-  History, 
-  Send,
-  CheckCircle,
+  LogOut, 
+  History,
+  RotateCcw,
   Calendar
 } from 'lucide-react';
 
 const H2Ageing = () => {
-  const [activeTab, setActiveTab] = useState('before');
-  const [formData, setFormData] = useState({
-    tankNo: '',
-    cycleHrs: '',
-    barcodeId: '',
-    h2BatchId: '',
-    length: '',
-    attn1310: '',
-    attn1383: '',
-    attn1550: '',
-    before: { date: '2024-05-31', time: '', a1240: '', a1310: '', a1383: '', a1550: '' },
-    after: { date: '2024-05-31', time: '', a1240: '', a1310: '', a1383: '', a1550: '' },
-    after14: { date: '2024-05-31', time: '', a1240: '', a1310: '', a1383: '', a1550: '' }
+  const formik = useFormik({
+    initialValues: {
+      barcode: '',
+      batchId: '',
+      date: '',
+      attn1240_before: '', attn1240_after: '', attn1240_14days: '',
+      attn1310_before: '', attn1310_after: '', attn1310_14days: '',
+      attn1383_before: '', attn1383_after: '', attn1383_14days: '',
+      attn1550_before: '', attn1550_after: '', attn1550_14days: '',
+      attn1625_before: '', attn1625_after: '', attn1625_14days: '',
+      testingOpr: '',
+      entryOpr: ''
+    },
+    onSubmit: (values) => {
+      console.log('Saving Record:', values);
+    },
   });
 
-  const handleInputChange = (section, field, value) => {
-    if (section === 'root') {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [section]: { ...prev[section], [field]: value }
-      }));
-    }
-  };
-
-  const tabs = [
-    { id: 'before', label: 'Before H2 Ageing', icon: <Clock size={14} />, color: 'bg-slate-800' },
-    { id: 'after', label: 'After H2 Ageing', icon: <Thermometer size={14} />, color: 'bg-emerald-700' },
-    { id: 'after14', label: 'After 14 Days', icon: <Calendar size={14} />, color: 'bg-indigo-800' }
+  const attnFields = [
+    { label: 'Attn 1240', key: 'attn1240' },
+    { label: 'Attn 1310', key: 'attn1310' },
+    { label: 'Attn 1383(OH)', key: 'attn1383' },
+    { label: 'Attn 1550', key: 'attn1550' },
+    { label: 'Attn 1625', key: 'attn1625' },
   ];
 
-  const InputField = ({ label, type = "text", placeholder = "", value, onChange, className = "" }) => (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{label}</label>
-      <input 
-        type={type}
-        placeholder={placeholder}
-        className="text-[12px] border border-slate-300 rounded px-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none h-8 transition-all"
-        value={value}
-        onChange={onChange}
-      />
-    </div>
-  );
-
-  const SelectField = ({ label, options = [], value, onChange, className = "" }) => (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{label}</label>
-      <select 
-        className="text-[12px] border border-slate-300 rounded px-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none h-8 transition-all appearance-none"
-        value={value}
-        onChange={onChange}
-      >
-        <option value="">Select</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-    </div>
-  );
-
   return (
-    <div className="max-w-5xl mx-auto p-4 space-y-4 bg-slate-50 min-h-screen font-sans">
-      {/* Header Section */}
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-blue-600">
-        <div className="flex items-center justify-between mb-6 border-b pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-              <Pipette size={24} />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight leading-none uppercase">H2 Ageing Module</h2>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest italic">Process Control & Attenuation Analysis</p>
-            </div>
+    <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-800">
+      {/* Top Header / Barcode Scanner */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="md:col-span-1 bg-violet-600 rounded-2xl p-4 text-white shadow-lg flex items-center gap-4">
+          <div className="bg-white/20 p-3 rounded-xl">
+            <Scan size={28} />
           </div>
-          <div className="flex gap-2">
-             <button className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 text-slate-500 text-[10px] font-bold rounded uppercase hover:bg-slate-50 transition-all">
-               <RotateCcw size={12} /> Reset
-             </button>
+          <div className="flex-1">
+            <label className="text-xs font-bold uppercase opacity-80">Scan Barcode</label>
+            <input 
+              name="barcode"
+              className="w-full bg-transparent border-b-2 border-white/30 focus:border-white outline-none text-lg font-bold py-1"
+              placeholder="0000000000"
+            />
           </div>
         </div>
-
-        {/* Primary Data Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-          <SelectField label="Tank No" options={["Tank 01", "Tank 02", "Tank 03", "Tank 04"]} value={formData.tankNo} onChange={(e) => handleInputChange('root', 'tankNo', e.target.value)} />
-          <SelectField label="Cycle Hrs" options={["24 Hrs", "48 Hrs", "72 Hrs"]} value={formData.cycleHrs} onChange={(e) => handleInputChange('root', 'cycleHrs', e.target.value)} />
-          <InputField label="Barcode ID" placeholder="Scan..." value={formData.barcodeId} onChange={(e) => handleInputChange('root', 'barcodeId', e.target.value)} />
-          <InputField label="H2 Batch ID" placeholder="Batch..." value={formData.h2BatchId} onChange={(e) => handleInputChange('root', 'h2BatchId', e.target.value)} />
-          <InputField label="Length (m)" value={formData.length} onChange={(e) => handleInputChange('root', 'length', e.target.value)} />
-          <InputField label="Attn 1310" value={formData.attn1310} onChange={(e) => handleInputChange('root', 'attn1310', e.target.value)} />
-          <InputField label="Attn 1383" value={formData.attn1383} onChange={(e) => handleInputChange('root', 'attn1383', e.target.value)} />
-          <InputField label="Attn 1550" value={formData.attn1550} onChange={(e) => handleInputChange('root', 'attn1550', e.target.value)} />
+        
+        <div className="md:col-span-2 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <div className="bg-indigo-100 text-indigo-600 p-3 rounded-xl"><Layers size={24} /></div>
+             <div>
+               <p className="text-xs font-bold text-slate-400 uppercase">D2 Batch ID</p>
+               <input className="text-lg font-bold text-slate-700 outline-none" placeholder="Enter Batch ID..." />
+             </div>
+          </div>
+          <div className="text-right">
+             <p className="text-xs font-bold text-slate-400 uppercase flex items-center justify-end gap-1">
+               <Calendar size={12} /> System Date
+             </p>
+             <p className="text-lg font-mono font-bold text-slate-600">04/30/2026</p>
+          </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex p-1 bg-slate-200 rounded-xl w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-tight transition-all ${
-              activeTab === tab.id 
-                ? 'bg-white text-blue-700 shadow-sm' 
-                : 'text-slate-500 hover:bg-slate-300/50'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Active Stage Content */}
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden min-h-[300px] flex flex-col">
-        {/* Stage Header Overlay */}
-        <div className={`${tabs.find(t => t.id === activeTab).color} text-white px-6 py-3 flex items-center justify-between`}>
-          <div className="flex items-center gap-2">
-            {tabs.find(t => t.id === activeTab).icon}
-            <span className="text-xs font-black uppercase tracking-widest">Stage Entry: {tabs.find(t => t.id === activeTab).label}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left: Attn Testing Matrix */}
+        <section className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2 font-bold text-slate-600 uppercase tracking-wider text-sm">
+            <ClipboardCheck size={18} className="text-emerald-500" /> Attn Quality Testing
           </div>
-          <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded uppercase">Step {activeTab === 'before' ? '1' : activeTab === 'after' ? '2' : '3'} of 3</div>
-        </div>
+          <div className="p-6 overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-bold text-slate-400 uppercase border-b border-slate-100">
+                  <th className="pb-4">Parameter</th>
+                  <th className="pb-4">Before</th>
+                  <th className="pb-4">After</th>
+                  <th className="pb-4">14 Days</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {attnFields.map((field) => (
+                  <tr key={field.key} className="group">
+                    <td className="py-3 font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{field.label}</td>
+                    <td className="py-3">
+                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                    </td>
+                    <td className="py-3">
+                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                    </td>
+                    <td className="py-3">
+                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div className="mt-6 grid grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+               <div>
+                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Testing Operator</label>
+                 <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none" />
+               </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Entry Operator</label>
+                 <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none" />
+               </div>
+            </div>
+          </div>
+          <div className="bg-emerald-500 h-2 w-full"></div>
+        </section>
 
-        <div className="p-8 flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Date/Time Section */}
+        {/* Right: Batch Management */}
+        <aside className="lg:col-span-4 space-y-6">
+          
+          {/* Issue Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+              <History className="text-blue-500" size={18} /> Batch Selection
+            </h3>
             <div className="space-y-4">
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Timing Info</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <InputField 
-                  label="Date" 
-                  type="date" 
-                  value={formData[activeTab].date} 
-                  onChange={(e) => handleInputChange(activeTab, 'date', e.target.value)}
-                />
-                <InputField 
-                  label="Time" 
-                  placeholder="HH:MM" 
-                  value={formData[activeTab].time} 
-                  onChange={(e) => handleInputChange(activeTab, 'time', e.target.value)}
-                />
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Pending Batches</label>
+                <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm mt-1">
+                  <option>Select Batch...</option>
+                </select>
               </div>
-            </div>
-
-            {/* Measurements Section */}
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Attenuation Measurements (dB/km)</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <InputField 
-                  label="Attn @ 1240" 
-                  value={formData[activeTab].a1240} 
-                  onChange={(e) => handleInputChange(activeTab, 'a1240', e.target.value)}
-                />
-                <InputField 
-                  label="Attn @ 1310" 
-                  value={formData[activeTab].a1310} 
-                  onChange={(e) => handleInputChange(activeTab, 'a1310', e.target.value)}
-                />
-                <InputField 
-                  label="Attn @ 1383" 
-                  value={formData[activeTab].a1383} 
-                  onChange={(e) => handleInputChange(activeTab, 'a1383', e.target.value)}
-                />
-                <InputField 
-                  label="Attn @ 1550" 
-                  value={formData[activeTab].a1550} 
-                  onChange={(e) => handleInputChange(activeTab, 'a1550', e.target.value)}
-                />
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Fail Batches</label>
+                <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm mt-1">
+                  <option>Select Batch...</option>
+                </select>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer Actions for Tab */}
-        <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-end gap-3">
-          {activeTab === 'before' && (
-            <button className="flex items-center gap-2 px-8 py-2.5 bg-slate-800 text-white text-[11px] font-black uppercase rounded-lg hover:bg-black transition-all shadow-lg shadow-slate-200">
-              <Send size={14} /> Issue for H2 Ageing
-            </button>
-          )}
-          {activeTab === 'after' && (
-            <button className="flex items-center gap-2 px-8 py-2.5 bg-emerald-700 text-white text-[11px] font-black uppercase rounded-lg hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-100">
-              <History size={14} /> Receive From H2
-            </button>
-          )}
-          {activeTab === 'after14' && (
-            <button className="flex items-center gap-2 px-8 py-2.5 bg-indigo-700 text-white text-[11px] font-black uppercase rounded-lg hover:bg-indigo-800 transition-all shadow-lg shadow-indigo-100">
-              <CheckCircle size={14} /> Final Lab Submit
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Draft Footer */}
-      <div className="flex justify-between items-center bg-white/50 p-4 rounded-xl border border-dashed border-slate-300">
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Online</span>
+          {/* Re-Issue for Fail Batches */}
+          <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5">
+             <h3 className="font-bold text-rose-700 mb-4 flex items-center gap-2">
+               <AlertCircle size={18} /> Re-Issue Handling
+             </h3>
+             <div className="space-y-3">
+               <input placeholder="Scan Barcode" className="w-full p-2 rounded-lg border border-rose-200 text-sm" />
+               <input placeholder="Batch ID" className="w-full p-2 rounded-lg border border-rose-200 text-sm" />
+               <button className="w-full bg-rose-600 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-rose-700 transition-colors">
+                 <RotateCcw size={16} /> Re-Issue
+               </button>
+             </div>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter border-l pl-4">Last Saved: 10:15 AM</span>
-        </div>
-        <button className="flex items-center gap-2 px-6 py-2 bg-white border border-slate-300 text-slate-700 text-[11px] font-black uppercase rounded-lg hover:bg-slate-50 transition-all">
-          <Save size={14} /> Save Progress
-        </button>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+              <Save size={20} /> Save Entry
+            </button>
+            <button className="px-6 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all">
+              <LogOut size={20} />
+            </button>
+          </div>
+
+        </aside>
       </div>
+
+      {/* Bottom Table: Batch Status */}
+      <section className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 text-sm font-bold text-slate-600">
+          Recent Batch Activity
+        </div>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-slate-50/50 text-[10px] uppercase tracking-widest text-slate-400">
+              <th className="px-6 py-3">Batch ID</th>
+              <th className="px-6 py-3">Barcode</th>
+              <th className="px-6 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {[1, 2, 3].map(i => (
+              <tr key={i} className="text-sm">
+                <td className="px-6 py-3 font-mono text-indigo-600">BATCH-00{i}</td>
+                <td className="px-6 py-3 text-slate-600 font-mono">SCN-990{i}</td>
+                <td className="px-6 py-3">
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">COMPLETED</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </div>
   );
 };
