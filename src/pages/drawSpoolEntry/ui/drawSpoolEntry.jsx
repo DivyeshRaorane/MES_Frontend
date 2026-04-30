@@ -1,383 +1,294 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useFormik, FormikProvider, Field, Form, FieldArray } from 'formik';
 import { 
-  Send, 
-  Home, 
-  ChevronDown, 
-  Plus, 
-  Monitor,
-  User,
-  Activity,
-  Box,
-  Settings,
-  Trash2
+  Send, Home, Monitor, Settings, Activity, User, Wind, 
+  Droplets, Zap, Clock, ChevronDown, Plus, Trash2, ListTree
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const DrwaSpoolEntry = () => {
-const navigate = useNavigate()
+const DrawSpoolEntry = () => {
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('Coating');
-  const [drawFlaws, setDrawFlaws] = useState([]);
+  const formik = useFormik({
+    initialValues: {
+      // Initial Parameters
+      towerNo: '', drawLength: '', preformId: '', spoolId: '', 
+      preformWeight: '', preformLen: '', entryDate: '2026-04-30',
+      balancePreWt: '', balanceThLen: '',
+      startDate: '', startTime: '', endDate: '', endTime: '',
 
-  // Mock function to simulate getting data from a CSV file
-  const handleGetDrawFlaws = () => {
-    const mockCsvData = [
-      { id: Date.now() + 1, preformId: 'TEF524', type: 'Bottom End', startPos: '0.0', endPos: '0.5', length: '0.5', isManual: false },
-      { id: Date.now() + 2, preformId: 'TEF524', type: 'Lumps', startPos: '12.4', endPos: '12.45', length: '0.05', isManual: false },
-      { id: Date.now() + 3, preformId: 'TEF524', type: 'BFD', startPos: '45.2', endPos: '45.3', length: '0.1', isManual: false },
-      { id: Date.now() + 4, preformId: 'TEF524', type: 'SCD', startPos: '88.1', endPos: '88.2', length: '0.1', isManual: false },
-    ];
-    setDrawFlaws([...drawFlaws, ...mockCsvData]);
-  };
+      // Operating Details
+      roomTemp: '', humidity: '', coTime: '', spoolCoTime: '',
+      dieClean: '', primaryFilter: '2um', secondaryFilter: '2um',
 
-  // Function to add a blank manual entry row
-  const handleAddManualRow = () => {
-    const newRow = {
-      id: Date.now(),
-      preformId: '',
-      type: 'Lumps', // Default type
-      startPos: '0.0',
-      endPos: '0.0',
-      length: '0.0',
-      isManual: true
-    };
-    setDrawFlaws([...drawFlaws, newRow]);
-  };
+      // Draw Parameters
+      drawLineSpeed: '', drawTension: '', furnacePower: '', preSequence: '',
+      beScrap: '', breakType: '', breakReason: '', spoolChangeOver: '',
 
-  // Function to update manual row fields
-  const updateManualField = (id, field, value) => {
-    setDrawFlaws(drawFlaws.map(flaw => {
-      if (flaw.id === id) {
-        const updated = { ...flaw, [field]: value };
-        // Auto-calculate length if start or end changes
-        if (field === 'startPos' || field === 'endPos') {
-          const s = parseFloat(updated.startPos) || 0;
-          const e = parseFloat(updated.endPos) || 0;
-          updated.length = (Math.abs(e - s)).toFixed(3);
-        }
-        return updated;
-      }
-      return flaw;
-    }));
-  };
+      // Pitchchange details (New Dynamic Table)
+      pitchChanges: [
+        { flawType: '', startLength: '', endLength: '', pitchKms: '' }
+      ],
 
-  const removeFlaw = (id) => {
-    setDrawFlaws(drawFlaws.filter(f => f.id !== id));
-  };
+      // Coating Details
+      primaryCoat: '', secondaryCoat: '', primCoatPress: '', secCoatPress: '',
+      batchNo1: '', batchNo2: '',
 
-  const renderConsumptionFields = () => {
-    if (activeTab === 'Coating') {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormInput label="Primary Pressure" />
-          <FormInput label="Primary Cons(kg)" />
-          <FormSelect label="Primary Coating" options={['Select']} />
-          <FormInput label="Primary Batch" />
-          <FormInput label="Secondary Pressure" />
-          <FormInput label="Secondary Cons(kg)" />
-          <FormSelect label="Secondary Coating" options={['Select']} />
-          <FormInput label="Secondary Batch" />
-        </div>
-      );
-    } else {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormInput label="Gas Cons (M³)" placeholder="Enter cubic meter value" />
-          <FormInput label="Flow Rate" placeholder="Optional" />
-          <FormInput label="Line Pressure" />
-        </div>
-      );
-    }
-  };
+      // Gas Flow Details
+      furnaceArgon: '', furnaceHe: '', coolingTubeHe: '', co2Flow: '',
+      uvN2Flow: '', uvComprAir: '',
+
+      // Operator Details
+      drawnShift: 'A', shiftIncharge: '', furnaceOpr: '', 
+      dieOpr: '', rampUpOpr: '', spoolEndOpr: '', leftoverOpr: '',
+      windingObs: 'OK', scratchesObs: 'NO'
+    },
+    onSubmit: (values) => {
+      console.log('Submitting Form Data:', values);
+    },
+  });
 
   return (
-    <div className="min-h-screen bg-[#f4f7f9] text-slate-800 font-sans p-4">
-      {/* Top Action Bar */}
-      <header className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm mb-4 sticky top-0 z-50 rounded-lg">
-        <h1 className="text-lg font-bold text-blue-900 flex items-center gap-2">
-          <Monitor size={20} className="text-blue-600" /> DRAW SPOOL ENTRY
-        </h1>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-6 py-2 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition shadow-sm">
-            <Send size={14} /> Submit
-          </button>
-          <button onClick={()=>navigate('/dashboard')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition shadow-sm">
-            <Home size={14} /> Home
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-[1600px] mx-auto space-y-4">
-        {/* 1. Initial Parameters */}
-        <Section title="Initial Parameters" icon={<Settings size={16}/>}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-x-6 gap-y-3">
-            <FormSelect label="Tower No." options={['Select', 'Tower 1', 'Tower 2']} />
-            <FormSelect label="Preform ID" options={['Select', 'TEF524', 'TEF525']} />
-            <FormSelect label="Shift" options={['Select', 'A', 'B', 'C']} />
-            <FormInput label="Draw Barcode ID" />
-            <FormInput label="Drawn Len(KM)" defaultValue="0" />
-            <FormInput label="Cumm Len(KM)" defaultValue="0" />
-            <FormInput label="Start Date" type="date" defaultValue="2024-05-31" />
-            <FormInput label="Start Time" type="time" />
-            <FormInput label="Spool ID" />
-            <FormInput label="Preform Wt(KG)" defaultValue="0" />
-            <FormInput label="Drawn Wt(KG)" defaultValue="0" />
-            <FormInput label="Theoritical Len(KM)" defaultValue="0" />
-            <FormInput label="End Date" type="date" defaultValue="2024-05-31" />
-            <FormInput label="End Time" type="time" />
-            <FormInput label="Piece No." />
-            <FormInput label="Preform Type" readOnly />
-            <FormInput label="Adjust KM" defaultValue="0.15" />
-            <FormInput label="Product Type" readOnly />
+    <FormikProvider value={formik}>
+      <div className="min-h-screen bg-slate-50 text-slate-800 p-4 font-sans">
+        {/* Sticky Header */}
+        <header className="bg-white border border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm mb-6 sticky top-0 z-50 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md">
+              <Monitor size={22} />
+            </div>
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-800">DRAW SPOOL ENTRY</h1>
           </div>
-        </Section>
-
-        {/* 2. Draw Parameters */}
-        <Section title="Draw Parameters" icon={<Activity size={16}/>}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-3">
-            <FormInput label="Line Speed" defaultValue="0" />
-            <FormInput label="Bot End Scrap" />
-            <FormInput label="Draw Seq." />
-            <FormInput label="Power" defaultValue="0" />
-            <FormInput label="Bare Fiber Tension" defaultValue="0" />
-            <FormSelect label="Die No" options={['Select', 'D1', 'D2']} />
-            <FormSelect label="Die Cleaned" options={['Select', 'Yes', 'No']} />
-            <FormSelect label="FSU" options={['Select', 'Yes', 'No']} />
-            <FormInput label="Temp" defaultValue="0" />
-            <FormInput label="Humidity" defaultValue="0" />
-            <FormSelect label="Undrawn" options={['Select', 'Yes', 'No']} />
-            <FormSelect label="Wind/Spool Cndtn" options={['Select', 'Good', 'Bad']} />
-            <FormInput label="Spool Condition" />
-            <FlawSelect label="Draw Break" options={['None', 'Process', 'Material']} />
-            <FormSelect label="Spool End Type" options={['Select', 'Flat', 'Tapered']} />
+          <div className="flex gap-3">
+            <button 
+              type="button"
+              onClick={formik.handleSubmit}
+              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
+            >
+              <Send size={18} /> Submit Entry
+            </button>
+            <button 
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 transition-all"
+            >
+              <Home size={18} />
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
-            <FormInput label="Remarks" placeholder="Enter remarks..." />
-            <FormInput label="Manual Entry Reason" placeholder="Reason if applicable..." />
-          </div>
-        </Section>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2">
-            <Section title="Operator Details" icon={<User size={16}/>}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-                <FormSelect label="Shift Inc." options={['Please Select']} />
-                <FormSelect label="Process Opr." options={['Please Select']} />
-                <FormSelect label="Furnace Opr." options={['Please Select']} />
-                <FormSelect label="Die Opr." options={['Please Select']} />
-                <FormSelect label="Rumpup Opr." options={['Please Select']} />
-                <FormSelect label="Spool End Opr." options={['Please Select']} />
+        <Form className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <section className="lg:col-span-8 space-y-6">
+            {/* Section 1: Core Identification */}
+            <ModuleCard title="Initial Parameters" icon={<Settings className="text-blue-500" />}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormikInput name="towerNo" label="Draw Tower No." />
+                <FormikInput name="drawLength" label="Draw Length" />
+                <FormikInput name="preformId" label="Preform ID" />
+                <FormikInput name="spoolId" label="Spool ID" />
+                <FormikInput name="preformWeight" label="Preform Weight (KG)" />
+                <FormikInput name="preformLen" label="Preform Length" />
+                <FormikInput name="balancePreWt" label="Balance Pre Wt." />
+                <FormikInput name="balanceThLen" label="Balance Th. Length" />
+                <FormikInput name="entryDate" label="Entry Date" type="date" />
               </div>
-            </Section>
-          </div>
-
-          <div className="lg:col-span-1">
-            <Section title="Draw Flaws Details" icon={<Activity size={16}/>}>
-              <div className="flex justify-end gap-2 mb-2">
-                <button 
-                  onClick={handleGetDrawFlaws}
-                  className="bg-blue-600 text-white text-[10px] px-2 py-1 rounded shadow-sm hover:bg-blue-700 transition"
-                >
-                  Get Draw Flaws
-                </button>
-                <button 
-                  onClick={handleAddManualRow}
-                  className="bg-cyan-500 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1 shadow-sm hover:bg-cyan-600 transition"
-                >
-                  <Plus size={10}/> Add Rows
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                <FormikInput name="startDate" label="Start Date" type="date" />
+                <FormikInput name="startTime" label="Start Time" type="time" />
+                <FormikInput name="endDate" label="End Date" type="date" />
+                <FormikInput name="endTime" label="End Time" type="time" />
               </div>
-              <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-md">
-                <table className="w-full text-[10px] text-left">
-                  <thead className="bg-slate-50 sticky top-0 border-b">
-                    <tr className="text-slate-500 font-bold uppercase">
-                      <th className="p-1.5 w-20">ID</th>
-                      <th className="p-1.5">Type</th>
-                      <th className="p-1.5 w-16">Start</th>
-                      <th className="p-1.5 w-16">End</th>
-                      <th className="p-1.5 w-16">Len</th>
-                      <th className="p-1.5 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {drawFlaws.length > 0 ? (
-                      drawFlaws.map((flaw) => (
-                        <tr key={flaw.id} className={`${flaw.isManual ? 'bg-amber-50/30' : 'hover:bg-blue-50/50'} transition-colors`}>
-                          <td className="p-1.5">
-                            {flaw.isManual ? (
-                              <input 
-                                className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-blue-400" 
-                                value={flaw.preformId}
-                                onChange={(e) => updateManualField(flaw.id, 'preformId', e.target.value)}
-                                placeholder="ID"
-                              />
-                            ) : (
-                              <span className="font-medium text-blue-700">{flaw.preformId}</span>
-                            )}
-                          </td>
-                          <td className="p-1.5">
-                            {flaw.isManual ? (
-                              <select 
-                                className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-blue-400"
-                                value={flaw.type}
-                                onChange={(e) => updateManualField(flaw.id, 'type', e.target.value)}
-                              >
-                                {['Bottom End', 'Lumps', 'BFD', 'SCD'].map(t => <option key={t}>{t}</option>)}
-                              </select>
-                            ) : (
-                              flaw.type
-                            )}
-                          </td>
-                          <td className="p-1.5 font-mono">
-                            {flaw.isManual ? (
-                              <input 
-                                className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-blue-400" 
-                                type="number" step="0.01"
-                                value={flaw.startPos}
-                                onChange={(e) => updateManualField(flaw.id, 'startPos', e.target.value)}
-                              />
-                            ) : (
-                              flaw.startPos
-                            )}
-                          </td>
-                          <td className="p-1.5 font-mono">
-                            {flaw.isManual ? (
-                              <input 
-                                className="w-full bg-white border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-blue-400" 
-                                type="number" step="0.01"
-                                value={flaw.endPos}
-                                onChange={(e) => updateManualField(flaw.id, 'endPos', e.target.value)}
-                              />
-                            ) : (
-                              flaw.endPos
-                            )}
-                          </td>
-                          <td className="p-1.5 font-mono font-bold text-slate-700">
-                            {flaw.length}
-                          </td>
-                          <td className="p-1.5 text-center">
-                            <button onClick={() => removeFlaw(flaw.id)} className="text-red-400 hover:text-red-600 transition-colors">
-                              <Trash2 size={12} />
-                            </button>
-                          </td>
+            </ModuleCard>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ModuleCard title="Operating Details" icon={<Activity className="text-rose-500" />}>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormikInput name="roomTemp" label="Room Temp" />
+                    <FormikInput name="humidity" label="Humidity" />
+                  </div>
+                  <FormikInput name="coTime" label="C/O Time (mins)" />
+                  <FormikInput name="spoolCoTime" label="Spool C/O Time (mins)" />
+                  <FormikSelect name="dieClean" label="Die Clean" options={['Select', 'Yes', 'No']} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormikSelect name="primaryFilter" label="Prim. Filter" options={['2um', '5um']} />
+                    <FormikSelect name="secondaryFilter" label="Sec. Filter" options={['2um', '5um']} />
+                  </div>
+                </div>
+              </ModuleCard>
+
+              <ModuleCard title="Draw & Process" icon={<Zap className="text-amber-500" />}>
+                <div className="space-y-3">
+                  <div className="bg-emerald-500 text-white text-center py-2 rounded-lg font-bold text-xs mb-2">
+                    PROCESS TYPE: 250 / 200 / 180
+                  </div>
+                  <FormikInput name="drawLineSpeed" label="Draw Line Speed" />
+                  <FormikInput name="drawTension" label="Draw Tension" />
+                  <FormikInput name="furnacePower" label="Furnace Power" />
+                  <FormikInput name="preSequence" label="Pre. Sequence" />
+                  <FormikInput name="beScrap" label="B/E Scrap" />
+                </div>
+              </ModuleCard>
+            </div>
+
+            {/* NEW: Pitchchange Details Table */}
+            <ModuleCard title="Pitchchange Details" icon={<ListTree className="text-slate-600" />}>
+              <FieldArray name="pitchChanges">
+                {({ push, remove }) => (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200">
+                          <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase">Flaw Type</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase">Start Length</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase">End Length</th>
+                          <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase">Pitchchange Kms</th>
+                          <th className="px-3 py-2 text-center w-10"></th>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="p-6 text-center text-slate-400 italic">
-                          No flaws recorded. Fetch data or add rows manually.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formik.values.pitchChanges.map((_, index) => (
+                          <tr key={index} className="group">
+                            <td className="p-2">
+                              <Field name={`pitchChanges.${index}.flawType`} className="w-full bg-transparent border-none focus:ring-0 text-sm p-1" placeholder="Enter type..." />
+                            </td>
+                            <td className="p-2">
+                              <Field name={`pitchChanges.${index}.startLength`} className="w-full bg-transparent border-none focus:ring-0 text-sm p-1" placeholder="0" />
+                            </td>
+                            <td className="p-2">
+                              <Field name={`pitchChanges.${index}.endLength`} className="w-full bg-transparent border-none focus:ring-0 text-sm p-1" placeholder="0" />
+                            </td>
+                            <td className="p-2">
+                              <Field name={`pitchChanges.${index}.pitchKms`} className="w-full bg-transparent border-none focus:ring-0 text-sm p-1" placeholder="0.0" />
+                            </td>
+                            <td className="p-2 text-center">
+                              <button 
+                                type="button" 
+                                onClick={() => remove(index)}
+                                className="text-slate-300 hover:text-rose-500 transition-colors"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <button
+                      type="button"
+                      onClick={() => push({ flawType: '', startLength: '', endLength: '', pitchKms: '' })}
+                      className="mt-3 flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors px-2"
+                    >
+                      <Plus size={14} /> Add Flaw Row
+                    </button>
+                  </div>
+                )}
+              </FieldArray>
+            </ModuleCard>
+          </section>
+
+          {/* Right Sidebar */}
+          <aside className="lg:col-span-4 space-y-6">
+            <ModuleCard title="Coating & Batch" icon={<Droplets className="text-cyan-500" />}>
+              <div className="grid grid-cols-2 gap-3">
+                <FormikInput name="primaryCoat" label="Primary Coat (KG)" />
+                <FormikInput name="secondaryCoat" label="Secondary Coat (KG)" />
+                <FormikInput name="primCoatPress" label="Prim. Press" />
+                <FormikInput name="secCoatPress" label="Sec. Press" />
               </div>
-            </Section>
-          </div>
-        </div>
+              <div className="mt-3 space-y-2">
+                <FormikInput name="batchNo1" label="Coat Batch No 1" />
+                <FormikInput name="batchNo2" label="Coat Batch No 2" />
+              </div>
+            </ModuleCard>
 
-        {/* 5. Consumption Details */}
-        <Section title="Consumption Details" icon={<Box size={16}/>}>
-          <div className="flex border-b mb-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
-            {['Coating', 'Furnace Gas', 'Nitrogen Gas', 'Helium Gas', 'CO2 Gas'].map(tab => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === tab ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-slate-500 hover:text-blue-500'}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div className="p-2">
-            {renderConsumptionFields()}
-          </div>
-        </Section>
+            <ModuleCard title="Gas Flow (LPM)" icon={<Wind className="text-indigo-500" />}>
+              <div className="grid grid-cols-2 gap-3">
+                <FormikInput name="furnaceArgon" label="Furnace Argon" />
+                <FormikInput name="furnaceHe" label="Furnace He" />
+                <FormikInput name="coolingTubeHe" label="Tube He" />
+                <FormikInput name="co2Flow" label="CO2 Flow" />
+                <FormikInput name="uvN2Flow" label="UV N2" />
+                <FormikInput name="uvComprAir" label="UV Air" />
+              </div>
+            </ModuleCard>
 
-        {/* 6. Fiber Details */}
-        <Section title="Fiber Details" icon={<Activity size={16}/>}>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-3">
-            <FormSelect label="Spool Results" options={['Select']} />
-            <FormInput label="Clad Dia" />
-            <FormInput label="Clad Oval" />
-            <FormInput label="SCD" />
-            <FormInput label="SCC" />
-            <FormInput label="PCD" />
-            <FormInput label="Cut off" />
-            <FormInput label="Mfd" />
-            <FormInput label="CCC" />
-            <FormInput label="Curl" />
-            <FormInput label="PCC" />
-            <FormInput label="ZD" />
-          </div>
-        </Section>
+            <ModuleCard title="Personnel" icon={<User className="text-violet-500" />}>
+              <div className="space-y-3">
+                <FormikSelect name="drawnShift" label="Drawn Shift" options={['A', 'B', 'C']} />
+                <FormikSelect name="shiftIncharge" label="Shift Incharge" options={['SIC Name 1', 'SIC Name 2']} />
+                <FormikSelect name="furnaceOpr" label="Furnace Operator" options={['FF Operator 1', 'FF Operator 2']} />
+                <FormikSelect name="dieOpr" label="Die Operator" options={['Die Operator 1', 'Die Operator 2']} />
+                <FormikSelect name="spoolEndOpr" label="Spool End Operator" options={['Opr 1', 'Opr 2']} />
+              </div>
+            </ModuleCard>
+          </aside>
 
-        {/* 7. Order Details */}
-        <Section title="Order Details" icon={<Box size={16}/>}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3">
-            <FormInput label="Plant" readOnly />
-            <FormInput label="Production Order" readOnly />
-            <FormInput label="Order Quantity" readOnly />
-            <FormInput label="Material Code" readOnly />
-            <FormInput label="Material Desc" className="col-span-1 md:col-span-2 lg:col-span-1" readOnly />
-            <FormInput label="Work Center" readOnly />
-            <FormInput label="Operation" readOnly />
-            <FormInput label="PreForm MaterialName" readOnly />
-          </div>
-        </Section>
+          {/* Bottom Full-Width */}
+          <section className="lg:col-span-12">
+            <ModuleCard title="Observations & Break Details" icon={<Clock className="text-slate-500" />}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="md:col-span-2 space-y-4">
+                  <FormikInput name="breakReason" label="Break Reason (Coating, S/C, Cut, Sample...)" />
+                  <FormikInput name="spoolChangeOver" label="Spool Change Over (Pass/Fail)" />
+                </div>
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <FormikSelect name="windingObs" label="Winding Obs" options={['OK', 'NOT OK']} />
+                  <FormikSelect name="scratchesObs" label="Scratches Obs" options={['NO', 'YES']} />
+                  <FormikSelect name="leftoverOpr" label="Leftover Removal Opr" options={['Select Opr']} className="col-span-2" />
+                </div>
+              </div>
+            </ModuleCard>
+          </section>
+        </Form>
       </div>
-    </div>
+    </FormikProvider>
   );
 };
 
-// Sub-components
-const Section = ({ title, icon, children }) => (
-  <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-    <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors">
-      <h2 className="text-xs font-bold text-blue-800 uppercase flex items-center gap-2 tracking-wide">
-        {icon} {title}
-      </h2>
-      <ChevronDown size={14} className="text-slate-400" />
+/* --- UI Helper Components --- */
+
+const ModuleCard = ({ title, icon, children }) => (
+  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-200 flex items-center gap-2">
+      {icon}
+      <h2 className="font-bold text-slate-700 text-xs uppercase tracking-wider">{title}</h2>
     </div>
-    <div className="p-4 bg-white">
+    <div className="p-5 flex-1 bg-white">
       {children}
     </div>
   </div>
 );
 
-const FormInput = ({ label, className = "", ...props }) => (
-  <div className={`flex flex-col gap-1 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-    <input 
+const FormikInput = ({ label, name, type = "text", ...props }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">{label}</label>
+    <Field
+      name={name}
+      type={type}
+      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
       {...props}
-      className={`border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-sm ${props.readOnly ? 'bg-slate-50 cursor-not-allowed text-slate-400' : 'bg-white'}`}
     />
   </div>
 );
 
-const FormSelect = ({ label, options, className = "" }) => (
-  <div className={`flex flex-col gap-1 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+const FormikSelect = ({ label, name, options, className = "" }) => (
+  <div className={`flex flex-col gap-1.5 ${className}`}>
+    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">{label}</label>
     <div className="relative">
-      <select className="w-full appearance-none border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none bg-white shadow-sm transition-all pr-8 cursor-pointer">
-        {options.map((opt, i) => <option key={i}>{opt}</option>)}
-      </select>
-      <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <Field
+        as="select"
+        name={name}
+        className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all cursor-pointer"
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </Field>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
     </div>
   </div>
 );
 
-const FlawSelect = ({ label, options }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-    <div className="relative">
-      <select className="w-full appearance-none border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none bg-white shadow-sm transition-all pr-8 cursor-pointer">
-        <option>Select</option>
-        {options.map((opt, i) => <option key={i}>{opt}</option>)}
-      </select>
-      <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-    </div>
-  </div>
-);
-
-export default DrwaSpoolEntry;
+export default DrawSpoolEntry;

@@ -91,8 +91,8 @@ const Sidebar = ()=>{
                       <SubNavItem label="Handle Joining" active={location.pathname == '/drawmange/handlejoining'} onClick={()=>navigate('/drawmange/handlejoining')} />
                       <SubNavItem label="Preform Allocation" active={location.pathname == '/drawmange/allocation'} onClick={()=>navigate('/drawmange/allocation')} />
                       <SubNavItem label="Draw Spool Entry" active={location.pathname == '/drawmange/drawspoolentry'} onClick={()=>navigate('/drawmange/drawspoolentry')} />
-                      <SubNavItem label="Draw Break Analysis" active={location.pathname == '/drawmange/drawbrakanalysis'} onClick={()=>navigate('/drawmange/drawbrakanalysis')} />
-                      <SubNavItem label="Draw Plan Shift" active={location.pathname == '/drawmange/drawshiftplan'} onClick={()=>navigate('/drawmange/drawshiftplan')} />
+                      {/*<SubNavItem label="Draw Break Analysis" active={location.pathname == '/drawmange/drawbrakanalysis'} onClick={()=>navigate('/drawmange/drawbrakanalysis')} />
+                      <SubNavItem label="Draw Plan Shift" active={location.pathname == '/drawmange/drawshiftplan'} onClick={()=>navigate('/drawmange/drawshiftplan')} />*/}
                       <SubNavItem label="Reports" active={location.pathname == '/underdev'} onClick={()=>navigate('/underdev')} />
                     </div>
                   )}
@@ -122,10 +122,11 @@ const Sidebar = ()=>{
                   {(proofMenuExpanded && sidebarOpen) && (
                     <div className="ml-9 mt-1 space-y-1 border-l border-slate-700">
                       <SubNavItem label="Proof Test Entry" active={location.pathname == '/prooftesting/ptentry'}  onClick={() => navigate('/prooftesting/ptentry')} />
-                      <SubNavItem label="REW/COL Entry" active={location.pathname == '/prooftesting/rewcolztentry'}  onClick={() => navigate('/prooftesting/rewcolztentry')} />
                       <SubNavItem label="Allocation" active={location.pathname == '/prooftesting/ptallocation'}  onClick={() => navigate('/prooftesting/ptallocation')} />
-                      <SubNavItem label="Break Analysis" active={location.pathname == '/prooftesting/ptbreakanalysis'}  onClick={() => navigate('/prooftesting/ptbreakanalysis')} />
-                      <SubNavItem label="Reports" active={location.pathname== '/underdev'} onClick={() => navigate('/underdev')} />
+                      <SubNavItem label="Automation" active={location.pathname == '/prooftesting/ptautomation'}  onClick={() => navigate('/prooftesting/ptautomation')} />
+                      <SubNavItem label="REW/COL Entry" active={location.pathname == '/prooftesting/rewcolztentry'}  onClick={() => navigate('/prooftesting/rewcolztentry')} />
+                      {/*<SubNavItem label="Break Analysis" active={location.pathname == '/prooftesting/ptbreakanalysis'}  onClick={() => navigate('/prooftesting/ptbreakanalysis')} />*/}
+                      <SubNavItem label="Reports" active={location.pathname== '/prooftesting/ptreport'} onClick={() => navigate('/prooftesting/ptreport')} />
                     </div>
                   )}
                 </div>
@@ -159,6 +160,7 @@ const Sidebar = ()=>{
                       <SubNavItem label="D2 Gas Entry" active={location.pathname === '/quality/d2gasconeentry'} onClick={() => navigate('/quality/d2gasconeentry')} />
                       <SubNavItem label="D2 Recieving" active={location.pathname === '/quality/d2recieving'} onClick={() => navigate('/quality/d2recieving')} />
                       <SubNavItem label="H2 Egeing" active={location.pathname === '/quality/h2egeing'} onClick={() => navigate('/quality/h2egeing')} />
+                      <SubNavItem label="Customer Allocation" active={location.pathname === '/quality/customerallocation'} onClick={() => navigate('/quality/customerallocation')} />
                       <SubNavItem label="Quality Report" active={location.pathname== '/underdev'} onClick={() => navigate('/underdev')} />
                     </div>
                   )}
@@ -187,16 +189,18 @@ const Sidebar = ()=>{
       
                   {(gradingDispatchMenuExpanded && sidebarOpen) && (
                     <div className="ml-9 mt-1 space-y-1 border-l border-slate-700">
+                      <SubNavItem label="Dispatch Checking" active={location.pathname === '/dispatch/dispatchchecking'} onClick={() => navigate('/dispatch/dispatchchecking')} />
+                      <SubNavItem label="Fiber Make Checking" active={location.pathname === '/dispatch/fibermakingcheck'} onClick={() => navigate('/dispatch/fibermakingcheck')} />
                       <SubNavItem label="Box Scanning Entry" active={location.pathname === '/dispatch/boxscanningentry'} onClick={() => navigate('/dispatch/boxscanningentry')} />
-                      <SubNavItem label="FG Fiber Allocation" active={location.pathname === '/dispatch/fgfiberallocation'} onClick={() => navigate('/dispatch/fgfiberallocation')} />
-                      <SubNavItem label="FG Rejection" active={location.pathname === '/dispatch/fgrejection'} onClick={() => navigate('/dispatch/fgrejection')} />
+                      {/*<SubNavItem label="FG Fiber Allocation" active={location.pathname === '/dispatch/fgfiberallocation'} onClick={() => navigate('/dispatch/fgfiberallocation')} />
+                      <SubNavItem label="FG Rejection" active={location.pathname === '/dispatch/fgrejection'} onClick={() => navigate('/dispatch/fgrejection')} />*/}
                       <SubNavItem label="TC Generation" active={location.pathname === '/dispatch/tcgeneration'} onClick={() => navigate('/dispatch/tcgeneration')} />
                      </div>
                   )}
                 </div>
 
                 {/* QA Parent Menu */}
-                <div className="pt-1">
+                {/*<div className="pt-1">
                   <div 
                     onClick={() => {
                       if(!sidebarOpen) {
@@ -224,7 +228,7 @@ const Sidebar = ()=>{
                       <SubNavItem label="Long Term Entry" active={location.pathname === '/qa/longtermentry'} onClick={() => navigate('/qa/longtermentry')} />
                       </div>
                   )}
-                </div>
+                </div>*/}
 
                 {/* Customer Complaint */}
                 <div className="pt-1">
