@@ -40,7 +40,7 @@ const DrawSpoolEntry = () => {
 
       // Operator Details
       drawnShift: 'A', shiftIncharge: '', furnaceOpr: '', 
-      dieOpr: '', rampUpOpr: '', spoolEndOpr: '', leftoverOpr: '',
+      dieOpr: '', rampUpOpr: '', leftoverOpr: '',
       windingObs: 'OK', scratchesObs: 'NO'
     },
     onSubmit: (values) => {
@@ -220,7 +220,7 @@ const DrawSpoolEntry = () => {
                 <FormikSelect name="shiftIncharge" label="Shift Incharge" options={['SIC Name 1', 'SIC Name 2']} />
                 <FormikSelect name="furnaceOpr" label="Furnace Operator" options={['FF Operator 1', 'FF Operator 2']} />
                 <FormikSelect name="dieOpr" label="Die Operator" options={['Die Operator 1', 'Die Operator 2']} />
-                <FormikSelect name="spoolEndOpr" label="Spool End Operator" options={['Opr 1', 'Opr 2']} />
+                <FormikSelect name="rampUpOpr" label="Ramp Up Operator" options={['Opr 1', 'Opr 2']} />
               </div>
             </ModuleCard>
           </aside>

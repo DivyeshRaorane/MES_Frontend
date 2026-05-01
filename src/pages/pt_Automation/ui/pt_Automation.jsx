@@ -206,6 +206,10 @@ const PTAutomation = () => {
           </div>
         </Form>
       </div>
+     <p className="text-sm text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-md p-3">
+  <strong>Note:</strong> Some fields may not exactly match or may be missing in the UI.
+  This is expected, as we are still working to better understand and refine them.
+</p>
       
       {/* Table Styles */}
       <style jsx>{`
@@ -291,7 +295,7 @@ const TableSection = ({ title, name, headers, renderRow, onAdd }) => (
           </table>
         )}
       </FieldArray>
-    </div>
+    </div>  
   </div>
 );
 

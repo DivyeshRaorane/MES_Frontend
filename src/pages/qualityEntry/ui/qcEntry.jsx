@@ -1,264 +1,239 @@
-import React, { useState } from 'react';
-import { LogOut, CheckCircle, Award } from 'lucide-react';
+import React from 'react';
+import { Formik, Form, Field } from 'formik';
+import { Send, Search, Beaker, Activity, Layers, Settings, FileText } from 'lucide-react';
 
-/**
- * High-density data field for the sidebar
- */
-const SidebarField = ({ label, value }) => (
-  <div className="flex flex-col mb-1.5">
-    <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-tight leading-tight">{label}</label>
-    <input 
-      type="text" 
-      className="w-full text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5 outline-none focus:border-blue-400" 
-      value={value} 
-      readOnly 
-    />
-  </div>
-);
+const QCEntryScreen = () => {
+  // 100% Field Mapping from image_68cc56.png
+  const initialValues = {
+    // Header
+    noOfRewinding: '', barcodeId: '', fid: '', manualEntry: false, automatic: false,
+    // Column 1: Optical / Rewinding
+    ptLen: '', opticalLen: '', attn1310Top: '', avgLsa1550: '', attn1310Bot: '', 
+    attn1550B: '', spec1285_1330: '', spectral1310: '', spectral1550: '',
+    mfdUni1310: '', mfdUni1550: '', maxAttn1310: '', maxAvgAttn1550: '',
+    attn1310Tb: '', attn1550Tb: '', maxTb1310: '', maxTb1550: '', maxAttn1625: '',
+    attn1625Tb: '', grade: '', rewReason: '', rewSubReason: '',
+    // Column 2: FID / Dimensions
+    mfdTum: '', mfdBum: '', cutoffTnm: '', cutoffBnm: '', cladDiaTum: '',
+    coreCladConcTum: '', cladOvalityT: '', coreDiaTum: '', coreOvalityT_Percent: '',
+    cladDiaBum: '', coreCladConcBum: '', cladOvalityB: '', coreDiaBum: '', coreOvalityB_Percent: '',
+    rewScrap_1: '', rewScrap_2: '', rewScrap_3: '', rewScrap_4: '',
+    rewScrap_Len1: '', rewScrap_Len2: '', rewScrap_Len3: '', rewScrap_Len4: '',
+    // Column 3: Coating & Submit
+    priCoatDiaTum: '', secCoatDiaTum: '', priCoatConcTum: '', secCoatConcTum: '',
+    coatOvalityT: '', priCoatDiaBum: '', secCoatDiaBum: '', priCoatConcBum: '',
+    secCoatConcBum: '', coatOvalityB: '', fiberCurlT: '', fiberCurlB: '',
+    curlDeflectionT: '', curlDeflectionB: '', effAreaTop: '', effAreaBot: '',
+    attn1460: '', attn1410: '', st13Size: '', st15Size: '', spikeSize: '',
+    failReason: '', curing1: '', curing2: '',
+    // Column 4: Manual Entry / Dispersion
+    zeroDispWavelen: '', slopeZeroDisp: '', disp1550: '', disp1285_1330: '',
+    disp1270_1340: '', disp1575: '', pmd1310: '', pmd1550: '', cd1460: '',
+    twpmd: '', disp1625: '', disp1570: '', disp1260: '', bdfLumps: '',
+    specOpr: '', otdrOpr: '', cdPmdOpr: '', ptOpr: '', rewOpr: '', colOpr: '',
+    fType: '', colour: '', otdrNo: '', ptNo: '', dtNo: '', coatType: '', priCoat: '',
+    // Column 5: Microbend & Final Status
+    mb1550_50: '', mb1310_50: '', mb1625_50: '', mb1550_60: '', mb1310_60: '', mb1625_60: '',
+    mb1550_32: '', mb1550_30: '', mb1550_20: '', mb1550_32t: '', mbOpr: '',
+    diff1310OH: '', maxOH: '', minOH: '', dispSlope1550: '', macValue: '',
+    cableCutoff: '', colDia: '', attnUni1310: '', attnUni1550: '', 
+    attnMax1625tb: '', mfdUni1625: '', attnUni1625: ''
+  };
 
-/**
- * Standard input for parameter groups
- */
-const ParamField = ({ label, value, onChange }) => (
-  <div className="flex items-center gap-2 mb-1 justify-between">
-    <label className="text-[10px] text-slate-600 font-medium leading-tight flex-1">{label}</label>
-    <input 
-      type="text" 
-      className="w-20 text-[11px] border border-slate-300 rounded px-1.5 py-0.5 focus:border-blue-500 outline-none" 
-      value={value} 
-      onChange={onChange}
-    />
-  </div>
-);
-
-export const QCEntryScreen = () => {
-  return (
-    <div className="bg-[#f1f5f9] min-h-screen font-sans text-slate-800 flex flex-col overflow-hidden">
-      {/* Top Header */}
-      <div className="bg-white border-b border-slate-200 px-4 py-2 flex justify-between items-center shrink-0">
-        <h1 className="text-lg font-bold text-[#1e40af] tracking-tight">QC Entry Screen</h1>
-        <button className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded hover:bg-rose-700 transition-all">
-          <LogOut size={14} /> Exit
-        </button>
+  const Row = ({ label, name, bg = "bg-white" }) => (
+    <div className="flex border-b border-gray-300 h-[22px]">
+      <div className="w-[140px] text-[10px] px-1 flex items-center font-semibold bg-gray-100 border-r border-gray-300 truncate">
+        {label}
       </div>
+      <Field name={name} className={`flex-1 text-[11px] px-1 outline-none focus:bg-yellow-50 ${bg}`} />
+    </div>
+  );
 
-      <div className="flex flex-1 overflow-hidden p-3 gap-3">
-        {/* Left Sidebar - Primary ID Info */}
-        <div className="w-56 bg-white border border-slate-200 rounded-lg p-3 overflow-y-auto shadow-sm shrink-0 custom-scrollbar">
-          <SidebarField label="Fiber ID" value="" />
-          <SidebarField label="PT Id" value="" />
-          <SidebarField label="Selected Fiber Id" value="" />
-          <SidebarField label="Preform ID" value="" />
-          <SidebarField label="Tower No" value="" />
-          <SidebarField label="Draw Barcode ID" value="" />
-          <SidebarField label="PT Length (Km)" value="" />
-          <SidebarField label="Spool ID" value="" />
-          <SidebarField label="OTDR Length (m)" value="" />
-          <SidebarField label="Avg.LSA 1310 (dB/Km)" value="" />
-          <SidebarField label="Avg.LSA 1550 (dB/Km)" value="" />
-          <SidebarField label="Max 1310 TB (dB/Km)" value="" />
-          <SidebarField label="Max 1550 TB (dB/Km)" value="" />
-          <SidebarField label="Atten Uni 1310 (dB)" value="" />
-          <SidebarField label="Atten Uni 1550 (dB)" value="" />
-          <SidebarField label="MFD Uni 1310 (dB)" value="" />
-          <SidebarField label="MFD Uni 1550 (dB)" value="" />
-          <SidebarField label="OH (1383) (dB/Km)" value="" />
-          <SidebarField label="Atten 1625 (dB/Km)" value="" />
-          <SidebarField label="Step 1310 Max" value="" />
-          <SidebarField label="Step 1550 Max" value="" />
-          <SidebarField label="Max 1625 TB (dB/Km)" value="" />
-          <SidebarField label="Grade" value="" />
+  return (
+    <div className="p-2 bg-slate-200 min-h-screen font-sans">
+      <Formik initialValues={initialValues} onSubmit={(v) => console.log(v)}>
+        <Form className="flex flex-col gap-2">
           
-          <div className="mt-4 pt-3 border-t border-slate-200">
-             <SidebarField label="Temp Grade" value="" />
-             <button className="w-full py-1.5 bg-orange-500 text-white text-[11px] font-black uppercase rounded shadow-sm hover:bg-orange-600 transition-colors">
-                Grade
-             </button>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
-          
-          {/* Machine Info Top Bar */}
-          <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-            <h3 className="text-xs font-bold text-blue-800 mb-2 uppercase">Machine Name</h3>
-            <div className="grid grid-cols-5 gap-4">
-              {['PT. No', 'OTDR No.', 'Spec. No', 'CD No.', 'MBEND No.'].map(label => (
-                <div key={label} className="flex flex-col">
-                  <label className="text-[10px] font-bold text-slate-500 mb-0.5">{label}</label>
-                  <input type="text" className="w-full text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1" />
-                </div>
-              ))}
+          {/* TOP BAR */}
+          <div className="flex gap-1 items-center bg-white p-1 border border-gray-400 shadow-sm">
+            <div className="bg-blue-600 p-1 text-white"><Settings size={16}/></div>
+            <div className="flex border border-gray-400"><div className="bg-green-200 text-[10px] font-bold px-2 py-1 border-r border-gray-400">No of Rewinding</div><Field name="noOfRewinding" className="w-10 px-1"/></div>
+            <div className="flex border border-gray-400"><div className="bg-yellow-300 text-[10px] font-bold px-2 py-1 border-r border-gray-400">Barcodeid</div><Field name="barcodeId" className="w-24 px-1"/></div>
+            <div className="flex border border-gray-400"><div className="bg-orange-200 text-[10px] font-bold px-2 py-1 border-r border-gray-400">FID</div><Field name="fid" className="w-24 px-1"/></div>
+            
+            <div className="ml-auto flex gap-4 items-center px-4">
+              <label className="text-[11px] font-bold flex gap-1"><Field type="checkbox" name="manualEntry"/> Manual Entry</label>
+              <label className="text-[11px] font-bold flex gap-1"><Field type="checkbox" name="automatic"/> Automatic</label>
+              <button type="submit" className="bg-green-700 text-white px-4 py-1 text-xs font-bold flex items-center gap-1 hover:bg-green-800"><Send size={12}/> SUBMIT</button>
             </div>
           </div>
 
-          {/* Parameters Grid - Height adjusted to fit content without internal scrollbars */}
-          <div className="grid grid-cols-4 gap-3 items-start">
-            {/* Category: Coating */}
-            <div className="bg-white border border-slate-200 rounded-lg flex flex-col shadow-sm">
-              <div className="bg-slate-50 border-b px-3 py-1.5"><h4 className="text-[11px] font-bold text-blue-800 uppercase tracking-tight">Coating</h4></div>
-              <div className="p-3">
-                {['Sec Coat Dia Top (um)', 'Sec Coat Dia Bot (um)', 'Sec Conc Top (um)', 'Sec Conc Bot (um)', 'Coat Ovality Top (um)', 'Coat Ovality Bot (um)', 'Pri Coat Dia Top (um)', 'Pri Coat Dia Bot (um)', 'Pri Conc Top (um)', 'Pri Conc Bot (um)', 'Fiber Color', 'Color Dia Top', 'Ring Type'].map(l => <ParamField key={l} label={l} />)}
-              </div>
+          <div className="flex gap-2 items-start overflow-x-auto pb-4">
+            
+            {/* COLUMN 1 */}
+            <div className="min-w-[240px] bg-white border border-gray-400">
+              <Row label="PT Len" name="ptLen" />
+              <Row label="Optical Len" name="opticalLen" />
+              <Row label="Attn1310 nm (Top)" name="attn1310Top" />
+              <Row label="Avg LSA 1550 db/km" name="avgLsa1550" />
+              <Row label="Attn1310 nm (Bot)" name="attn1310Bot" />
+              <Row label="Attn 1550 B(db/km)" name="attn1550B" />
+              <Row label="Spec 1285_1330 nm" name="spec1285_1330" />
+              <Row label="Spectral 1310 nm" name="spectral1310" />
+              <Row label="Spectral 1550 nm" name="spectral1550" />
+              <Row label="MFD UNI 1310" name="mfdUni1310" />
+              <Row label="MFD UNI 1550" name="mfdUni1550" />
+              <Row label="Max Attn 1310nm" name="maxAttn1310" />
+              <Row label="Max Avg Attn 1550 nm" name="maxAvgAttn1550" />
+              <Row label="Attn 1310 TB" name="attn1310Tb" />
+              <Row label="Attn 1550 TB" name="attn1550Tb" />
+              <Row label="Max TB 1310" name="maxTb1310" />
+              <Row label="Max TB 1550" name="maxTb1550" />
+              <Row label="Max Attn1625" name="maxAttn1625" />
+              <Row label="Attn1625 TB" name="attn1625Tb" />
+              <div className="bg-gray-600 text-white text-[10px] font-bold py-1 text-center">Grade</div>
+              <Row label="Value" name="grade" />
+              <Row label="Rew Reason" name="rewReason" />
+              <Row label="Rew Sub Reason" name="rewSubReason" />
             </div>
 
-            {/* Category: Geometry */}
-            <div className="bg-white border border-slate-200 rounded-lg flex flex-col shadow-sm">
-              <div className="bg-slate-50 border-b px-3 py-1.5"><h4 className="text-[11px] font-bold text-blue-800 uppercase tracking-tight">Geometry</h4></div>
-              <div className="p-3">
-                {['Clad Dia Top (um)', 'Clad Dia Bot (um)', 'Clad Ovl Top (%)', 'Clad Ovl Bot (%)', 'CCC Top (um)', 'CCC Bot (um)', 'Core Dia Top (um)', 'Core Dia Bot (um)', 'Core Ovl Top (%)', 'Core Ovl Bot (%)', 'Fiber Curl Top', 'Fiber Curl Bot'].map(l => <ParamField key={l} label={l} />)}
-              </div>
-            </div>
-
-            {/* Category: CD/PMD */}
-            <div className="bg-white border border-slate-200 rounded-lg flex flex-col shadow-sm">
-              <div className="bg-slate-50 border-b px-3 py-1.5"><h4 className="text-[11px] font-bold text-blue-800 uppercase tracking-tight">CD/PMD</h4></div>
-              <div className="p-3">
-                {['ZD Wave Len(nm)', 'Slope (ps/nm2)', 'CD 1285 (ps/nm.km)', 'CD 1550 (ps/nm.km)', 'CD 1625 (ps/nm.km)', 'CD 1270', 'PMD 1310 (ps/root km)', 'PMD 1550 (ps/root km)', 'ZTPMD 1550', 'Attn 1490', 'MFD_T 1310 (um)', 'MFD_B 1310 (um)', 'MFD_T 1550 (um)', 'MFD_B 1550 (um)', 'CableCutoff T', 'GSN_T 1310', 'GSN_B 1310', 'GSN_T 1550', 'GSN_B 1550', 'Cutoff Top (nm)', 'Cutoff Bot (nm)'].map(l => <ParamField key={l} label={l} />)}
-              </div>
-            </div>
-
-            {/* Category: M-BEND & Sidebar Fields */}
-            <div className="flex flex-col gap-3">
-              <div className="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm">
-                <div className="bg-slate-50 border-b px-3 py-1.5 flex justify-center"><h4 className="text-[11px] font-bold text-blue-800 uppercase tracking-tight">M-BEND</h4></div>
-                <table className="w-full text-[10px] border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 font-bold">
-                    <tr>
-                      <th className="p-1 border-r text-center">TRN</th>
-                      <th className="p-1 border-r text-center">1310</th>
-                      <th className="p-1 border-r text-center">1550</th>
-                      <th className="p-1 text-center">1625</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {['10', '15', '20', '30', '32'].map(val => (
-                      <tr key={val}>
-                        <td className="p-1 border-r text-center font-bold bg-slate-50/50">{val}</td>
-                        <td className="p-1 border-r"><input type="text" className="w-full outline-none text-center" /></td>
-                        <td className="p-1 border-r"><input type="text" className="w-full outline-none text-center" /></td>
-                        <td className="p-1"><input type="text" className="w-full outline-none text-center" /></td>
-                      </tr>
+            {/* COLUMN 2 */}
+            <div className="min-w-[240px] bg-white border border-gray-400">
+              <div className="bg-orange-100 text-center py-1 font-bold text-[10px] border-b border-gray-400">FID DATA</div>
+              <Row label="MFD T um" name="mfdTum" />
+              <Row label="MFD B um" name="mfdBum" />
+              <Row label="Cutoff T nm" name="cutoffTnm" />
+              <Row label="Cutoff B nm" name="cutoffBnm" />
+              <Row label="Clad Dia T um" name="cladDiaTum" />
+              <Row label="Core Clad Conc. T um" name="coreCladConcTum" />
+              <Row label="Clad Ovality T %" name="cladOvalityT" />
+              <Row label="Core Dia T um" name="coreDiaTum" />
+              <Row label="Core Ovality T %" name="coreOvalityT_Percent" />
+              <Row label="Clad Dia B um" name="cladDiaBum" />
+              <Row label="Core Clad Conc. B um" name="coreCladConcBum" />
+              <Row label="Clad Ovality B %" name="cladOvalityB" />
+              <Row label="Core Dia B um" name="coreDiaBum" />
+              <Row label="Core Ovality B %" name="coreOvalityB_Percent" />
+              <div className="mt-2 p-1">
+                <table className="w-full text-[10px] border-collapse border border-gray-400">
+                  <thead className="bg-gray-100"><tr><th className="border border-gray-400">Rew/Scrap</th><th className="border border-gray-400">Len in Meter</th></tr></thead>
+                  <tbody>
+                    {[1,2,3,4].map(i => (
+                      <tr key={i}><td className="border border-gray-400 h-5"><Field name={`rewScrap_${i}`} className="w-full"/></td><td className="border border-gray-400"><Field name={`rewScrap_Len${i}`} className="w-full"/></td></tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <div className="bg-white border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 shadow-sm">
-                 <SidebarField label="Parent Barcode Id" value="" />
-                 <SidebarField label="REW.No" value="" />
-                 <SidebarField label="Col No." value="" />
-                 <SidebarField label="OTDR Date" value="" />
-                 <SidebarField label="Product Type" value="" />
+            {/* COLUMN 3 */}
+            <div className="min-w-[240px] bg-white border border-gray-400">
+              <div className="bg-green-600 text-white text-center py-1 font-bold text-[10px]">SUBMIT</div>
+              <button type="button" className="w-full bg-green-200 text-[10px] font-bold py-1 border-b border-gray-400"><Search size={10} className="inline mr-1"/> Show Preform Data</button>
+              <Row label="Pri Coat Dia T um" name="priCoatDiaTum" />
+              <Row label="Sec Coat Dia T um" name="secCoatDiaTum" />
+              <Row label="Pri Coat Conc. T um" name="priCoatConcTum" />
+              <Row label="Sec Coat Conc. T um" name="secCoatConcTum" />
+              <Row label="Coat Ovality T" name="coatOvalityT" />
+              <Row label="Pri Coat Dia B um" name="priCoatDiaBum" />
+              <Row label="Sec Coat Dia B um" name="secCoatDiaBum" />
+              <Row label="Pri Coat Conc. B um" name="priCoatConcBum" />
+              <Row label="Sec Coat Conc. B um" name="secCoatConcBum" />
+              <Row label="Coat Ovality B" name="coatOvalityB" />
+              <Row label="Fiber Curl T" name="fiberCurlT" />
+              <Row label="Fiber Curl B" name="fiberCurlB" />
+              <Row label="Curl Deflection T" name="curlDeflectionT" />
+              <Row label="Curl Deflection B" name="curlDeflectionB" />
+              <Row label="Eff Area Top" name="effAreaTop" />
+              <Row label="Eff Area Bot" name="effAreaBot" />
+              <Row label="Attn 1460" name="attn1460" />
+              <Row label="Attn 1410" name="attn1410" />
+              <Row label="ST13 Size" name="st13Size" />
+              <Row label="ST15 Size" name="st15Size" />
+              <Row label="Spike Size" name="spikeSize" />
+              <div className="mt-2"><Row label="Fail Reason" name="failReason" /></div>
+              <div className="flex border-b border-gray-300 h-[22px]">
+                <div className="w-[140px] text-[10px] px-1 flex items-center font-semibold bg-gray-100 border-r border-gray-300">Curing</div>
+                <Field name="curing1" className="w-1/2 border-r border-gray-300 px-1 outline-none" />
+                <Field name="curing2" className="w-1/2 px-1 outline-none" />
               </div>
             </div>
+
+            {/* COLUMN 4 */}
+            <div className="min-w-[240px] bg-white border border-gray-400">
+              <div className="p-1 bg-gray-100 text-[10px] font-bold border-b border-gray-400 text-center uppercase">Manual Entry</div>
+              <Row label="Zero Disp Wavelen nm" name="zeroDispWavelen" />
+              <Row label="Slope Zero Disp ps/nm2" name="slopeZeroDisp" />
+              <Row label="Disp 1550 ps/nm.km" name="disp1550" />
+              <Row label="Disp 1285-1330 ps/nm.km" name="disp1285_1330" />
+              <Row label="Disp 1270-1340 ps/nm.km" name="disp1270_1340" />
+              <Row label="Disp 1575 ps/nm.km" name="disp1575" />
+              <Row label="PMD 1310 ps/root.km" name="pmd1310" />
+              <Row label="PMD 1550 ps/root.km" name="pmd1550" />
+              <Row label="CD 1460" name="cd1460" />
+              <Row label="TWPMD" name="twpmd" />
+              <Row label="Disp 1625" name="disp1625" />
+              <Row label="Disp 1570" name="disp1570" />
+              <Row label="Disp 1260" name="disp1260" />
+              <Row label="BDF/Lumps" name="bdfLumps" />
+              <Row label="Spec Opr" name="specOpr" />
+              <Row label="OTDR Opr" name="otdrOpr" />
+              <Row label="CD/PMD Opr" name="cdPmdOpr" />
+              <Row label="PT Opr" name="ptOpr" />
+              <Row label="Rew Opr" name="rewOpr" />
+              <Row label="Col Opr" name="colOpr" />
+              <Row label="F Type" name="fType" />
+              <Row label="Colour" name="colour" />
+              <Row label="OTDR No" name="otdrNo" />
+              <Row label="PT No" name="ptNo" />
+              <Row label="DT No" name="dtNo" />
+              <Row label="Coat Type" name="coatType" />
+              <Row label="Pri Coat" name="priCoat" />
+            </div>
+
+            {/* COLUMN 5 */}
+            <div className="min-w-[320px] bg-white border border-gray-400 p-1">
+              <p className="text-[10px] font-bold mb-1 underline">Microbend Loss</p>
+              <table className="w-full text-[10px] border-collapse border border-gray-400 mb-2">
+                <thead className="bg-gray-100">
+                  <tr><th className="border border-gray-400"></th><th className="border border-gray-400">1550</th><th className="border border-gray-400">1310</th><th className="border border-gray-400">1625</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td className="border border-gray-400 px-1 font-bold">100_T 50 mm</td><td className="border border-gray-400"><Field name="mb1550_50" className="w-full"/></td><td className="border border-gray-400"><Field name="mb1310_50" className="w-full"/></td><td className="border border-gray-400"><Field name="mb1625_50" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">100_T 60 mm</td><td className="border border-gray-400"><Field name="mb1550_60" className="w-full"/></td><td className="border border-gray-400"><Field name="mb1310_60" className="w-full"/></td><td className="border border-gray-400"><Field name="mb1625_60" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">1T 32 mm</td><td className="border border-gray-400"></td><td className="border border-gray-400"></td><td className="border border-gray-400"><Field name="mb1550_32" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">10T 30 mm</td><td className="border border-gray-400"></td><td className="border border-gray-400"></td><td className="border border-gray-400"><Field name="mb1550_30" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">1T 20 mm</td><td className="border border-gray-400"></td><td className="border border-gray-400"></td><td className="border border-gray-400"><Field name="mb1550_20" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">100T 32 mm</td><td className="border border-gray-400"></td><td className="border border-gray-400"></td><td className="border border-gray-400"><Field name="mb1550_32t" className="w-full"/></td></tr>
+                  <tr><td className="border border-gray-400 px-1 font-bold">Mb Opr</td><td className="border border-gray-400"><Field name="mbOpr" className="w-full" colSpan={3}/></td></tr>
+                </tbody>
+              </table>
+
+              <div className="space-y-1">
+                <div className="flex border border-gray-400"><div className="w-[120px] bg-gray-100 text-[10px] font-bold px-1 py-1">Temp Grade</div><div className="flex-1 bg-green-500"></div></div>
+                <div className="flex border border-gray-400"><div className="w-[120px] bg-gray-100 text-[10px] font-bold px-1 py-1 border-r border-gray-400">D2 Status</div><div className="flex-1 bg-green-200 px-2 py-1 text-[10px]">PASS</div></div>
+                <div className="flex border border-gray-400"><div className="w-[120px] bg-gray-100 text-[10px] font-bold px-1 py-1 border-r border-gray-400">PV Status</div><div className="flex-1 bg-green-200 px-2 py-1 text-[10px]">ACTIVE</div></div>
+                
+                <div className="pt-2">
+                  <Row label="Diff 1310-OH" name="diff1310OH" />
+                  <Row label="Max OH" name="maxOH" />
+                  <Row label="Min OH" name="minOH" />
+                  <Row label="Disp Slope at 1550" name="dispSlope1550" />
+                  <Row label="MAC Value" name="macValue" />
+                  <Row label="Cable Cutoff" name="cableCutoff" />
+                  <Row label="Col Dia" name="colDia" />
+                  <Row label="Attn uni 1310" name="attnUni1310" />
+                  <Row label="Attn uni 1550" name="attnUni1550" />
+                  <Row label="Attn Max1625 tb" name="attnMax1625tb" />
+                  <Row label="MFDUNI 1625" name="mfdUni1625" />
+                  <Row label="AttnUNI 1625" name="attnUni1625" />
+                </div>
+              </div>
+            </div>
+
           </div>
-
-          {/* Bottom Actions Form */}
-          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-md shrink-0">
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Fail Reason</label>
-                  <select className="text-xs border border-slate-300 rounded px-2 py-1 bg-white outline-none">
-                    <option>select</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">OTDR Opr</label>
-                  <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Rew Reason</label>
-                  <select className="text-xs border border-slate-300 rounded px-2 py-1 bg-white outline-none">
-                    <option>select</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">CD Opr</label>
-                  <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Sub Reason</label>
-                  <select className="text-xs border border-slate-300 rounded px-2 py-1 bg-white outline-none">
-                    <option>select</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Spec Opr</label>
-                  <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Fiber Type</label>
-                  <input type="text" className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1" readOnly />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Mbend Opr</label>
-                  <input type="text" className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1" readOnly />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Rew Reason</label>
-                <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Rew Sub Reason</label>
-                <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Fail Reason</label>
-                <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Final Length(km)</label>
-                <input type="text" className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1" readOnly />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-               <div className="flex-1 flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Remarks</label>
-                  <input type="text" className="text-xs border border-slate-300 rounded px-2 py-1 w-full" />
-               </div>
-               <div className="flex gap-2">
-                  <button className="flex items-center gap-2 px-6 py-2 bg-rose-500 text-white text-xs font-black uppercase rounded shadow-lg hover:bg-rose-600 transition">
-                    <Award size={14} /> M Grade
-                  </button>
-                  <button className="flex items-center gap-2 px-10 py-2 bg-emerald-600 text-white text-xs font-black uppercase rounded shadow-lg hover:bg-emerald-700 transition">
-                    <CheckCircle size={14} /> Submit
-                  </button>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer Branding/Info */}
-      <div className="bg-[#1e293b] text-white px-4 py-1.5 flex justify-between items-center text-[10px] font-medium tracking-wide shrink-0">
-        <span>QC MODULE V4.2</span>
-        <span className="opacity-50 italic uppercase tracking-widest">Validation active</span>
-        <span>SERVER STATUS: ONLINE</span>
-      </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}</style>
+        </Form>
+      </Formik>
     </div>
   );
 };
