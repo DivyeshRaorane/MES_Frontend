@@ -42,17 +42,16 @@ const PTEntry = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-100 rounded-xl">
-              <ClipboardCheck className="w-8 h-8 text-indigo-600" />
+            <div className="p-3 bg-slate/50 rounded-xl">
+              <ClipboardCheck className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Preform Acceptance</h1>
-              <p className="text-slate-500 text-xs font-bold uppercase">MES Portal</p>
+              <h1 className="text-2xl font-bold text-white">PT Entry</h1>
             </div>
           </div>
         </div>

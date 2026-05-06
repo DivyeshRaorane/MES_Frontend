@@ -56,30 +56,30 @@ const PTAutomation = () => {
 
   return (
     <FormikProvider value={formik}>
-      <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
-        <Form className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800">
+        <Form className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
           
           {/* Header Section */}
-          <header className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2 text-indigo-700">
+              <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
                 <Cpu className="w-8 h-8" /> PT Production Automation
               </h1>
-              <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">
+              <p className="text-white text-sm mt-1 flex items-center gap-1">
                 <Database className="w-4 h-4" /> Auto-fetching from Allocation & Draw Tables
               </p>
             </div>
             <div className="flex gap-3">
-              <button type="button" className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold hover:bg-indigo-100 transition-colors">
+              <button type="button" className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-100 transition-colors">
                 <Search className="w-4 h-4" /> Get Allocation
               </button>
-              <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+              <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">
                 <Save className="w-4 h-4" /> Save Entry
               </button>
             </div>
-          </header>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-2 px-2">
             
             {/* Left Column: Identification & Setup */}
             <div className="lg:col-span-4 space-y-6">

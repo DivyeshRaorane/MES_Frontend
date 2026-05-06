@@ -4,6 +4,7 @@ import {
   Send, Home, Monitor, Settings, Activity, User, Wind, 
   Droplets, Zap, Clock, ChevronDown, Plus, Trash2, ListTree
 } from 'lucide-react';
+import { ModuleCard,FormikInput,FormikSelect } from '../../../components/common_fields';
 import { useNavigate } from 'react-router-dom';
 
 const DrawSpoolEntry = () => {
@@ -51,19 +52,20 @@ const DrawSpoolEntry = () => {
   return (
     <FormikProvider value={formik}>
       <div className="min-h-screen bg-slate-50 text-slate-800 p-4 font-sans">
+        <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         {/* Sticky Header */}
-        <header className="bg-white border border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm mb-6 sticky top-0 z-50 rounded-xl">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md">
+            <div className="bg-slate/10 p-2 rounded-lg text-white">
               <Monitor size={22} />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight text-slate-800">DRAW SPOOL ENTRY</h1>
+            <h1 className="text-xl font-extrabold tracking-tight text-white">DRAW SPOOL ENTRY</h1>
           </div>
           <div className="flex gap-3">
             <button 
               type="button"
               onClick={formik.handleSubmit}
-              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
+              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all"
             >
               <Send size={18} /> Submit Entry
             </button>
@@ -75,9 +77,9 @@ const DrawSpoolEntry = () => {
               <Home size={18} />
             </button>
           </div>
-        </header>
+        </div>
 
-        <Form className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Form className="max-w-[1600px] m-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           <section className="lg:col-span-8 space-y-6">
             {/* Section 1: Core Identification */}
@@ -243,52 +245,13 @@ const DrawSpoolEntry = () => {
           </section>
         </Form>
       </div>
+      </div>
     </FormikProvider>
   );
 };
 
 /* --- UI Helper Components --- */
 
-const ModuleCard = ({ title, icon, children }) => (
-  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-    <div className="bg-slate-50/80 px-5 py-3 border-b border-slate-200 flex items-center gap-2">
-      {icon}
-      <h2 className="font-bold text-slate-700 text-xs uppercase tracking-wider">{title}</h2>
-    </div>
-    <div className="p-5 flex-1 bg-white">
-      {children}
-    </div>
-  </div>
-);
 
-const FormikInput = ({ label, name, type = "text", ...props }) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">{label}</label>
-    <Field
-      name={name}
-      type={type}
-      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-      {...props}
-    />
-  </div>
-);
-
-const FormikSelect = ({ label, name, options, className = "" }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">{label}</label>
-    <div className="relative">
-      <Field
-        as="select"
-        name={name}
-        className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all cursor-pointer"
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </Field>
-      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-    </div>
-  </div>
-);
 
 export default DrawSpoolEntry;

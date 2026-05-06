@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFormik } from 'formik';
+import { Formik, Form } from 'formik';
 import { 
   Database, 
   FileSpreadsheet, 
@@ -11,30 +11,30 @@ import {
   Clock,
   Activity
 } from 'lucide-react';
+import { ModuleCard,FormikSelect,FormikInput } from '../../../components/common_fields';
 
 const D2Recieving = () => {
-  const formik = useFormik({
-    initialValues: {
-      tank: '',
-      batchId: '',
-      startDate: '',
-      endDate: '',
-      processHours: '',
-      status: '',
-      startOpr: '',
-      endOpr: ''
-    },
-    onSubmit: (values) => {
-      console.log('Receiving Data:', values);
-    },
-  });
+  const initialValues = {
+    tank: '',
+    batchId: '',
+    startDate: '',
+    endDate: '',
+    processHours: '',
+    status: '',
+    startOpr: '',
+    endOpr: ''
+  };
+
+  const handleSubmit = (values) => {
+    console.log('Receiving Data:', values);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-800">
-      {/* Header Section */}
-      <header className="mb-8 flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+       <div className="max-w-6xl mx-auto">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-t-2xl text-white flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-lg text-white">
+          <div className="bg-blue-600 p-2 rounded-lg text-white">
             <Activity size={24} />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">D2 Production Control</h1>
@@ -47,102 +47,107 @@ const D2Recieving = () => {
             <RefreshCw size={18} /> Refresh
           </button>
         </div>
-      </header>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white rounded-b-2xl shadow-xl border-x border-b border-slate-200 p-6 space-y-6">
         
         {/* Real-Time Monitoring Table */}
-        <section className="lg:col-span-12 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-            <Clock className="text-indigo-500" size={20} />
-            <h2 className="font-semibold text-slate-700">D2 Real Time Monitoring</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 text-slate-500 text-sm uppercase tracking-wider">
-                  <th className="px-6 py-4 font-semibold">Batch ID</th>
-                  <th className="px-6 py-4 font-semibold">Bobbin Count</th>
-                  <th className="px-6 py-4 font-semibold">Stage</th>
-                  <th className="px-6 py-4 font-semibold">Concentration</th>
-                  <th className="px-6 py-4 font-semibold">Start Time</th>
-                  <th className="px-6 py-4 font-semibold">Process Hours</th>
-                  <th className="px-6 py-4 font-semibold text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {[1, 2].map((i) => (
-                  <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-6 py-4 font-medium text-indigo-600">B-990{i}</td>
-                    <td className="px-6 py-4 text-slate-600">42</td>
-                    <td className="px-6 py-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">AGEING</span></td>
-                    <td className="px-6 py-4 text-slate-600">85%</td>
-                    <td className="px-6 py-4 text-slate-600 text-sm">10:30 AM</td>
-                    <td className="px-6 py-4 font-mono font-bold text-slate-700">04:20</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-block w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                    </td>
+        <section className="lg:col-span-12">
+          <ModuleCard 
+            title="D2 Real Time Monitoring" 
+            icon={<Clock className="text-blue-500" size={20} />}
+          >
+            <div className="overflow-x-auto -m-5"> {/* Offset ModuleCard padding for full-width table */}
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 text-slate-500 text-[10px] uppercase tracking-wider">
+                    <th className="px-6 py-4 font-bold">Batch ID</th>
+                    <th className="px-6 py-4 font-bold">Bobbin Count</th>
+                    <th className="px-6 py-4 font-bold">Stage</th>
+                    <th className="px-6 py-4 font-bold">Concentration</th>
+                    <th className="px-6 py-4 font-bold">Start Time</th>
+                    <th className="px-6 py-4 font-bold">Process Hours</th>
+                    <th className="px-6 py-4 font-bold text-center">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[1, 2].map((i) => (
+                    <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="px-6 py-4 font-medium text-blue-600">B-990{i}</td>
+                      <td className="px-6 py-4 text-slate-600 text-sm">42</td>
+                      <td className="px-6 py-4">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">AGEING</span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 text-sm">85%</td>
+                      <td className="px-6 py-4 text-slate-600 text-sm">10:30 AM</td>
+                      <td className="px-6 py-4 font-mono font-bold text-slate-700 text-sm">04:20</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ModuleCard>
         </section>
 
         {/* D2 Receiving Form */}
-        <section className="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-            <Database className="text-violet-500" size={20} />
-            <h2 className="font-semibold text-slate-700">D2 Receiving Entry</h2>
-          </div>
-          <form onSubmit={formik.handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { label: 'Select Tank', name: 'tank', type: 'text' },
-                { label: 'Batch ID', name: 'batchId', type: 'text' },
-                { label: 'Start Date', name: 'startDate', type: 'date' },
-                { label: 'End Date', name: 'endDate', type: 'date' },
-                { label: 'Process Hours', name: 'processHours', type: 'number' },
-                { label: 'Status', name: 'status', type: 'text' },
-                { label: 'Start Operator', name: 'startOpr', type: 'text' },
-                { label: 'End Operator', name: 'endOpr', type: 'text' },
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm font-medium text-slate-500 mb-1">{field.label}</label>
-                  <input
-                    {...field}
-                    onChange={formik.handleChange}
-                    value={formik.values[field.name]}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-8 flex gap-4">
-              <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
-                <Send size={20} /> Receive Material
-              </button>
-              <button type="button" className="flex-1 bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
-                <LogOut size={20} /> Exit Portal
-              </button>
-            </div>
-          </form>
+        <section className="lg:col-span-8">
+          <ModuleCard 
+            title="D2 Receiving Entry" 
+            icon={<Database className="text-blue-500" size={20} />}
+          >
+            <Formik initialValues={initialValues} onSubmit={handleSubmit}>
+              {() => (
+                <Form className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormikSelect 
+                      label="Select Tank" 
+                      name="tank" 
+                      options={['Tank 01', 'Tank 02', 'Tank 03']} 
+                    />
+                    <FormikInput label="Batch ID" name="batchId" placeholder="Enter Batch ID" />
+                    <FormikInput label="Start Date" name="startDate" type="date" />
+                    <FormikInput label="End Date" name="endDate" type="date" />
+                    <FormikInput label="Process Hours" name="processHours" type="number" />
+                    <FormikSelect 
+                      label="Status" 
+                      name="status" 
+                      options={['Pending', 'Completed', 'In-Progress']} 
+                    />
+                    <FormikInput label="Start Operator" name="startOpr" />
+                    <FormikInput label="End Operator" name="endOpr" />
+                  </div>
+                  
+                  <div className="flex gap-4 pt-4">
+                    <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95">
+                      <Send size={18} /> Receive Material
+                    </button>
+                    <button type="button" className="flex-1 bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                      <LogOut size={18} /> Exit Portal
+                    </button>
+                  </div>
+                </Form>
+              )}
+            </Formik>
+          </ModuleCard>
         </section>
 
-        {/* Scan Barcode Sidebar */}
+        {/* Sidebar */}
         <aside className="lg:col-span-4 space-y-6">
-          <div className="bg-violet-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+          {/* Scan Section */}
+          <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
             <ScanLine className="absolute right-[-10px] bottom-[-10px] opacity-10" size={120} />
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <ScanLine size={20} /> Scan for H2 Ageing
+            <h3 className="text-sm font-bold mb-4 flex items-center gap-2 uppercase tracking-wider">
+              <ScanLine size={18} /> Scan for H2 Ageing
             </h3>
             <div className="space-y-4 relative z-10">
               <input 
                 placeholder="Scan Barcode..." 
-                className="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 placeholder:text-violet-100 outline-none focus:bg-white/30"
+                className="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 placeholder:text-blue-100 text-sm outline-none focus:bg-white/30 transition-all"
               />
-              <div className="bg-white/10 rounded-lg p-4 text-sm space-y-2 backdrop-blur-sm">
+              <div className="bg-white/10 rounded-lg p-4 text-xs space-y-2 backdrop-blur-sm border border-white/10">
                 <div className="flex justify-between"><span>PT Len:</span> <span className="font-bold">--</span></div>
                 <div className="flex justify-between"><span>Grade:</span> <span className="font-bold">--</span></div>
                 <div className="flex justify-between"><span>Reason:</span> <span className="font-bold italic">H2Ageing</span></div>
@@ -150,26 +155,30 @@ const D2Recieving = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-slate-700 font-bold mb-4 flex items-center gap-2">
-              <FileText size={20} className="text-emerald-500" /> Generate Report
-            </h3>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-slate-400">From</label>
-                <input type="date" className="w-full text-xs bg-slate-50 border border-slate-200 p-2 rounded" />
+          {/* Report Section */}
+          <ModuleCard 
+            title="Generate Report" 
+            icon={<FileText size={18} className="text-emerald-500" />}
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-400">From</label>
+                  <input type="date" className="w-full text-xs bg-slate-50 border border-slate-200 p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-400">To</label>
+                  <input type="date" className="w-full text-xs bg-slate-50 border border-slate-200 p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20" />
+                </div>
               </div>
-              <div>
-                <label className="text-[10px] uppercase font-bold text-slate-400">To</label>
-                <input type="date" className="w-full text-xs bg-slate-50 border border-slate-200 p-2 rounded" />
-              </div>
+              <button className="w-full bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-100">
+                Download Report
+              </button>
             </div>
-            <button className="w-full bg-emerald-500 text-white py-2 rounded-lg font-bold hover:bg-emerald-600 transition-colors">
-              Download Report
-            </button>
-          </div>
+          </ModuleCard>
         </aside>
 
+      </div>
       </div>
     </div>
   );

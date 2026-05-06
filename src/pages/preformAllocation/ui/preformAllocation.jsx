@@ -88,17 +88,19 @@ const PrerformAllocation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-800">
       {/* Header */}
-      <header className="mb-6 flex items-center justify-between border-b border-slate-300 pb-4">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-blue-900">Preform Tower Management</h1>
-          <p className="text-sm text-slate-500">Track and allocate preform stock to tower lines</p>
+          <h1 className="text-2xl font-bold text-white">Preform Tower Management</h1>
+          <p className="text-sm text-white">Track and allocate preform stock to tower lines</p>
         </div>
-        <button className="flex items-center gap-2 rounded bg-white border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 transition shadow-sm">
+        <button className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/15 transition shadow-sm">
           <Download size={16} /> Export Data
         </button>
-      </header>
+      
+      </div>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -230,6 +232,7 @@ const PrerformAllocation = () => {
             </div>
           </form>
         )}
+      </div>
       </div>
     </div>
   );

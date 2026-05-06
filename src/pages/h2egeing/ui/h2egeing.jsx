@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFormik } from 'formik';
+import { Formik, Form } from 'formik';
 import { 
   Scan, 
   Layers, 
@@ -9,27 +9,27 @@ import {
   LogOut, 
   History,
   RotateCcw,
-  Calendar
+  ChevronRight,
+  Database,
+  Activity
 } from 'lucide-react';
 
+import { ModuleCard,FormikSelect,FormikInput } from '../../../components/common_fields';
+
 const H2Ageing = () => {
-  const formik = useFormik({
-    initialValues: {
-      barcode: '',
-      batchId: '',
-      date: '',
-      attn1240_before: '', attn1240_after: '', attn1240_14days: '',
-      attn1310_before: '', attn1310_after: '', attn1310_14days: '',
-      attn1383_before: '', attn1383_after: '', attn1383_14days: '',
-      attn1550_before: '', attn1550_after: '', attn1550_14days: '',
-      attn1625_before: '', attn1625_after: '', attn1625_14days: '',
-      testingOpr: '',
-      entryOpr: ''
-    },
-    onSubmit: (values) => {
-      console.log('Saving Record:', values);
-    },
-  });
+  const initialValues = {
+    barcode: '',
+    batchId: '',
+    attn1240_before: '', attn1240_after: '', attn1240_14days: '',
+    attn1310_before: '', attn1310_after: '', attn1310_14days: '',
+    attn1383_before: '', attn1383_after: '', attn1383_14days: '',
+    attn1550_before: '', attn1550_after: '', attn1550_14days: '',
+    attn1625_before: '', attn1625_after: '', attn1625_14days: '',
+    testingOpr: '',
+    entryOpr: '',
+    pendingBatch: '',
+    failBatch: ''
+  };
 
   const attnFields = [
     { label: 'Attn 1240', key: 'attn1240' },
@@ -40,167 +40,160 @@ const H2Ageing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-800">
-      {/* Top Header / Barcode Scanner */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="md:col-span-1 bg-violet-600 rounded-2xl p-4 text-white shadow-lg flex items-center gap-4">
-          <div className="bg-white/20 p-3 rounded-xl">
-            <Scan size={28} />
-          </div>
-          <div className="flex-1">
-            <label className="text-xs font-bold uppercase opacity-80">Scan Barcode</label>
-            <input 
-              name="barcode"
-              className="w-full bg-transparent border-b-2 border-white/30 focus:border-white outline-none text-lg font-bold py-1"
-              placeholder="0000000000"
-            />
-          </div>
-        </div>
+    <Formik initialValues={initialValues} onSubmit={(v) => console.log(v)}>
+      <Form className="min-h-screen bg-slate-50 font-sans text-slate-800">
         
-        <div className="md:col-span-2 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-4">
-             <div className="bg-indigo-100 text-indigo-600 p-3 rounded-xl"><Layers size={24} /></div>
-             <div>
-               <p className="text-xs font-bold text-slate-400 uppercase">D2 Batch ID</p>
-               <input className="text-lg font-bold text-slate-700 outline-none" placeholder="Enter Batch ID..." />
-             </div>
-          </div>
-          <div className="text-right">
-             <p className="text-xs font-bold text-slate-400 uppercase flex items-center justify-end gap-1">
-               <Calendar size={12} /> System Date
-             </p>
-             <p className="text-lg font-mono font-bold text-slate-600">04/30/2026</p>
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white shadow-lg">
+          <div className="max-w-[1400px] mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <History size={22} />
+              </div>
+              <div>
+                <h1 className="text-lg font-black tracking-tight uppercase leading-none">H2 Ageing</h1>
+                <p className="text-blue-100 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Hydrogen Ageing & Attenuation Analysis</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6">
+               <div className="hidden md:block text-right">
+                  <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">System Date</p>
+                  <p className="text-xs font-mono font-bold text-white">05/06/2026</p>
+               </div>
+               <button type="button" className="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors border border-white/20">
+                  <LogOut size={18} />
+               </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left: Attn Testing Matrix */}
-        <section className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2 font-bold text-slate-600 uppercase tracking-wider text-sm">
-            <ClipboardCheck size={18} className="text-emerald-500" /> Attn Quality Testing
+        <div className="max-w-[1400px] mx-auto p-6 space-y-6">
+          
+          {/* Scanning & ID Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-4 bg-violet-600 rounded-2xl p-4 text-white shadow-xl shadow-violet-100 flex items-center gap-4">
+              <div className="bg-white/20 p-3 rounded-xl"><Scan size={28} /></div>
+              <div className="flex-1">
+                <FormikInput label="Primary Scan" name="barcode" placeholder="Scan Barcode ID..." 
+                  className="w-full bg-transparent border-b border-white/30 focus:border-white outline-none text-lg font-bold py-1 placeholder:text-white/40" />
+              </div>
+            </div>
+            
+            <div className="md:col-span-8 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between px-8">
+              <div className="flex items-center gap-4">
+                 <div className="bg-indigo-50 text-indigo-600 p-3 rounded-xl border border-indigo-100"><Layers size={24} /></div>
+                 <FormikInput label="D2 Batch Association" name="batchId" placeholder="Enter Batch ID..." />
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parameter Count</p>
+                <p className="text-lg font-black text-indigo-600">05</p>
+              </div>
+            </div>
           </div>
-          <div className="p-6 overflow-x-auto">
-            <table className="w-full">
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Main Matrix */}
+            <div className="lg:col-span-8">
+              <ModuleCard title="Attenuation Quality Matrix" icon={<ClipboardCheck size={16} className="text-emerald-500" />}>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
+                        <th className="pb-4 pl-2">Testing Parameter</th>
+                        <th className="pb-4">Initial (Before)</th>
+                        <th className="pb-4">Final (After)</th>
+                        <th className="pb-4">14-Day Result</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {attnFields.map((field) => (
+                        <tr key={field.key} className="group hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 pl-2 font-bold text-slate-700">
+                            <div className="flex items-center gap-2">
+                               <ChevronRight size={12} className="text-slate-300" />
+                               {field.label}
+                            </div>
+                          </td>
+                          <td className="py-4">
+                            <FormikInput name={`${field.key}_before`} placeholder="0.00" />
+                          </td>
+                          <td className="py-4">
+                            <FormikInput name={`${field.key}_after`} placeholder="0.00" />
+                          </td>
+                          <td className="py-4">
+                            <FormikInput name={`${field.key}_14days`} placeholder="0.00" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  <div className="mt-8 grid grid-cols-2 gap-6 pt-8 border-t border-slate-100">
+                     <FormikInput label="Testing Operator" name="testingOpr" placeholder="Enter Operator ID" />
+                     <FormikInput label="Entry Operator" name="entryOpr" placeholder="Enter Entry ID" />
+                  </div>
+                </div>
+              </ModuleCard>
+            </div>
+
+            {/* Side Controls */}
+            <div className="lg:col-span-4 space-y-6">
+              <ModuleCard title="Batch Repository" icon={<Database className="text-indigo-500" size={14} />}>
+                <div className="space-y-4">
+                  <FormikSelect label="Pending Batches" name="pendingBatch" options={['BATCH-001', 'BATCH-002']} />
+                  <FormikSelect label="Flagged / Fail Batches" name="failBatch" options={['FAIL-990', 'FAIL-991']} />
+                </div>
+              </ModuleCard>
+
+              <div className="bg-rose-600 rounded-2xl p-6 text-white shadow-xl shadow-rose-100">
+                 <h3 className="font-black text-[10px] uppercase tracking-widest mb-4 flex items-center gap-2">
+                   <AlertCircle size={16} /> Re-Issue Handling
+                 </h3>
+                 <div className="space-y-3">
+                   <FormikInput name="reissueBarcode" placeholder="Scan New Barcode" />
+                   <button type="button" className="w-full bg-white text-rose-600 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-50 transition-all shadow-lg">
+                     <RotateCcw size={14} /> Process Re-Issue
+                   </button>
+                 </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                  <Save size={18} /> Save Record
+                </button>
+                <button type="reset" className="px-5 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:bg-slate-50 transition-all">
+                  <RotateCcw size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Activity Log */}
+          <ModuleCard title="Live Batch Activity Log" icon={<Activity size={16} className="text-blue-500" />}>
+            <table className="w-full text-left">
               <thead>
-                <tr className="text-left text-xs font-bold text-slate-400 uppercase border-b border-slate-100">
-                  <th className="pb-4">Parameter</th>
-                  <th className="pb-4">Before</th>
-                  <th className="pb-4">After</th>
-                  <th className="pb-4">14 Days</th>
+                <tr className="text-[9px] uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100">
+                  <th className="pb-3 font-black">Ref Batch ID</th>
+                  <th className="pb-3 font-black">Scan Serial</th>
+                  <th className="pb-3 font-black text-right">Timestamp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {attnFields.map((field) => (
-                  <tr key={field.key} className="group">
-                    <td className="py-3 font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{field.label}</td>
-                    <td className="py-3">
-                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
-                    </td>
-                    <td className="py-3">
-                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
-                    </td>
-                    <td className="py-3">
-                      <input className="w-24 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
-                    </td>
+                {[1, 2, 3].map(i => (
+                  <tr key={i} className="hover:bg-slate-50/50">
+                    <td className="py-4 font-mono font-bold text-indigo-600 text-xs">B-D2-H2-00{i}</td>
+                    <td className="py-4 text-slate-500 font-mono text-xs">SCN-X-990{i}</td>
+                    <td className="py-4 text-right text-[10px] font-bold text-slate-400">12:45 PM</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            
-            <div className="mt-6 grid grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-               <div>
-                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Testing Operator</label>
-                 <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none" />
-               </div>
-               <div>
-                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Entry Operator</label>
-                 <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 outline-none" />
-               </div>
-            </div>
-          </div>
-          <div className="bg-emerald-500 h-2 w-full"></div>
-        </section>
-
-        {/* Right: Batch Management */}
-        <aside className="lg:col-span-4 space-y-6">
-          
-          {/* Issue Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <History className="text-blue-500" size={18} /> Batch Selection
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Pending Batches</label>
-                <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm mt-1">
-                  <option>Select Batch...</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Fail Batches</label>
-                <select className="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm mt-1">
-                  <option>Select Batch...</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Re-Issue for Fail Batches */}
-          <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5">
-             <h3 className="font-bold text-rose-700 mb-4 flex items-center gap-2">
-               <AlertCircle size={18} /> Re-Issue Handling
-             </h3>
-             <div className="space-y-3">
-               <input placeholder="Scan Barcode" className="w-full p-2 rounded-lg border border-rose-200 text-sm" />
-               <input placeholder="Batch ID" className="w-full p-2 rounded-lg border border-rose-200 text-sm" />
-               <button className="w-full bg-rose-600 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-rose-700 transition-colors">
-                 <RotateCcw size={16} /> Re-Issue
-               </button>
-             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
-              <Save size={20} /> Save Entry
-            </button>
-            <button className="px-6 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all">
-              <LogOut size={20} />
-            </button>
-          </div>
-
-        </aside>
-      </div>
-
-      {/* Bottom Table: Batch Status */}
-      <section className="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 text-sm font-bold text-slate-600">
-          Recent Batch Activity
+          </ModuleCard>
         </div>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50/50 text-[10px] uppercase tracking-widest text-slate-400">
-              <th className="px-6 py-3">Batch ID</th>
-              <th className="px-6 py-3">Barcode</th>
-              <th className="px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {[1, 2, 3].map(i => (
-              <tr key={i} className="text-sm">
-                <td className="px-6 py-3 font-mono text-indigo-600">BATCH-00{i}</td>
-                <td className="px-6 py-3 text-slate-600 font-mono">SCN-990{i}</td>
-                <td className="px-6 py-3">
-                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">COMPLETED</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </div>
+      </Form>
+    </Formik>
   );
 };
 

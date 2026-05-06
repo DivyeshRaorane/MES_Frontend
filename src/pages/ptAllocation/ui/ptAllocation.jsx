@@ -92,19 +92,19 @@ const PTAllocation = () => {
               </div>
 
               {/* Sidebar Reports Panel */}
-              <div className="bg-slate-800 rounded-[2rem] p-6 text-white shadow-xl flex flex-col justify-between">
+              <div className="bg-slate-100 rounded-[2rem] p-6 text-white shadow-xl flex flex-col justify-between">
                 <div className="space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Quick Report</h3>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400">From Date</label>
-                    <input type="date" className="w-full bg-slate-700 border-none rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="date" className="w-full bg-white  rounded-xl p-2 text-slate-700 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-lg"  />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400">To Date</label>
-                    <input type="date" className="w-full bg-slate-700 border-none rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="date" className="w-full bg-white  rounded-xl p-2 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 shadow-lg" />
                   </div>
                 </div>
-                <button type="button" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 py-3 rounded-xl text-sm font-bold transition-all mt-6">
+                <button type="button" className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:bg-white/20 border border-white/20 py-3 rounded-xl text-sm text-white font-bold transition-all mt-6">
                   Generate Report
                 </button>
               </div>
@@ -120,7 +120,7 @@ const PTAllocation = () => {
                 <button className="flex items-center gap-2 text-slate-600 hover:text-blue-600 px-4 py-2 rounded-lg text-xs font-bold transition-all border border-slate-200">
                   <RefreshCcw size={14} /> Refresh
                 </button>
-                <button className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all">
+                <button className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all">
                   <Download size={14} /> Export
                 </button>
              </div>

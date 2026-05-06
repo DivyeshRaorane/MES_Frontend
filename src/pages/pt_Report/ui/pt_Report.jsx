@@ -31,16 +31,16 @@ const PTReport = () => {
 
   return (
     <FormikProvider value={formik}>
-      <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
-        <Form className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800">
+        <Form className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
           
           {/* Header & Date Selection */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-3 pr-6 border-r border-slate-100">
               <div className="bg-indigo-600 p-2 rounded-lg text-white">
                 <BarChart3 size={24} />
               </div>
-              <h1 className="text-xl font-bold tracking-tight">PT REPORTING CENTER</h1>
+              <h1 className="text-xl text-white font-bold tracking-tight">PT REPORTING CENTER</h1>
             </div>
             
             <div className="flex flex-wrap items-center gap-4 flex-1">
@@ -68,7 +68,7 @@ const PTReport = () => {
           </div>
 
           {/* Report Quick-Access Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 m-3">
             <ReportButton icon={<Layers className="text-blue-500" />} label="PT WIP Report" />
             <ReportButton icon={<Scissors className="text-rose-500" />} label="PT Scrap Report" />
             <ReportButton icon={<Scissors className="text-orange-500" />} label="Draw Scrap Report" />
@@ -79,7 +79,7 @@ const PTReport = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Visual Log Sheet Section */}
-            <div className="lg:col-span-12">
+            <div className="lg:col-span-12 m-3">
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-4">
                   <div className="space-y-4 flex-1">
