@@ -92,14 +92,19 @@ const HandleJoining = () => {
                                     icon={<Ruler size={18} className="text-indigo-600" />}
                                 >
                                     <div className="space-y-6">
-                                        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
                                             {['dia1', 'dia2', 'dia3', 'dia4', 'dia5'].map((d, index) => (
                                                 <FormikInput key={d} label={`Dia ${index + 1}`} name={d} type="number" placeholder="0.00" />
                                             ))}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                             <FormikInput label="Handle Length" name="handleLen" type="number" />
                                             <FormikInput label="Handle Diameter" name="handleDia" type="number" />
+                                            <FormikSelect 
+                                                label="Handle Type" 
+                                                name="handleType" 
+                                                options={['New', 'Rework']} 
+                                            />
                                         </div>
                                     </div>
                                 </ModuleCard>
@@ -141,9 +146,9 @@ const HandleJoining = () => {
                             </ModuleCard>
 
                             {/* Section 4: Remarks & Settings */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            
                                 <div className="lg:col-span-2">
-                                    <ModuleCard title="Remarks & Observations" icon={<Thermometer size={18} className="text-indigo-600" />}>
+                                    
                                         <FormikInput 
                                             label="Additional Notes" 
                                             name="remarks" 
@@ -151,25 +156,9 @@ const HandleJoining = () => {
                                             rows="4" 
                                             placeholder="Enter quality or process remarks..." 
                                         />
-                                    </ModuleCard>
+                                
                                 </div>
-                                <div>
-                                    <ModuleCard title="Process Config" icon={<Settings size={18} className="text-indigo-600" />}>
-                                        <div className="space-y-4">
-                                            <FormikSelect 
-                                                label="Shift" 
-                                                name="shift" 
-                                                options={['Day Shift', 'Night Shift']} 
-                                            />
-                                            <FormikSelect 
-                                                label="Handle Type" 
-                                                name="handleType" 
-                                                options={['New', 'Rework']} 
-                                            />
-                                        </div>
-                                    </ModuleCard>
-                                </div>
-                            </div>
+                            
 
                             {/* Form Actions */}
                             <div className="flex justify-between gap-4 items-center pt-8 border-t border-slate-100">

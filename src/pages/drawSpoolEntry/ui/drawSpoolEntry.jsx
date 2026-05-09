@@ -1,13 +1,13 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Monitor, Database, Layers, Activity, Wind, Users, Table, Eye, Cpu 
+import {
+  Monitor, Database, Layers, Activity, Wind, Users, Table, Eye, Cpu
 } from 'lucide-react';
 
 // Reusing your components
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
-import { FormikSelect, FormikInput, ModuleCard } from '../../../components/common_fields'; 
+import { FormikSelect, FormikInput, ModuleCard } from '../../../components/common_fields';
 // Import your new reusable header
 import FormHeader from '../../../components/header_template';
 
@@ -83,9 +83,9 @@ const DrawSpoolEntry = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-4 font-sans">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-        
+
         {/* --- REUSABLE HEADER REPLACING OLD BLOCK --- */}
-        <FormHeader 
+        <FormHeader
           title="Draw Spool Entry"
           subtitle="MES Production Portal"
           userName="Divyesh"
@@ -96,9 +96,9 @@ const DrawSpoolEntry = () => {
         <Formik initialValues={initialValues} onSubmit={handleSubmit}>
           {({ values }) => (
             <Form id="main-form" className="p-6 flex flex-col gap-6">
-              
+
               <ModuleCard title="Main Requirements" icon={<Database size={16} className="text-blue-600" />}>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2  gap-2">
                   <FormikSelect label="Draw Tower" name="drawTower" options={['Select', 'Tower 1', 'Tower 2']} />
                   <FormikInput label="Preform ID" name="preformId" readOnly />
                   <FormikInput label="Preform Weight" name="preformWeight" type="number" step="0.01" />
@@ -112,12 +112,16 @@ const DrawSpoolEntry = () => {
                   <FormikInput label="End Date" name="endDate" type="date" />
                   <FormikInput label="End Time" name="endTime" type="time" />
                   <FormikInput label="Drawn Length" name="drawnLength" type="number" />
+                  <FormikSelect label="Winding Obs" name="windingObs" options={['Select', 'Poor', 'Good']} />
+                  <FormikSelect label="Scratches Obs" name="scratchesObs" options={['Select', 'Nil', 'Minor', 'Major']} />
+                  <FormikSelect label="Die Clean" name="dieClean" options={['Select', 'Yes', 'No']} />
+
                   <FormikSelect label="Spool Status" name="spoolStatus" options={['OK', 'Not OK']} />
-                  
+
                   {values.spoolStatus === 'Not OK' && (
                     <FormikSelect label="Drawn Spool" name="drawnSpool" options={['Select', 'Scrap', 'Hold', 'Rework']} />
                   )}
-                  
+
                   <div className="md:col-span-4 flex flex-col gap-1.5 mt-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Remark</label>
                     <Field as="textarea" name="remark" className="w-full border border-slate-200 rounded-sm p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none h-20 bg-slate-50" />
@@ -208,12 +212,9 @@ const DrawSpoolEntry = () => {
                     <span className="text-sm font-bold text-slate-700 uppercase tracking-tight">Drawn Break Occurred?</span>
                   </label>
                   {values.drawnBreak && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                       <FormikSelect label="Break Reason" name="breakReason" options={['Select', 'Tension High', 'Gas Issue', 'Bubble']} />
-                      <FormikSelect label="Winding Obs" name="windingObs" options={['Select', 'Poor', 'Good']} />
-                      <FormikSelect label="Scratches Obs" name="scratchesObs" options={['Select', 'Nil', 'Minor', 'Major']} />
                       <FormikSelect label="Spool Change Over" name="spoolChangeOver" options={['Select', 'Auto', 'Manual']} />
-                      <FormikSelect label="Die Clean" name="dieClean" options={['Select', 'Yes', 'No']} />
                     </div>
                   )}
                 </div>
