@@ -121,8 +121,8 @@ const Sidebar = ()=>{
       
                   {(proofMenuExpanded && sidebarOpen) && (
                     <div className="ml-9 mt-1 space-y-1 border-l border-slate-700">
-                      <SubNavItem label="Proof Test Entry" active={location.pathname == '/prooftesting/ptentry'}  onClick={() => navigate('/prooftesting/ptentry')} />
                       <SubNavItem label="Allocation" active={location.pathname == '/prooftesting/ptallocation'}  onClick={() => navigate('/prooftesting/ptallocation')} />
+                      <SubNavItem label="Proof Test Entry" active={location.pathname == '/prooftesting/ptentry'}  onClick={() => navigate('/prooftesting/ptentry')} />
                       <SubNavItem label="Automation" active={location.pathname == '/prooftesting/ptautomation'}  onClick={() => navigate('/prooftesting/ptautomation')} />
                       <SubNavItem label="REW/COL Entry" active={location.pathname == '/prooftesting/rewcolztentry'}  onClick={() => navigate('/prooftesting/rewcolztentry')} />
                       {/*<SubNavItem label="Break Analysis" active={location.pathname == '/prooftesting/ptbreakanalysis'}  onClick={() => navigate('/prooftesting/ptbreakanalysis')} />*/}

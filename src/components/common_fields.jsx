@@ -21,15 +21,15 @@ export const FormikInput = ({ label, name, type = "text", ...props }) => (
     <Field
       name={name}
       type={type}
-      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+      className="w-full bg-slate-100 border border-slate-200 rounded-sm px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
       {...props}
     />
   </div>
 );
 
-export const FormikSelect = ({ label, name, options, className = "" }) => (
+export const FormikSelect = ({ label, name, options, className = "", labelClassName = "" }) => (
   <div className={`flex flex-col gap-1.5 ${className}`}>
-    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">{label}</label>
+    <label className={`text-[10px] font-bold ${labelClassName} || text-slate-500 uppercase ml-1`}>{label}</label>
     <div className="relative">
       <Field
         as="select"
