@@ -3,7 +3,6 @@ import { Formik, Form, Field } from 'formik';
 import { Monitor, Database, Layers, Activity, Wind, Users, Table, Eye, Cpu } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { FormikSelect, FormikInput, FormikTextarea, ModuleCard } from '../../../components/common_fields';
-import FormHeader from '../../../components/header_template';
 
 const getCurrentShift = () => {
   const h = new Date().getHours();
@@ -37,17 +36,8 @@ const initialValues = {
 
 /* ══════════════════════════════════════════════════════════ */
 const DrawSpoolEntry = () => (
-  <div className="h-screen bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-    <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden m-2">
-
-      <FormHeader
-        title="Draw Spool Entry"
-        subtitle="MES Production Portal"
-        userName="Divyesh"
-        userRole="Software Developer"
-        icon={Monitor}
-      />
-
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
       <Formik initialValues={initialValues} onSubmit={(v) => console.log('Submit:', v)}>
         {({ values }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3">

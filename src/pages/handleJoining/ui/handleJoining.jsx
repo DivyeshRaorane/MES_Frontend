@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Settings, Droplets, Activity, Ruler, Search } from 'lucide-react';
+import { Settings, Droplets, Ruler, Search } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
-import FormHeader from '../../../components/header_template';
 
 const FLAME_ROWS = [
   { key: 'h2Flow1',      label: 'H 2 Flow 1' },
@@ -35,17 +34,8 @@ const HandleJoining = () => {
     ((parseFloat(flow) || 0) * (parseFloat(time) || 0) / 1000).toFixed(3);
 
   return (
-    <div className="h-screen bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-      <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden m-2">
-
-        {/* ── Header ── */}
-        <FormHeader
-          title="Handle Joining Control Center"
-          subtitle="MES Production Portal"
-          userName="Divyesh"
-          userRole="Software Developer"
-          icon={Activity}
-        />
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
         <Formik
           initialValues={initialValues}

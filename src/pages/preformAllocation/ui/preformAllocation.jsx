@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { Formik, Form } from 'formik';
-import {
-  Plus, ClipboardList, History, X,
-  Keyboard, Settings, Building2, ListOrdered
-} from 'lucide-react';
+import { Plus, ClipboardList, History, X, Keyboard, Settings, Building2, ListOrdered } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
-import FormHeader from '../../../components/header_template';
 
 /* ── Mock data ── */
 const INITIAL_WIP = [
@@ -45,17 +41,8 @@ const PrerformAllocation = () => {
   };
 
   return (
-    <div className="h-screen bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-      <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden m-2">
-
-        {/* ── Header ── */}
-        <FormHeader
-          title="Preform Tower Management"
-          subtitle="MES Production Portal"
-          userName="Divyesh"
-          userRole="Software Developer"
-          icon={Building2}
-        />
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
         {/* ── Body ── */}
         <div className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">

@@ -3,7 +3,6 @@ import { GitBranch, LayoutGrid, PlayCircle, Trash2 } from 'lucide-react';
 import PTAllocation from '../pages/ptAllocation/ui/ptAllocation';
 import PTRunningTable from '../pages/ptRunnigTable/ui/ptRunningTable';
 import Rejected_Spools_In_PT_Allocation from '../pages/rejected_spool_in_pt_allocation/ui/Rejected_Spools_In_PT_Allocation';
-import FormHeader from './header_template';
 
 const TABS = [
   { key: 'allocation', label: 'Allocation Table',  icon: LayoutGrid,  color: 'blue'  },
@@ -15,17 +14,8 @@ const PTAllocationContainer = () => {
   const [activeTab, setActiveTab] = useState('allocation');
 
   return (
-    <div className="h-screen bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-      <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden m-2">
-
-        {/* ── Level 1 Header ── */}
-        <FormHeader
-          title="PT Allocation / Deallocation"
-          subtitle="MES Production Portal"
-          userName="Divyesh"
-          userRole="Software Developer"
-          icon={GitBranch}
-        />
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
         {/* ── Level 2 Tab Bar ── */}
         <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4 flex-shrink-0">

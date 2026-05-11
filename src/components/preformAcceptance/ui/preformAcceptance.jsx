@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { CheckCircle, XCircle, Package, Search, Ruler, FileText } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../common_fields';
 import { SubmitButton, ResetButton } from '../../common_buttons';
-import FormHeader from '../../header_template';
 import SelectionModal from '../../selectionModal';
 
 /* ── Dummy data ── */
@@ -41,17 +40,8 @@ const PreformAcceptance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="h-screen bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-      <div className="flex flex-col flex-1 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden m-2">
-
-        {/* ── Header ── */}
-        <FormHeader
-          title="Preform Acceptance Entry"
-          subtitle="MES Production Portal"
-          userName="Divyesh"
-          userRole="Software Developer"
-          icon={Package}
-        />
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
         <Formik
           initialValues={initialValues}
