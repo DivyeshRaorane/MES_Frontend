@@ -1,6 +1,6 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Monitor, Database, Layers, Activity, Wind, Users, Table, Eye, Cpu } from 'lucide-react';
+import { Monitor, Database, Layers, Activity, Wind, Table, Eye, Cpu } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { FormikSelect, FormikInput, FormikTextarea, ModuleCard } from '../../../components/common_fields';
 
@@ -53,7 +53,7 @@ const DrawSpoolEntry = () => (
               >
                 {/* inner scroll if viewport is very short */}
                 <div className="flex flex-col gap-2 overflow-y-auto h-full">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <FormikSelect compact label="Draw Tower"    name="drawTower"     options={['Select','Tower 1','Tower 2']} />
                     <FormikInput  compact label="Preform ID"    name="preformId"     readOnly />
                     <FormikInput  compact label="Preform Wt"    name="preformWeight" type="number" step="0.01" />
@@ -62,11 +62,11 @@ const DrawSpoolEntry = () => (
                     <FormikInput  compact label="Spool ID"      name="spoolId" />
                     <FormikInput  compact label="Entry Date"    name="entryDate"     type="date" />
                     <FormikInput  compact label="Shift"         name="shift"         readOnly />
+                    <FormikInput  compact label="Drawn Length"  name="drawnLength"   type="number" />
                     <FormikInput  compact label="Start Date"    name="startDate"     type="date" />
                     <FormikInput  compact label="Start Time"    name="startTime"     type="time" />
                     <FormikInput  compact label="End Date"      name="endDate"       type="date" />
                     <FormikInput  compact label="End Time"      name="endTime"       type="time" />
-                    <FormikInput  compact label="Drawn Length"  name="drawnLength"   type="number" />
                     <FormikSelect compact label="Winding Obs"   name="windingObs"    options={['Select','Poor','Good']} />
                     <FormikSelect compact label="Scratches Obs" name="scratchesObs"  options={['Select','Nil','Minor','Major']} />
                     <FormikSelect compact label="Die Clean"     name="dieClean"      options={['Select','Yes','No']} />
@@ -74,6 +74,12 @@ const DrawSpoolEntry = () => (
                     {values.spoolStatus === 'Not OK' && (
                       <FormikSelect compact label="Drawn Spool" name="drawnSpool"   options={['Select','Scrap','Hold','Rework']} />
                     )}
+                    {/* Work Details fields */}
+                    <FormikSelect compact label="Shift Incharge"   name="shiftIncharge"   options={['Select','Incharge A','Incharge B']} />
+                    <FormikSelect compact label="Furnace Operator" name="furnaceOperator" options={['Select','Operator 1','Operator 2']} />
+                    <FormikSelect compact label="Die Operator"     name="dieOperator"     options={['Select','Op 3','Op 4']} />
+                    <FormikSelect compact label="Rampup Operator"  name="rampupOperator"  options={['Select','Op 5','Op 6']} />
+                    <FormikSelect compact label="StartUp Operator" name="startupOperator" options={['Select','Op 7','Op 8']} />
                   </div>
                   <FormikTextarea compact label="Remark" name="remark" rows={2} placeholder="Enter remarks..." />
                 </div>
@@ -83,7 +89,7 @@ const DrawSpoolEntry = () => (
               <div className="flex flex-col gap-3 min-h-0">
 
                 <ModuleCard compact title="Coating & Batch" icon={<Layers size={13} className="text-indigo-600" />}>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <FormikInput  compact label="Primary Coat"    name="primaryCoat"   readOnly />
                     <FormikInput  compact label="Secondary Coat"  name="secondaryCoat" readOnly />
                     <FormikInput  compact label="Prim Press"      name="primPress" />
@@ -94,7 +100,7 @@ const DrawSpoolEntry = () => (
                 </ModuleCard>
 
                 <ModuleCard compact title="Process Parameters" icon={<Activity size={13} className="text-emerald-600" />}>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <FormikInput compact label="Draw Line Speed" name="drawLineSpeed" type="number" />
                     <FormikInput compact label="Draw Tension"    name="drawTension"   type="number" />
                     <FormikInput compact label="Furnace Power"   name="furnacePower"  type="number" />
@@ -103,7 +109,7 @@ const DrawSpoolEntry = () => (
                 </ModuleCard>
 
                 <ModuleCard compact title="Gas Flow" icon={<Wind size={13} className="text-sky-600" />}>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <FormikInput compact label="Furnace Argon" name="furnaceArgon" />
                     <FormikInput compact label="Furnace He"    name="furnaceHe" />
                     <FormikInput compact label="Tube He"       name="tubeHe" />
@@ -112,24 +118,15 @@ const DrawSpoolEntry = () => (
                     <FormikInput compact label="UV Air"        name="uvAir" />
                   </div>
                 </ModuleCard>
+
               </div>
 
-              {/* ══ COL 3: Work Details | PitchChange | Observations | Totals + Actions ══ */}
+              {/* ══ COL 3: PitchChange | Observations | Totals + Actions ══ */}
               <div className="flex flex-col gap-3 min-h-0">
 
-                <ModuleCard compact title="Work Details" icon={<Users size={13} className="text-orange-600" />}>
-                  <div className="grid grid-cols-2 gap-2">
-                    <FormikSelect compact label="Shift Incharge"    name="shiftIncharge"    options={['Select','Incharge A','Incharge B']} />
-                    <FormikSelect compact label="Furnace Operator"  name="furnaceOperator"  options={['Select','Operator 1','Operator 2']} />
-                    <FormikSelect compact label="Die Operator"      name="dieOperator"      options={['Select','Op 3','Op 4']} />
-                    <FormikSelect compact label="Rampup Operator"   name="rampupOperator"   options={['Select','Op 5','Op 6']} />
-                    <FormikSelect compact label="StartUp Operator"  name="startupOperator"  options={['Select','Op 7','Op 8']} />
-                  </div>
-                </ModuleCard>
-
-                {/* PitchChange Details — table scrolls if rows grow */}
+                {/* PitchChange Details — no scroll, min 10 visible rows */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex justify-between items-center">
+                  <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <Table size={13} className="text-purple-600" />
                       <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">PitchChange Details</span>
@@ -141,28 +138,36 @@ const DrawSpoolEntry = () => (
                       <Cpu size={11} /> Automation
                     </button>
                   </div>
-                  {/* scrollable body */}
-                  <div className="overflow-y-auto max-h-28">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="sticky top-0 bg-slate-50 z-10">
-                        <tr>
-                          {['Flow Type','Start Len','End Len','Pitch Kms'].map(h => (
-                            <th key={h} className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {values.pitchDetails.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-1.5 text-slate-700">{row.flowType}</td>
-                            <td className="px-3 py-1.5 text-slate-600">{row.startLength}</td>
-                            <td className="px-3 py-1.5 text-slate-600">{row.endLength}</td>
-                            <td className="px-3 py-1.5 font-mono text-emerald-600 font-bold">{row.pitchChange}</td>
-                          </tr>
+                  {/* No scroll — always shows min 10 rows */}
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        {['Flow Type','Start Len','End Len','Pitch Kms'].map(h => (
+                          <th key={h} className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {/* real data rows */}
+                      {values.pitchDetails.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="px-3 py-1.5 text-slate-700">{row.flowType}</td>
+                          <td className="px-3 py-1.5 text-slate-600">{row.startLength}</td>
+                          <td className="px-3 py-1.5 text-slate-600">{row.endLength}</td>
+                          <td className="px-3 py-1.5 font-mono text-emerald-600 font-bold">{row.pitchChange}</td>
+                        </tr>
+                      ))}
+                      {/* empty filler rows to guarantee min 10 visible rows */}
+                      {Array.from({ length: Math.max(0, 10 - values.pitchDetails.length) }).map((_, idx) => (
+                        <tr key={`empty-${idx}`} className="border-b border-slate-50">
+                          <td className="px-3 py-1.5 text-transparent select-none">—</td>
+                          <td className="px-3 py-1.5" />
+                          <td className="px-3 py-1.5" />
+                          <td className="px-3 py-1.5" />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Observations & Break */}
@@ -178,7 +183,7 @@ const DrawSpoolEntry = () => (
                     </label>
                     {values.drawnBreak && (
                       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                        <FormikSelect compact label="Break Reason"     name="breakReason"    options={['Select','Tension High','Gas Issue','Bubble']} />
+                        <FormikSelect compact label="Break Reason"      name="breakReason"    options={['Select','Tension High','Gas Issue','Bubble']} />
                         <FormikSelect compact label="Spool Change Over" name="spoolChangeOver" options={['Select','Auto','Manual']} />
                       </div>
                     )}

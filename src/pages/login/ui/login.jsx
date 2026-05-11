@@ -132,7 +132,6 @@ const LoginPage = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password</label>
-                <a href="#" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">Forgot Access?</a>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">

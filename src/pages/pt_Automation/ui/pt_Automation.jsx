@@ -1,302 +1,287 @@
 import React from 'react';
 import { useFormik, FormikProvider, Field, FieldArray, Form } from 'formik';
-import { 
-  Settings, 
-  Cpu, 
-  Barcode, 
-  Database, 
-  AlertTriangle, 
-  ClipboardList, 
-  TrendingUp, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Search,
-  User,
-  Clock
+import {
+  Settings, Cpu, Barcode, TrendingUp,
+  Clock, AlertTriangle, ClipboardList,
+  Plus, Trash2, Search, Save, User
 } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
+/* ── table-cell input ── */
+const TInput = ({ name }) => (
+  <Field
+    name={name}
+    className="w-full bg-transparent px-1.5 py-1 text-xs focus:outline-none focus:bg-white rounded transition-all"
+  />
+);
+const TSelect = ({ name, options }) => (
+  <Field
+    as="select"
+    name={name}
+    className="w-full bg-transparent px-1 py-1 text-xs focus:outline-none focus:bg-white rounded transition-all cursor-pointer"
+  >
+    {options.map(o => <option key={o}>{o}</option>)}
+  </Field>
+);
+
+/* ══════════════════════════════════════════════════════════ */
 const PTAutomation = () => {
   const formik = useFormik({
     initialValues: {
-      ptMachine: '',
-      allocatedId: '',
-      drawSpoolBarcode: '',
-      preformId: '',
-      ptId: '',
-      ptLength: '',
-      ptBobbinBarcode: '',
-      spoolEndReason: '',
-      ptScrapReason: '',
-      drawRejectionReason: '',
-      meRejectionReason: '',
-      scratchesReason: '',
-      productType: '',
-      operator: '',
-      incharge: '',
-      bobbinType: '',
-      bobbinColor: '',
-      // Metrics
-      drawLength: '',
-      ptDone: '',
-      balanceLength: '',
-      ptRunningStrain: '',
-      nextPtOkLen: '',
-      ptBobbinStatus: 'OK',
-      timeLoss: '',
-      timeLossReason: '',
-      speedLoss: '',
-      speedLossReason: '',
-      // Dynamic Tables
+      ptMachine:           '',
+      drawSpoolBarcode:    '',
+      preformId:           '',
+      ptId:                '',
+      ptBobbinBarcode:     '',
+      operator:            '',
+      incharge:            '',
+      bobbinType:          '',
+      bobbinColor:         '',
+      drawLength:          '',
+      ptDone:              '',
+      balanceLength:       '',
+      ptRunningStrain:     '',
+      nextPtOkLen:         '',
+      ptBobbinStatus:      'OK',
+      timeLoss:            '',
+      timeLossReason:      '',
+      speedLoss:           '',
+      speedLossReason:     '',
+      drawRejectionReason: 'None',
+      meRejectionReason:   'None',
+      scratchesReason:     'None',
+      spoolEndReason:      '',
+      ptScrapReason:       '',
       drawFlaws: [{ type: '', p1: '', p2: '', defectLen: '', actCuttingLen: '' }],
-      ptLogs: [{ identifier: '', length: '', reason: 'OK' }]
+      ptLogs:    [{ identifier: '', length: '', reason: 'OK' }],
     },
-    onSubmit: (values) => console.log('Submitting Production Data:', values),
+    onSubmit: (values) => console.log('PT Automation Submit:', values),
   });
 
   return (
     <FormikProvider value={formik}>
-      <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800">
-        <Form className="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-          
-          {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
-                <Cpu className="w-8 h-8" /> PT Production Automation
-              </h1>
-              <p className="text-white text-sm mt-1 flex items-center gap-1">
-                <Database className="w-4 h-4" /> Auto-fetching from Allocation & Draw Tables
-              </p>
+      <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+        <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+
+          {/* ── Action bar ── */}
+          <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Cpu size={14} className="text-indigo-600" />
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">PT Production Automation</span>
             </div>
-            <div className="flex gap-3">
-              <button type="button" className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-100 transition-colors">
-                <Search className="w-4 h-4" /> Get Allocation
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 transition-all"
+              >
+                <Search size={11} /> Get Allocation
               </button>
-              <button type="submit" className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">
-                <Save className="w-4 h-4" /> Save Entry
-              </button>
+              <SubmitButton compact onClick={formik.handleSubmit}>
+                <Save size={11} /> Save Entry
+              </SubmitButton>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-2 px-2">
-            
-            {/* Left Column: Identification & Setup */}
-            <div className="lg:col-span-4 space-y-6">
-              <SectionCard title="Machine Setup" icon={<Settings className="text-blue-500" />}>
-                <div className="space-y-4">
-                  <CustomInput label="Select PT Machine" name="ptMachine" placeholder="Machine #" />
-                  <CustomInput label="Draw Spool Barcode" name="drawSpoolBarcode" icon={<Barcode className="w-4 h-4" />} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <CustomInput label="Preform ID" name="preformId" />
-                    <CustomInput label="PT ID" name="ptId" />
+          <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3">
+            <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
+
+              {/* ══ COL 1: Machine Setup + Personnel ══ */}
+              <div className="flex flex-col gap-3 min-h-0">
+
+                <ModuleCard compact title="Machine Setup" icon={<Settings size={13} className="text-blue-500" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <FormikInput compact label="Draw Spool Barcode" name="drawSpoolBarcode" placeholder="Scan barcode..." />
+                    </div>
+                    <FormikInput compact label="PT Machine"    name="ptMachine"        placeholder="Machine #" />
+                    <FormikInput compact label="PT ID"         name="ptId" />
+                    <FormikInput compact label="Preform ID"    name="preformId" />
+                    <FormikInput compact label="PT Bobbin"     name="ptBobbinBarcode"  placeholder="Scan bobbin..." />
                   </div>
-                  <CustomInput label="PT Bobbin Barcode" name="ptBobbinBarcode" />
-                </div>
-              </SectionCard>
+                </ModuleCard>
 
-              <SectionCard title="Personnel & Bobbin" icon={<User className="text-purple-500" />}>
-                <div className="grid grid-cols-2 gap-4">
-                  <CustomInput label="Operator" name="operator" />
-                  <CustomInput label="Incharge" name="incharge" />
-                  <CustomInput label="Bobbin Type" name="bobbinType" />
-                  <CustomInput label="Bobbin Color" name="bobbinColor" />
-                </div>
-              </SectionCard>
-            </div>
+                <ModuleCard compact title="Personnel & Bobbin" icon={<User size={13} className="text-purple-500" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikInput compact label="Operator"     name="operator" />
+                    <FormikInput compact label="Incharge"     name="incharge" />
+                    <FormikInput compact label="Bobbin Type"  name="bobbinType" />
+                    <FormikInput compact label="Bobbin Color" name="bobbinColor" />
+                  </div>
+                </ModuleCard>
 
-            {/* Middle Column: Production Metrics */}
-            <div className="lg:col-span-4 space-y-6">
-              <SectionCard title="Production Metrics" icon={<TrendingUp className="text-emerald-500" />}>
-                <div className="grid grid-cols-2 gap-4">
-                  <CustomInput label="Draw Length" name="drawLength" />
-                  <CustomInput label="PT Done" name="ptDone" />
-                  <CustomInput label="Balance Length" name="balanceLength" highlight />
-                  <CustomInput label="Running Strain" name="ptRunningStrain" />
-                </div>
-                <div className="mt-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                  <label className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Next Instruction</label>
-                  <p className="text-lg font-mono font-bold text-emerald-900 mt-1">2,450m or Cutting Len</p>
-                </div>
-              </SectionCard>
+                <ModuleCard compact title="Reasoning" icon={<ClipboardList size={13} className="text-slate-500" />}>
+                  <div className="grid grid-cols-1 gap-2">
+                    <FormikInput compact label="Spool End Reason" name="spoolEndReason" />
+                    <FormikInput compact label="PT Scrap Reason"  name="ptScrapReason" />
+                  </div>
+                </ModuleCard>
+              </div>
 
-              <SectionCard title="Loss Tracking" icon={<Clock className="text-orange-500" />}>
-                <div className="grid grid-cols-2 gap-4">
-                  <CustomInput label="Time Loss (min)" name="timeLoss" />
-                  <CustomInput label="Speed Loss (m/min)" name="speedLoss" />
-                  <div className="col-span-2">
-                     <CustomInput label="Loss Reasons" name="timeLossReason" placeholder="Describe delay..." />
+              {/* ══ COL 2: Production Metrics + Loss Tracking ══ */}
+              <div className="flex flex-col gap-3 min-h-0">
+
+                <ModuleCard compact title="Production Metrics" icon={<TrendingUp size={13} className="text-emerald-500" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikInput compact label="Draw Length"     name="drawLength" />
+                    <FormikInput compact label="PT Done"         name="ptDone" />
+                    {/* Balance highlight */}
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-indigo-500 uppercase ml-0.5">Balance Length</label>
+                      <Field
+                        name="balanceLength"
+                        className="w-full bg-indigo-50 border border-indigo-200 rounded px-2 py-1.5 text-xs font-bold text-indigo-700 font-mono outline-none"
+                      />
+                    </div>
+                    <FormikInput compact label="Running Strain"  name="ptRunningStrain" />
+                    <FormikSelect compact label="Bobbin Status"  name="ptBobbinStatus" options={['OK','Scrap','PT Break']} />
+                    <FormikInput compact label="Next PT OK Len"  name="nextPtOkLen" />
+                  </div>
+                </ModuleCard>
+
+                <ModuleCard compact title="Loss Tracking" icon={<Clock size={13} className="text-orange-500" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikInput  compact label="Time Loss (min)"    name="timeLoss" />
+                    <FormikInput  compact label="Speed Loss (m/min)" name="speedLoss" />
+                    <FormikSelect compact label="Time Loss Reason"   name="timeLossReason"  options={['None','Power Cut','Machine Fault','Material Issue','Operator Delay','Other']} />
+                    <FormikSelect compact label="Speed Loss Reason"  name="speedLossReason" options={['None','Vibration','Tension Issue','Coating Problem','Other']} />
+                  </div>
+                </ModuleCard>
+
+                <ModuleCard compact title="Quality Control" icon={<AlertTriangle size={13} className="text-rose-500" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikSelect compact label="Draw Rejection" name="drawRejectionReason" options={['None','Surface Defect','Ovality','Diameter']} />
+                    <FormikSelect compact label="M/E Rejection"  name="meRejectionReason"   options={['None','Machine Error','Tool Wear']} />
+                    <FormikSelect compact label="Scratches"      name="scratchesReason"      options={['None','Guide Roll','Payoff','Winder']} />
+                  </div>
+                </ModuleCard>
+              </div>
+
+              {/* ══ COL 3: Draw Flaw Log + PT Log ══ */}
+              <div className="flex flex-col gap-3 min-h-0">
+
+                {/* Draw Flaw Log — scrollable */}
+                <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                  <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={13} className="text-amber-500" />
+                      <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Draw Flaw Log</span>
+                    </div>
+                    <FieldArray name="drawFlaws">
+                      {({ push }) => (
+                        <button
+                          type="button"
+                          onClick={() => push({ type: '', p1: '', p2: '', defectLen: '', actCuttingLen: '' })}
+                          className="p-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-all"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      )}
+                    </FieldArray>
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    <FieldArray name="drawFlaws">
+                      {({ remove, form }) => (
+                        <table className="w-full text-left border-collapse">
+                          <thead className="sticky top-0 bg-slate-50 z-10">
+                            <tr className="border-b border-slate-200">
+                              {['Flaw','P1','P2','Defect','Act Cut',''].map(h => (
+                                <th key={h} className="px-2 py-1.5 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {form.values.drawFlaws.map((_, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="px-1 py-1"><TInput name={`drawFlaws.${idx}.type`} /></td>
+                                <td className="px-1 py-1"><TInput name={`drawFlaws.${idx}.p1`} /></td>
+                                <td className="px-1 py-1"><TInput name={`drawFlaws.${idx}.p2`} /></td>
+                                <td className="px-1 py-1"><TInput name={`drawFlaws.${idx}.defectLen`} /></td>
+                                <td className="px-1 py-1"><TInput name={`drawFlaws.${idx}.actCuttingLen`} /></td>
+                                <td className="px-1 py-1 text-center">
+                                  <button type="button" onClick={() => remove(idx)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                                    <Trash2 size={12} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </FieldArray>
                   </div>
                 </div>
-              </SectionCard>
-            </div>
 
-            {/* Right Column: Quality & Rejection */}
-            <div className="lg:col-span-4 space-y-6">
-              <SectionCard title="Quality Control" icon={<AlertTriangle className="text-rose-500" />}>
-                <div className="space-y-4">
-                  <CustomSelect label="Draw Rejection" name="drawRejectionReason" options={['None', 'Surface Defect', 'Ovality', 'Diameter']} />
-                  <CustomSelect label="M/E Rejection" name="meRejectionReason" options={['None', 'Machine Error', 'Tool Wear']} />
-                  <CustomSelect label="Scratches" name="scratchesReason" options={['None', 'Guide Roll', 'Payoff', 'Winder']} />
-                  <CustomSelect label="Bobbin Status" name="ptBobbinStatus" options={['OK', 'Scrap', 'PT Break']} />
+                {/* PT Log — scrollable */}
+                <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                  <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList size={13} className="text-indigo-600" />
+                      <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Process Log (PT Log)</span>
+                    </div>
+                    <FieldArray name="ptLogs">
+                      {({ push }) => (
+                        <button
+                          type="button"
+                          onClick={() => push({ identifier: '', length: '', reason: 'OK' })}
+                          className="p-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-all"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      )}
+                    </FieldArray>
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    <FieldArray name="ptLogs">
+                      {({ remove, form }) => (
+                        <table className="w-full text-left border-collapse">
+                          <thead className="sticky top-0 bg-slate-50 z-10">
+                            <tr className="border-b border-slate-200">
+                              {['Barcode / ID / Flaw','Length','Reason',''].map(h => (
+                                <th key={h} className="px-2 py-1.5 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {form.values.ptLogs.map((_, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="px-1 py-1"><TInput name={`ptLogs.${idx}.identifier`} /></td>
+                                <td className="px-1 py-1"><TInput name={`ptLogs.${idx}.length`} /></td>
+                                <td className="px-1 py-1">
+                                  <TSelect
+                                    name={`ptLogs.${idx}.reason`}
+                                    options={['OK','PT Scrap','Draw Scrap','PT Break Scrap']}
+                                  />
+                                </td>
+                                <td className="px-1 py-1 text-center">
+                                  <button type="button" onClick={() => remove(idx)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                                    <Trash2 size={12} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </FieldArray>
+                  </div>
                 </div>
-              </SectionCard>
 
-              <SectionCard title="Reasoning" icon={<ClipboardList className="text-slate-500" />}>
-                <div className="space-y-4">
-                  <CustomInput label="Spool End Reason" name="spoolEndReason" />
-                  <CustomInput label="PT Scrap Reason" name="ptScrapReason" />
+                {/* Actions */}
+                <div className="flex justify-between gap-3">
+                  <ResetButton compact type="button" onClick={() => formik.resetForm()}>Reset</ResetButton>
+                  <SubmitButton compact type="submit">Save Entry</SubmitButton>
                 </div>
-              </SectionCard>
-            </div>
 
-            {/* Dynamic Tables Section */}
-            <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Draw Flaw Table */}
-              <TableSection 
-                title="Draw Flaw Log" 
-                name="drawFlaws"
-                headers={['Flaw', 'Pos 1', 'Pos 2', 'Defect', 'Act Cut']}
-                renderRow={(index, remove) => (
-                  <tr key={index} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                    <td><Field name={`drawFlaws.${index}.type`} className="table-input" /></td>
-                    <td><Field name={`drawFlaws.${index}.p1`} className="table-input" /></td>
-                    <td><Field name={`drawFlaws.${index}.p2`} className="table-input" /></td>
-                    <td><Field name={`drawFlaws.${index}.defectLen`} className="table-input" /></td>
-                    <td><Field name={`drawFlaws.${index}.actCuttingLen`} className="table-input" /></td>
-                    <td className="text-center">
-                      <button type="button" onClick={() => remove(index)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                )}
-                onAdd={(push) => push({ type: '', p1: '', p2: '', defectLen: '', actCuttingLen: '' })}
-              />
-
-              {/* PT Log Table */}
-              <TableSection 
-                title="Process Log (PT Log)" 
-                name="ptLogs"
-                headers={['Barcode/ID/Flaw', 'Length', 'Reason']}
-                renderRow={(index, remove) => (
-                  <tr key={index} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                    <td><Field name={`ptLogs.${index}.identifier`} className="table-input" /></td>
-                    <td><Field name={`ptLogs.${index}.length`} className="table-input" /></td>
-                    <td>
-                      <Field as="select" name={`ptLogs.${index}.reason`} className="table-input bg-transparent">
-                        <option value="OK">OK</option>
-                        <option value="PT Scrap">PT Scrap</option>
-                        <option value="Draw Scrap">Draw Scrap</option>
-                        <option value="PT Break Scrap">PT Break Scrap</option>
-                      </Field>
-                    </td>
-                    <td className="text-center">
-                      <button type="button" onClick={() => remove(index)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                )}
-                onAdd={(push) => push({ identifier: '', length: '', reason: 'OK' })}
-              />
+              </div>
+              {/* ══ end col 3 ══ */}
 
             </div>
-          </div>
-        </Form>
+          </Form>
+        </div>
       </div>
-     <p className="text-sm text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-md p-3">
-  <strong>Note:</strong> Some fields may not exactly match or may be missing in the UI.
-  This is expected, as we are still working to better understand and refine them.
-</p>
-      
-      {/* Table Styles */}
-      <style jsx>{`
-        .table-input {
-          @apply w-full p-2 bg-transparent text-sm focus:outline-none focus:bg-white transition-all;
-        }
-      `}</style>
     </FormikProvider>
   );
 };
-
-// UI Components
-const SectionCard = ({ title, icon, children }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-    <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex items-center gap-2">
-      {icon}
-      <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{title}</h3>
-    </div>
-    <div className="p-5">{children}</div>
-  </div>
-);
-
-const CustomInput = ({ label, name, icon, highlight, ...props }) => (
-  <div className="space-y-1">
-    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">{label}</label>
-    <div className="relative">
-      <Field
-        name={name}
-        className={`w-full rounded-xl border border-slate-200 p-2.5 text-sm transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none
-          ${icon ? 'pl-9' : ''} ${highlight ? 'bg-indigo-50 font-bold text-indigo-700 border-indigo-200' : 'bg-slate-50/50'}`}
-        {...props}
-      />
-      {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>}
-    </div>
-  </div>
-);
-
-const CustomSelect = ({ label, name, options }) => (
-  <div className="space-y-1">
-    <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">{label}</label>
-    <Field as="select" name={name} className="w-full rounded-xl border border-slate-200 p-2.5 text-sm bg-slate-50/50 focus:ring-2 focus:ring-indigo-500/20 outline-none">
-      {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-    </Field>
-  </div>
-);
-
-const TableSection = ({ title, name, headers, renderRow, onAdd }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-    <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-      <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{title}</h3>
-      <button 
-        type="button" 
-        className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        onClick={() => {}} // Handle addition via FieldArray's push passed in props usually
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
-    <div className="overflow-x-auto">
-      <FieldArray name={name}>
-        {({ push, remove, form }) => (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
-                {headers.map(h => <th key={h} className="px-3 py-2">{h}</th>)}
-                <th className="w-10 px-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {form.values[name].map((_, index) => renderRow(index, remove))}
-              <tr>
-                <td colSpan={headers.length + 1} className="p-2">
-                  <button 
-                    type="button"
-                    onClick={() => onAdd(push)}
-                    className="w-full py-2 border-2 border-dashed border-slate-100 rounded-lg text-slate-400 text-xs font-bold hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-500 transition-all"
-                  >
-                    + Add New Entry
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-      </FieldArray>
-    </div>  
-  </div>
-);
 
 export default PTAutomation;

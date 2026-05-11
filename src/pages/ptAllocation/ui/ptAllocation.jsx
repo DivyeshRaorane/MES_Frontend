@@ -58,6 +58,7 @@ const PTAllocation = () => {
                 <FormikInput  compact label="Preform ID"               name="preform_id"     placeholder="Automatic" readOnly />
                 <FormikInput  compact label="DT No"                    name="DT_No"          placeholder="Automatic" readOnly />
                 <FormikInput  compact label="Drawn Length"             name="Drawn_Length"   placeholder="Automatic" readOnly />
+                <FormikInput  compact label="Product Type"             name="product_Type"   placeholder="Automatic" readOnly />
                 <FormikSelect compact label="Select PT Strain"         name="pt_strain"      options={['Select Strain','Strain-A','Strain-B','Strain-C']} />
                 <FormikSelect compact label="Select PT Machine"        name="pt_machine"     options={['Select Machine','PT-MAC-01','PT-MAC-02','PT-MAC-03']} />
                 <FormikSelect compact label="Allocated By"             name="allocated_by"   options={['Select User','Divyesh','Senior Op','Manager']} />
