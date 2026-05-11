@@ -56,7 +56,7 @@ const PreformAcceptance = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 p-4 md:p-6 font-sans text-slate-800">
+    <div className="relative min-h-screen bg-slate-50 p-1 md:p-6 font-sans text-slate-800">
       <div className="max-w-full mx-auto">
         
         <FormHeader 
@@ -75,7 +75,7 @@ const PreformAcceptance = () => {
           {({ values, setFieldValue, resetForm }) => (
             <>
               <Form className="bg-white rounded-b-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <div className="p-4 md:p-8 space-y-10">
+                <div className="p-1 md:p-2 space-y-10">
                   
                   {/* --- Section 1: Basic Information --- */}
                   <div className="space-y-6">

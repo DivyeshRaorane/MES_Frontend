@@ -8,7 +8,7 @@ const Layout= ()=>{
       <Sidebar />
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+      <main className="flex-1 overflow-y-auto bg-slate-50 p-1">
         <Outlet /> {/* This is where your routed pages will render */}
       </main>
     </div>

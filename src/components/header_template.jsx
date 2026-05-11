@@ -38,8 +38,8 @@ const FormHeader = ({
   return (
     <div className="relative overflow-hidden bg-slate-900 rounded-t-2xl border-b border-white/10 shadow-2xl">
       {/* Decorative Background Elements */}
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl"></div>
+      <div className="absolute top-0 right-0 -mt-1 -mr-4 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 -mb-1 -ml-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl"></div>
 
       <div className="relative px-6 py-4 flex justify-between items-center bg-slate-900/50 backdrop-blur-sm">
         
