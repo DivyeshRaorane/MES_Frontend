@@ -183,8 +183,8 @@ const PrerformAllocation = () => {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <FormikInput compact label="Preform Type" name="preform_type" placeholder="e.g. 1" />
-                        <FormikSelect compact label="Product Type" name="product_type" options={['Operator A', 'Operator B', 'Supervisor X']} />
-                        <FormikSelect compact label="Process Type" name="process_type" options={['Operator A', 'Operator B', 'Supervisor X']} />
+                        <FormikSelect compact label="Product Type" name="product_type" options={['A', 'B', 'X']} />
+                        <FormikSelect compact label="Process Type" name="process_type" options={['A', 'B', 'X']} />
                       </div>
                       <FormikTextarea compact label="Process Remarks" name="remarks" placeholder="Enter observations..." rows={2} />
                     </div>

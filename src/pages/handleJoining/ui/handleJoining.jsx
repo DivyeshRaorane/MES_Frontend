@@ -96,10 +96,11 @@ const HandleJoining = () => {
                         <FormikInput key={d} compact label={`Dia ${i+1}`} name={d} type="number" placeholder="0.00" />
                       ))}
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-4 gap-1.5">
                       <FormikInput  compact label="Handle Length"   name="handleLen" type="number" />
                       <FormikInput  compact label="Handle Diameter" name="handleDia" type="number" />
                       <FormikSelect compact label="Handle Type"     name="handleType" options={['New','Rework']} />
+                      <FormikInput  compact label="Handle Number" name="handlenumber" type="number" />
                     </div>
                   </div>
                 </ModuleCard>

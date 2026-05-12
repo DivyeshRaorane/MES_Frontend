@@ -91,7 +91,7 @@ const PreformAcceptance = () => {
                       <div className="col-span-2">
                         <FormikInput compact label="Material Description" name="material_desc" />
                       </div>
-                      <FormikInput  compact label="Quantity"     name="qty"           type="number" />
+                    
                       <FormikSelect compact label="Preform Type" name="preform_type"   options={['G652D','G667A1','G657A2']} />
                     </div>
                   </ModuleCard>

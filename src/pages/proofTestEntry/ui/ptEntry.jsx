@@ -72,7 +72,7 @@ const initialValues = {
   running_strain: 'Strain-A', product_type: 'Single Mode',
   /* metrics */
   pt_done: '', be_scrap: '',
-  payoff_vibration: 'Normal', dancer_vibration: 'Normal', remark: '',
+  payoff_vibration: 'Normal', dancer_vibration: 'Normal',
   /* rejections */
   rejection_checked: false,            rejection_type: '',
   bal_draw_rej_unlocked: false,        bal_draw_rej_checked: false, bal_draw_remark: '',
@@ -125,12 +125,22 @@ const PTEntry = () => {
                         <FormikInput  compact label="Preform ID"        name="preform_id"        readOnly />
                         <FormikInput  compact label="Drawn Length (km)" name="drawn_length"       readOnly />
                         <FormikInput  compact label="DT No"             name="dt_no"              readOnly />
+                        <FormikInput  compact label="Drawn Date"  name="drawn_date"   type="date" />
                         <FormikInput  compact label="PT In Entry Date"  name="pt_in_entry_date"   type="date" />
                         <FormikInput  compact label="PT Bobbin No"      name="pt_bobbin_no"       placeholder="Scan bobbin..." />
                         <FormikInput  compact label="Barcode"           name="barcode"            placeholder="Scan..." />
+                        <FormikInput  compact label="Spool Status"           name="spool_status"            placeholder="Spool Status" />
                       </div>
                       {/* Drawn Remark — full width */}
                       <FormikTextarea compact label="Drawn Remark" name="drawn_remark" rows={2} placeholder="Auto-fetched..." />
+                      <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 transition-all h-[30px] self-end">
+                                            <Field
+                                              type="checkbox"
+                                              name="bobbin_Status"
+                                              className="w-3.5 h-3.5 rounded border-slate-300 accent-indigo-600"
+                                            />
+                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Bobbin Status Ok</span>
+                                          </label>
                       {/* PT ID — full width */}
                       <div className="flex flex-col gap-0.5">
                         <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">PT ID</label>
@@ -176,7 +186,7 @@ const PTEntry = () => {
                         </div>
                       </div>
                       {/* Remark — full width */}
-                      <FormikTextarea compact label="Remark" name="remark" rows={2} placeholder="Remarks..." />
+                      
                     </div>
                   </ModuleCard>
 
