@@ -127,6 +127,7 @@ const PTEntry = () => {
                         <FormikInput  compact label="DT No"             name="dt_no"              readOnly />
                         <FormikInput  compact label="Drawn Date"  name="drawn_date"   type="date" />
                         <FormikInput  compact label="PT In Entry Date"  name="pt_in_entry_date"   type="date" />
+                        <FormikInput  compact label="FID"  name="pt_fid"   type="text" />
                         <FormikInput  compact label="PT Bobbin No"      name="pt_bobbin_no"       placeholder="Scan bobbin..." />
                         <FormikInput  compact label="Barcode"           name="barcode"            placeholder="Scan..." />
                         <FormikInput  compact label="Spool Status"           name="spool_status"            placeholder="Spool Status" />
