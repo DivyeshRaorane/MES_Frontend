@@ -1,6 +1,6 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Monitor, Database, Layers, Activity, Wind, Table, Eye, Cpu } from 'lucide-react';
+import { Database, Layers, Activity, Table, Eye, Cpu } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { FormikSelect, FormikInput, FormikTextarea, ModuleCard } from '../../../components/common_fields';
 
@@ -12,7 +12,7 @@ const getCurrentShift = () => {
 };
 
 const dummyPitchData = [
-  { flowType: 'Standard',  startLength: 0,  endLength: 50,  pitchChange: 50 },
+  { flowType: 'Standard', startLength: 0, endLength: 50, pitchChange: 50 },
   { flowType: 'HighSpeed', startLength: 50, endLength: 120, pitchChange: 70 },
 ];
 
@@ -31,7 +31,9 @@ const initialValues = {
   pitchDetails: dummyPitchData,
   drawnBreak: false, breakReason: '', windingObs: '', scratchesObs: '',
   spoolChangeOver: '', dieClean: '',
+  processRemark: 'Select', drawBreakReason: '',
   totalPitchChangeLength: '120', totalScrap: '5.2',
+  trial:false,
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -52,73 +54,97 @@ const DrawSpoolEntry = () => (
                 icon={<Database size={13} className="text-blue-600" />}
               >
                 {/* inner scroll if viewport is very short */}
-                <div className="flex flex-col gap-2 overflow-y-auto h-full">
-                  <div className="grid grid-cols-3 gap-2">
-                    <FormikSelect compact label="Draw Tower"    name="drawTower"     options={['Select','Tower 1','Tower 2']} />
-                    <FormikInput  compact label="Preform ID"    name="preformId"     readOnly />
-                    <FormikInput  compact label="Preform Wt"    name="preformWeight" type="number" step="0.01" />
-                    <FormikSelect compact label="Preform Type"  name="preformType"   options={['Select','Type A','Type B']} />
-                    <FormikSelect compact label="Product Type"  name="productType"   options={['Select','Single Mode','Multi Mode']} />
-                    <FormikInput  compact label="Spool ID"      name="spoolId" />
-                    <FormikInput  compact label="Entry Date"    name="entryDate"     type="date" />
-                    <FormikInput  compact label="Shift"         name="shift"         readOnly />
-                    <FormikInput  compact label="Drawn Length"  name="drawnLength"   type="number" />
-                    <FormikInput  compact label="Start Date"    name="startDate"     type="date" />
-                    <FormikInput  compact label="Start Time"    name="startTime"     type="time" />
-                    <FormikInput  compact label="End Date"      name="endDate"       type="date" />
-                    <FormikInput  compact label="End Time"      name="endTime"       type="time" />
-                    <FormikSelect compact label="Winding Obs"   name="windingObs"    options={['Select','Poor','Good']} />
-                    <FormikSelect compact label="Scratches Obs" name="scratchesObs"  options={['Select','Nil','Minor','Major']} />
-                    <FormikSelect compact label="Die Clean"     name="dieClean"      options={['Select','Yes','No']} />
-                    <FormikSelect compact label="Spool Status"  name="spoolStatus"   options={['OK','Not OK']} />
+                <div className="flex flex-col gap-1 overflow-y-auto h-full">
+                  <div className="grid grid-cols-3 gap-1">
+                    <FormikSelect compact label="Draw Tower" name="drawTower" options={['Select', 'Tower 1', 'Tower 2']} />
+                    <FormikInput compact label="Preform ID" name="preformId" readOnly />
+                    <FormikInput compact label="Preform Wt" name="preformWeight" type="number" step="0.01" />
+                    <FormikSelect compact label="Preform Type" name="preformType" options={['Select', 'Type A', 'Type B']} />
+                    <FormikSelect compact label="Product Type" name="productType" options={['Select', 'Single Mode', 'Multi Mode']} />
+                    <FormikInput compact label="Spool ID" name="spoolId" />
+                    <FormikInput compact label="Entry Date" name="entryDate" type="date" />
+                    <FormikInput compact label="Shift" name="shift" readOnly />
+                    <FormikInput compact label="Drawn Weight" name="drawnweight" type="number" />
+                    <FormikInput compact label="Drawn Length" name="drawnLength" type="number" />
+                    <FormikSelect compact label="Winding Obs" name="windingObs" options={['Select', 'Poor', 'Good']} />
+                    <FormikSelect compact label="Scratches Obs" name="scratchesObs" options={['Select', 'Nil', 'Minor', 'Major']} />
+                    <FormikInput compact label="Top End Scrap" name="drawnLength" type="number" />
+                    <FormikInput compact label="Bottom End Scrap" name="drawnLength" type="number" />
+                    <FormikInput compact label="Balance weight" name="drawnLength" type="number" />
+                    <FormikSelect compact label="Die Clean" name="dieClean" options={['Select', 'Yes', 'No']} />
+                    <FormikInput compact label="Start Date" name="startDate" type="date" />
+                    <FormikInput compact label="Start Time" name="startTime" type="time" />
+                    <FormikInput compact label="End Date" name="endDate" type="date" />
+                    <FormikInput compact label="End Time" name="endTime" type="time" />
+                    <FormikSelect compact label="Spool Status" name="spoolStatus" options={['OK', 'Not OK']} />
                     {values.spoolStatus === 'Not OK' && (
-                      <FormikSelect compact label="Drawn Spool" name="drawnSpool"   options={['Select','Scrap','Hold','Rework']} />
+                      <FormikSelect compact label="Drawn Spool" name="drawnSpool" options={['Select', 'Scrap', 'Hold', 'Rework']} />
                     )}
                     {/* Work Details fields */}
-                    <FormikSelect compact label="Shift Incharge"   name="shiftIncharge"   options={['Select','Incharge A','Incharge B']} />
-                    <FormikSelect compact label="Furnace Operator" name="furnaceOperator" options={['Select','Operator 1','Operator 2']} />
-                    <FormikSelect compact label="Die Operator"     name="dieOperator"     options={['Select','Op 3','Op 4']} />
-                    <FormikSelect compact label="Rampup Operator"  name="rampupOperator"  options={['Select','Op 5','Op 6']} />
-                    <FormikSelect compact label="StartUp Operator" name="startupOperator" options={['Select','Op 7','Op 8']} />
+                    <FormikSelect compact label="Shift Incharge" name="shiftIncharge" options={['Select', 'Incharge A', 'Incharge B']} />
+                    <FormikSelect compact label="Furnace Operator" name="furnaceOperator" options={['Select', 'Operator 1', 'Operator 2']} />
+                    <FormikSelect compact label="Die Operator" name="dieOperator" options={['Select', 'Op 3', 'Op 4']} />
+                    <FormikSelect compact label="Rampup Operator" name="rampupOperator" options={['Select', 'Op 5', 'Op 6']} />
+                    <FormikSelect compact label="StartUp Operator" name="startupOperator" options={['Select', 'Op 7', 'Op 8']} />
                   </div>
-                  <FormikTextarea compact label="Remark" name="remark" rows={2} placeholder="Enter remarks..." />
+                  <FormikTextarea compact label="Process Remark" name="remark" rows={2} placeholder="Enter remarks..." />
                 </div>
               </ModuleCard>
 
               {/* ══ COL 2: Coating | Process Params | Gas Flow ══ */}
-              <div className="flex flex-col gap-3 min-h-0">
+              <div className="flex flex-col gap-2 min-h-0">
 
                 <ModuleCard compact title="Coating & Batch" icon={<Layers size={13} className="text-indigo-600" />}>
-                  <div className="grid grid-cols-3 gap-2">
-                    <FormikInput  compact label="Primary Coat"    name="primaryCoat"   readOnly />
-                    <FormikInput  compact label="Secondary Coat"  name="secondaryCoat" readOnly />
-                    <FormikInput  compact label="Prim Press"      name="primPress" />
-                    <FormikInput  compact label="Sec Press"       name="secPress" />
-                    <FormikSelect compact label="Prim Coat Batch" name="primCoatBatch" options={['Select','Batch-01','Batch-02']} />
-                    <FormikSelect compact label="Sec Coat Batch"  name="secCoatBatch"  options={['Select','S-Batch-01','S-Batch-02']} />
+                  <div className="grid grid-cols-3 gap-1">
+                    <FormikInput compact label="Primary Coat" name="primaryCoat" readOnly />
+                    <FormikInput compact label="Secondary Coat" name="secondaryCoat" readOnly />
+                    <FormikSelect compact label="Coating Type" name="coating_type" options={['Select', 'Batch-01', 'Batch-02']} />
+                    <FormikInput compact label="Prim Press" name="primPress" />
+                    <FormikInput compact label="Sec Press" name="secPress" />
+                    <FormikSelect compact label="Prim Coat Batch" name="primCoatBatch" options={['Select', 'Batch-01', 'Batch-02']} />
+                    <FormikSelect compact label="Sec Coat Batch" name="secCoatBatch" options={['Select', 'S-Batch-01', 'S-Batch-02']} />
+                    <FormikInput compact label="Process Type" name="process_type" />
                   </div>
                 </ModuleCard>
 
                 <ModuleCard compact title="Process Parameters" icon={<Activity size={13} className="text-emerald-600" />}>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1">
                     <FormikInput compact label="Draw Line Speed" name="drawLineSpeed" type="number" />
                     <FormikInput compact label="Draw Tension"    name="drawTension"   type="number" />
                     <FormikInput compact label="Furnace Power"   name="furnacePower"  type="number" />
                     <FormikInput compact label="Pre. Sequence"   name="preSequence"   type="number" />
+                    <FormikInput compact label="Furnace Argon"   name="furnaceArgon" />
+                    <FormikInput compact label="Furnace He"      name="furnaceHe" />
+                    <FormikInput compact label="Tube He"         name="tubeHe" />
+                    <FormikInput compact label="CO2 Flow"        name="co2Flow" />
+                    <FormikInput compact label="UV N2"           name="uvN2" />
+                    <FormikInput compact label="UV Air"          name="uvAir" />
+                    {/* Remark + conditional Draw Break Reason in same row */}
+                    <FormikSelect compact label="Remark" name="processRemark"
+                      options={['Select','OK','Not OK']} />
+                    {values.processRemark === 'Not OK' && (
+                      <FormikSelect compact label="Draw Break Reason" name="drawBreakReason"
+                        options={['Select','Tension High','Gas Issue','Bubble','Coating Defect','Other']} />
+                    )}
                   </div>
                 </ModuleCard>
 
-                <ModuleCard compact title="Gas Flow" icon={<Wind size={13} className="text-sky-600" />}>
-                  <div className="grid grid-cols-3 gap-2">
-                    <FormikInput compact label="Furnace Argon" name="furnaceArgon" />
-                    <FormikInput compact label="Furnace He"    name="furnaceHe" />
-                    <FormikInput compact label="Tube He"       name="tubeHe" />
-                    <FormikInput compact label="CO2 Flow"      name="co2Flow" />
-                    <FormikInput compact label="UV N2"         name="uvN2" />
-                    <FormikInput compact label="UV Air"        name="uvAir" />
+                {/* Indication + Trial */}
+                <ModuleCard compact title="Additional" icon={<Activity size={13} className="text-slate-500" />}>
+                  <div className="grid grid-cols-3 gap-1 items-end">
+                    <FormikSelect compact label="Indication Fiber Cut" name="indication_fiber_cut"
+                      options={['Select','Cut','Sample','Break']} />
+                    {/* Trial checkbox — styled consistently */}
+                    <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 transition-all h-[30px] self-end">
+                      <Field
+                        type="checkbox"
+                        name="trial"
+                        className="w-3.5 h-3.5 rounded border-slate-300 accent-indigo-600"
+                      />
+                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Trial</span>
+                    </label>
                   </div>
                 </ModuleCard>
-
               </div>
 
               {/* ══ COL 3: PitchChange | Observations | Totals + Actions ══ */}
@@ -142,7 +168,7 @@ const DrawSpoolEntry = () => (
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-50">
                       <tr>
-                        {['Flow Type','Start Len','End Len','Pitch Kms'].map(h => (
+                        {['Flow Type', 'Start Len', 'End Len', 'Pitch Kms'].map(h => (
                           <th key={h} className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
                         ))}
                       </tr>
@@ -172,34 +198,30 @@ const DrawSpoolEntry = () => (
 
                 {/* Observations & Break */}
                 <ModuleCard compact title="Observations & Break" icon={<Eye size={13} className="text-red-600" />}>
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Field
-                        type="checkbox"
-                        name="drawnBreak"
-                        className="w-4 h-4 rounded border-slate-300 text-indigo-600"
-                      />
-                      <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">Drawn Break Occurred?</span>
-                    </label>
-                    {values.drawnBreak && (
-                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                        <FormikSelect compact label="Break Reason"      name="breakReason"    options={['Select','Tension High','Gas Issue','Bubble']} />
-                        <FormikSelect compact label="Spool Change Over" name="spoolChangeOver" options={['Select','Auto','Manual']} />
-                      </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikSelect compact label="Spool Change Over" name="spoolChangeOver"
+                      options={['Select', 'Yes', 'No']} />
+                    {values.spoolChangeOver === 'Yes' && (
+                      <FormikSelect compact label="Break Reason" name="breakReason"
+                        options={['Select', 'Tension High', 'Gas Issue', 'Bubble', 'Coating Defect', 'Other']} />
                     )}
                   </div>
                 </ModuleCard>
 
                 {/* Totals + Action buttons */}
-                <div className="flex flex-col gap-2 mt-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="px-3 py-2 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col">
-                      <span className="text-[9px] font-bold text-indigo-400 uppercase">Total Pitch Change Length</span>
+                <div className="flex flex-col gap-2 mt-1">
+                  <div className="grid grid-cols-3 gap-1">
+                    <div className="px-1 py-1 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col">
+                      <span className="text-[7px] font-bold text-indigo-400 uppercase">Total Pitch Change Length</span>
                       <span className="text-base font-black text-indigo-700">{values.totalPitchChangeLength} Kms</span>
                     </div>
-                    <div className="px-3 py-2 bg-rose-50 rounded-xl border border-rose-100 flex flex-col">
-                      <span className="text-[9px] font-bold text-rose-400 uppercase">Total Scrap</span>
+                    <div className="px-1 py-1 bg-rose-50 rounded-xl border border-rose-100 flex flex-col">
+                      <span className="text-[7px] font-bold text-rose-400 uppercase">Total Scrap</span>
                       <span className="text-base font-black text-rose-700">{values.totalScrap} Kg</span>
+                    </div>
+                    <div className="px-1 py-1 bg-rose-50 rounded-xl border border-rose-100 flex flex-col">
+                      <span className="text-[7px] font-bold text-Slate-400 uppercase">Drawn Breaks</span>
+                      <span className="text-base font-black text-slate-700">{values?.k || 50} mm</span>
                     </div>
                   </div>
                   <div className="flex justify-between gap-3">

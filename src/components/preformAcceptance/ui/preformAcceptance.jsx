@@ -21,8 +21,8 @@ const modalColumns = [
 ];
 
 const initialValues = {
-  preformId: '', weight: '', material_code: '', qty: '',
-  material_desc: '', productType: 'Standard',
+  preformId: '', preform_weight: '',charge_weight: '',charge_length: '',preform_length: '', material_code: '',drawing_length:'',
+  material_desc: '', preform_type: 'Standard',
   preformDia: '', topDia: '', bottomDia: '', coneLength: '',
   diaVariation: '', cutOff: '', mfd: '',
   accepted_by: '',
@@ -81,14 +81,18 @@ const PreformAcceptance = () => {
                         </div>
                       </div>
 
-                      <FormikInput compact label="Weight (kg)"   name="weight"        type="number" />
+                      <FormikInput compact label="Preform Weight (kg)"   name="preform_weight"        type="number" />
+                      <FormikInput compact label="Charge Weight (kg)"   name="charge_weight"        type="number" />
+                      <FormikInput compact label="Preform Length (mm)"   name="preform_length"        type="number" />
+                      <FormikInput compact label="Charge Length (mm)"   name="charge_length"        type="number" />
+                      <FormikInput compact label="Drawing Length(km)"   name="drawing_length"        type="number" />
                       <FormikInput compact label="Material Code" name="material_code"  type="number" />
 
                       <div className="col-span-2">
                         <FormikInput compact label="Material Description" name="material_desc" />
                       </div>
                       <FormikInput  compact label="Quantity"     name="qty"           type="number" />
-                      <FormikSelect compact label="Product Type" name="productType"   options={['Standard','Premium','Custom']} />
+                      <FormikSelect compact label="Preform Type" name="preform_type"   options={['G652D','G667A1','G657A2']} />
                     </div>
                   </ModuleCard>
 

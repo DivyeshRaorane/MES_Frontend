@@ -37,8 +37,7 @@ const MENU = [
     color: 'text-purple-400',
     children: [
       { label: 'PT Allocation',   path: '/prooftesting/ptallocation' },
-      { label: 'Proof Test Entry',path: '/prooftesting/ptentry' },
-      { label: 'Automation',      path: '/prooftesting/ptautomation' },
+      { label: 'PT Entry',        path: '/prooftesting/ptentry' },
       { label: 'REW/COL Entry',   path: '/prooftesting/rewcolztentry' },
       { label: 'Reports',         path: '/prooftesting/ptreport' },
     ],

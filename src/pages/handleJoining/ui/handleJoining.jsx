@@ -18,7 +18,7 @@ const HandleJoining = () => {
 
   const initialValues = {
     preformId: '',
-    wt: 'Automatic', dia: 'Automatic', cutoff: 'Automatic', mfd: 'Automatic',
+    wt: 'Automatic', dia: 'Automatic', cutoff: 'Automatic', mfd: 'Automatic',preform_type: 'Automatic',
     dia1: '', dia2: '', dia3: '', dia4: '', dia5: '',
     handleLen: '', handleDia: '', handleType: 'New',
     remarks: '',
@@ -74,7 +74,7 @@ const HandleJoining = () => {
                     </div>
                     {/* Auto fields */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                      {['wt', 'dia', 'cutoff', 'mfd'].map((f) => (
+                      {['wt', 'dia', 'cutoff', 'mfd','preform_type'].map((f) => (
                         <div key={f} className="flex justify-between items-center">
                           <span className="text-[9px] font-bold text-slate-400 uppercase">{f}</span>
                           <span className="text-[11px] font-semibold text-slate-700">{values[f]}</span>

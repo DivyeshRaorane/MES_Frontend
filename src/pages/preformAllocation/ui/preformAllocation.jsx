@@ -6,9 +6,9 @@ import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
 /* ── Mock data ── */
 const INITIAL_WIP = [
-  { id: 'TEF524220', weight: 54.041, batch: 'B-9921' },
-  { id: 'TEF524195', weight: 55.952, batch: 'B-8832' },
-  { id: 'TEF524194', weight: 60.997, batch: 'B-7710' },
+  { id: 'TEF524220', weight: 54.041, batch: 'B-9921', drawing_length: '578' },
+  { id: 'TEF524195', weight: 55.952, batch: 'B-8832', drawing_length: '578' },
+  { id: 'TEF524194', weight: 60.997, batch: 'B-7710', drawing_length: '578' },
 ];
 
 const INITIAL_ALLOCS = [
@@ -30,8 +30,8 @@ const FORM_INIT = {
 /* ══════════════════════════════════════════════════════════ */
 const PrerformAllocation = () => {
   const [selectedPreform, setSelectedPreform] = useState(null);
-  const [wipData]        = useState(INITIAL_WIP);
-  const [allocations]    = useState(INITIAL_ALLOCS);
+  const [wipData] = useState(INITIAL_WIP);
+  const [allocations] = useState(INITIAL_ALLOCS);
 
   const handleSubmit = (values, { resetForm }) => {
     console.log('Payload:', { ...values, preformId: selectedPreform.id });
@@ -76,11 +76,10 @@ const PrerformAllocation = () => {
                           <button
                             type="button"
                             onClick={() => setSelectedPreform(item)}
-                            className={`p-1 rounded-lg transition-all ${
-                              selectedPreform?.id === item.id
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white'
-                            }`}
+                            className={`p-1 rounded-lg transition-all ${selectedPreform?.id === item.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white'
+                              }`}
                           >
                             <Plus size={13} />
                           </button>
@@ -124,14 +123,12 @@ const PrerformAllocation = () => {
           </div>
 
           {/* ── Row 2: Entry Form ── */}
-          <div className={`flex-1 min-h-0 rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300 ${
-            selectedPreform ? 'border-blue-300 shadow-lg' : 'border-slate-200 opacity-60'
-          }`}>
+          <div className={`flex-1 min-h-0 rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300 ${selectedPreform ? 'border-blue-300 shadow-lg' : 'border-slate-200 opacity-60'
+            }`}>
 
             {/* Form header bar */}
-            <div className={`px-4 py-2.5 flex justify-between items-center transition-colors duration-300 ${
-              selectedPreform ? 'bg-blue-900' : 'bg-slate-700'
-            }`}>
+            <div className={`px-4 py-2.5 flex justify-between items-center transition-colors duration-300 ${selectedPreform ? 'bg-blue-900' : 'bg-slate-700'
+              }`}>
               <div className="flex items-center gap-3">
                 <div className={`p-1.5 rounded-lg ${selectedPreform ? 'bg-blue-700' : 'bg-slate-600'}`}>
                   <Keyboard size={15} className="text-white" />
@@ -142,8 +139,9 @@ const PrerformAllocation = () => {
                   </h2>
                   {selectedPreform && (
                     <p className="text-blue-200 text-[10px] font-medium">
-                      Stock Weight: {selectedPreform.weight} KG
+                      Stock Weight: {selectedPreform.weight} KG || Drawing Length : {selectedPreform.drawing_length}
                     </p>
+
                   )}
                 </div>
               </div>
@@ -175,13 +173,20 @@ const PrerformAllocation = () => {
                         <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Logistics &amp; Tracking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <FormikInput  compact label="Allocation Date" name="entryDate" type="date" />
-                        <FormikSelect compact label="Tower Line (DT)" name="dtNo"      options={['DT01','DT02','DT03','DT10']} />
-                        <FormikSelect compact label="Working Shift"   name="shift"     options={['A','B','C']} />
-                        <FormikInput  compact label="Sequence No"     name="seq"       placeholder="e.g. 1" />
+                        <FormikInput compact label="Allocation Date" name="entryDate" type="date" />
+                        <FormikSelect compact label="Tower Line (DT)" name="dtNo" options={['DT01', 'DT02', 'DT03', 'DT10']} />
                       </div>
-                      <FormikSelect  compact label="Loading Operator" name="loadedBy"  options={['Operator A','Operator B','Supervisor X']} />
-                      <FormikTextarea compact label="Process Remarks" name="remarks"   placeholder="Enter observations..." rows={2} />
+                      <div className="grid grid-cols-3 gap-2">
+                        <FormikSelect compact label="Working Shift" name="shift" options={['A', 'B', 'C']} />
+                        <FormikInput compact label="Sequence No" name="seq" placeholder="e.g. 1" />
+                        <FormikSelect compact label="Loading Operator" name="loadedBy" options={['Operator A', 'Operator B', 'Supervisor X']} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <FormikInput compact label="Preform Type" name="preform_type" placeholder="e.g. 1" />
+                        <FormikSelect compact label="Product Type" name="product_type" options={['Operator A', 'Operator B', 'Supervisor X']} />
+                        <FormikSelect compact label="Process Type" name="process_type" options={['Operator A', 'Operator B', 'Supervisor X']} />
+                      </div>
+                      <FormikTextarea compact label="Process Remarks" name="remarks" placeholder="Enter observations..." rows={2} />
                     </div>
 
                     {/* Right: Measurements */}
@@ -191,7 +196,7 @@ const PrerformAllocation = () => {
                         <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Measurements (MM)</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        {[1,2,3,4,5].map(i => (
+                        {[1, 2, 3, 4, 5].map(i => (
                           <FormikInput key={i} compact label={`Dia ${i}`} name={`dia${i}`} type="number" placeholder="0.00" />
                         ))}
                         <FormikInput compact label="Cone L" name="coneL" type="number" placeholder="0.00" />
