@@ -1,122 +1,163 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { 
-  Scan, Layers, Ruler, Palette, Settings, MessageSquare, 
-  CheckSquare, Info, Save, LogOut, Activity, ArrowRightLeft,
-  ChevronRight, ListChecks
-} from 'lucide-react';
+import { Layers, ListChecks, Ruler } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
-const RewindingEntry = () => {
-  const initialValues = {
-    barcodeId: '',
-    fid: 'FID-99283', // Auto-fetched
-    machineNo: 'MC-04', // Auto-fetched
-    colour: 'Blue', // Auto-fetched
-    length: '1200', // Auto-fetched
-    colourBatchCode: 'CBC-X1', // Auto-fetched
-    rewType: 'Standard', // Auto-fetched
-    rwReason: '',
-    remark: '', // Added missing field
-    bottomEndChecked: false, // Added missing checkbox
-    scrapLen: '',
-    opr: '',
-    bobbinType: '',
-    bobbinColour: '',
-    lengthDetails: Array(8).fill({ length: '', fid: '', barcode: '', startPos: '', endPos: '' }),
-    instructions: Array(8).fill({ checked: false, instruction: '', lengthKm: '' })
-  };
+/* ── Compact table-cell input ── */
+const TCell = ({ name, type = 'text' }) => (
+  <Field name={name} type={type}
+    className="w-full bg-transparent px-1.5 py-1 text-xs focus:outline-none focus:bg-white rounded transition-all" />
+);
 
-  return (
-    <div className="min-h-screen bg-[#f0f2f5] p-4 lg:p-6 font-sans text-slate-900">
-      <div className="max-w-[1600px] mx-auto space-y-6">
-        
-        <Formik initialValues={initialValues} onSubmit={(v) => console.log(v)}>
-          {({ values }) => (
-            <Form className="space-y-6">
-              
-              {/* Header & Main Parameters */}
-              <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <InputGroup label="Enter Barcode ID" name="barcodeId" icon={Scan} />
-                  <InputGroup label="FID" name="fid" icon={Layers} readOnly variant="yellow" />
-                  <InputGroup label="Machine No" name="machineNo" icon={Settings} readOnly variant="yellow" />
-                  <InputGroup label="Colour" name="colour" icon={Palette} readOnly variant="yellow" />
-                  <InputGroup label="Length" name="length" icon={Ruler} readOnly variant="yellow" />
-                  <InputGroup label="Colour Batch Code" name="colourBatchCode" icon={Info} readOnly variant="yellow" />
-                  <InputGroup label="Rew Type" name="rewType" icon={Activity} readOnly variant="yellow" />
-                  <InputGroup label="Rw Reason" name="rwReason" icon={ArrowRightLeft} />
-                  
-                  {/* Missing Fields Added Here */}
-                  <InputGroup label="Remark" name="remark" icon={MessageSquare} />
-                  <div className="flex flex-col justify-end pb-1">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Bottom End</label>
-                    <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-xl cursor-pointer hover:bg-slate-100 transition-all">
-                      <Field type="checkbox" name="bottomEndChecked" className="w-5 h-5 rounded border-slate-300 text-blue-600" />
-                      <span className="text-sm font-bold text-slate-700">Checked</span>
-                    </label>
+const initialValues = {
+  spool_id: '',
+  colour: 'Blue',          // auto
+  colour_barcode: 'CBC-X1',        // auto
+  rew_reason: '',
+  length: '',
+  rew_type: '',
+  remark: '',
+  machine_no: '',
+  fid: '',              // auto after click
+  scrap_length: '',
+  bobbin_type: '',
+  operator: '',
+  bobbin_colour: '',
+  instructions: Array(8).fill(null).map(() => ({ checked: false, instruction: '', length_km: '' })),
+  length_details: Array(8).fill(null).map(() => ({ length: '', fid: '', barcode: '', start_pos: '', end_pos: '' })),
+};
+
+const RewindingEntry = () => (
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden">
+      <Formik initialValues={initialValues} onSubmit={(v) => { console.log('Rewinding Submit:', v); alert('Saved!'); }}>
+        {({ resetForm }) => (
+          <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
+
+            {/* ── Row 1: All form fields in 3 cards ── */}
+            <div className="grid grid-cols-3 gap-2 flex-shrink-0">
+
+              {/* Card 1: Spool & Identification */}
+              <ModuleCard compact title="Spool & Identification" icon={<Layers size={12} className="text-blue-600" />}>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="col-span-2 flex items-end gap-1.5">
+                    <div className="flex-1">
+                      <FormikInput compact label="Spool ID" name="spool_id" placeholder="Enter spool ID..." />
+                    </div>
+                    <button type="button"
+                      className="px-3 py-1.5 bg-indigo-600 text-white text-[8px] font-bold rounded uppercase hover:bg-indigo-700 h-[28px] whitespace-nowrap">
+                      Fetch
+                    </button>
                   </div>
+                  <FormikInput compact label="Colour" name="colour" readOnly />
+                  <FormikInput compact label="Colour Batc Code" name="colour_barcode" readOnly />
+                  <FormikSelect compact label="Rew Reason" name="rew_reason" options={['Select', 'Attn High', 'MFD Fail', 'Customer Req', 'Other']} />
+                  <FormikInput compact label="Length" name="length" type="number" placeholder="0.000" />
+                  <FormikSelect compact label="Rew Type" name="rew_type" options={['Select', 'Standard', 'Premium', 'Custom']} />
+                  <FormikSelect compact label="Machine No" name="machine_no" options={['Select', 'MC-01', 'MC-02', 'MC-03', 'MC-04']} />
                 </div>
-              </div>
+              </ModuleCard>
 
-              {/* Enhanced Tables Section */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                
-                {/* Length Allocation Table (Left) */}
-                <div className="xl:col-span-8 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-                  <div className="bg-slate-800 px-6 py-3 flex items-center gap-2">
-                    <Ruler size={16} className="text-blue-400" />
-                    <span className="text-xs font-black uppercase text-white tracking-widest">Length Allocation Details</span>
+              {/* Card 2: FID & Scrap */}
+              <ModuleCard compact title="FID & Scrap" icon={<Ruler size={12} className="text-indigo-600" />}>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="col-span-2 flex items-end gap-1.5">
+                    <div className="flex-1">
+                      <FormikInput compact label="FID" name="fid" readOnly placeholder="Click to generate..." />
+                    </div>
+                    <button type="button"
+                      className="px-3 py-1.5 bg-amber-500 text-white text-[8px] font-bold rounded uppercase hover:bg-amber-600 h-[28px] whitespace-nowrap">
+                      Get FID
+                    </button>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="text-[10px] font-black text-slate-500 uppercase bg-slate-100">
-                          <th className="px-4 py-3 border-r border-slate-200">Optlen (m)</th>
-                          <th className="px-4 py-3 border-r border-slate-200">Length</th>
-                          <th className="px-4 py-3 border-r border-slate-200">FID</th>
-                          <th className="px-4 py-3 border-r border-slate-200 bg-yellow-100 text-yellow-800">Barcode/Scrap ID</th>
-                          <th className="px-4 py-3 border-r border-slate-200 bg-emerald-100 text-emerald-800">Start Pos</th>
-                          <th className="px-4 py-3 bg-emerald-100 text-emerald-800">End Pos</th>
+                  <FormikInput compact label="Scrap Length" name="scrap_length" type="number" placeholder="0.000" />
+                  <FormikSelect compact label="Bobbin Type" name="bobbin_type" options={['Select', 'Type A', 'Type B', 'Type C']} />
+                  <FormikSelect compact label="Operator" name="operator" options={['Select', 'Operator A', 'Operator B', 'Operator C']} />
+                  <FormikSelect compact label="Bobbin Colour" name="bobbin_colour" options={['Select', 'Red', 'Blue', 'Green', 'Yellow', 'White']} />
+                  <div className="flex-1 col-span-3 overflow-y-auto max-h-25 border rounded">
+                    <table className="text-[10px] w-full overflow-y-auto border-collapse">
+                      <thead className="bg-slate-50 text">
+                        <tr>
+                          <th className="sticky top-0 bg-slate-50 p-2 text-left">
+                          DFG123
+                          </th>
+                          <th className="sticky top-0 bg-slate-50 p-2 text-left">
+                            Rewinding
+                          </th>
+                          <th className="sticky top-0 bg-slate-50 p-2 text-left">
+                            Scrap
+                          </th>
+                          <th className="sticky top-0 bg-slate-50 p-2 text-left">
+                            Balance
+                          </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {values.lengthDetails.map((_, i) => (
-                          <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                            <td className="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50/50 border-r border-slate-100 text-center">{i + 1}</td>
-                            <td className="p-1 border-r border-slate-100"><Field name={`lengthDetails.${i}.length`} className="w-full p-2 text-sm outline-none bg-transparent" /></td>
-                            <td className="p-1 border-r border-slate-100"><Field name={`lengthDetails.${i}.fid`} className="w-full p-2 text-sm outline-none bg-transparent" /></td>
-                            <td className="p-1 border-r border-slate-100 bg-yellow-50/50"><Field name={`lengthDetails.${i}.barcode`} className="w-full p-2 text-sm outline-none bg-transparent font-bold" /></td>
-                            <td className="p-1 border-r border-slate-100 bg-emerald-50/50"><Field name={`lengthDetails.${i}.startPos`} className="w-full p-2 text-sm outline-none bg-transparent" /></td>
-                            <td className="p-1 bg-emerald-50/50"><Field name={`lengthDetails.${i}.endPos`} className="w-full p-2 text-sm outline-none bg-transparent" /></td>
-                          </tr>
-                        ))}
+
+                      <tbody>
+                        <tr>
+                          <td className="p-2 border-t">455</td>
+                          <td className="p-2 border-t">455</td>
+                          <td className="p-2 border-t">475</td>
+                          <td className="p-2 border-t">477</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2 border-t">505</td>
+                          <td className="p-2 border-t">475</td>
+                          <td className="p-2 border-t">477</td>
+                          <td className="p-2 border-t">505</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
+              </ModuleCard>
 
-                {/* Rewinding Instruction Table (Right) */}
-                <div className="xl:col-span-4 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden h-fit">
-                  <div className="bg-slate-800 px-6 py-3 flex items-center gap-2">
-                    <ListChecks size={16} className="text-orange-400" />
-                    <span className="text-xs font-black uppercase text-white tracking-widest">Rewinding Instruction</span>
-                  </div>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="text-[10px] font-black text-slate-500 uppercase bg-slate-100">
-                        <th className="px-4 py-3 border-r border-slate-200 w-12 text-center">✔</th>
-                        <th className="px-4 py-3 border-r border-slate-200">Instruction</th>
-                        <th className="px-4 py-3">Length (km)</th>
+              {/* Card 3: Remark */}
+              <div>
+              <ModuleCard compact title="Remarks" icon={<ListChecks size={12} className="text-emerald-600" />}>
+              <FormikTextarea compact label="Q Remark" name="q_remark" rows={4.5} placeholder="Auto Fetched Remark..." />
+                <FormikTextarea compact label="Remark" name="remark" rows={4.5} placeholder="Enter process remarks..." />
+              </ModuleCard>
+              </div>
+            </div>
+
+            {/* ── Action Buttons ── */}
+            <div className="flex justify-between gap-2 flex-shrink-0">
+              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              <SubmitButton compact type="submit">Submit Process</SubmitButton>
+            </div>
+
+            {/* ── Row 2: Two Tables ── */}
+            <div className="grid grid-cols-[1.8fr_1fr] gap-2 flex-1 min-h-0">
+
+              {/* Length Allocation Table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
+                  <Ruler size={12} className="text-blue-600" />
+                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Length Allocation Details</span>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-slate-50 z-10">
+                      <tr className="border-b border-slate-200">
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase w-8">#</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase">Length</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase">FID</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-amber-600 uppercase bg-amber-50">Barcode / Scrap ID</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-emerald-600 uppercase bg-emerald-50">Start Pos</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-emerald-600 uppercase bg-emerald-50">End Pos</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {values.instructions.map((_, i) => (
-                        <tr key={i} className="hover:bg-slate-50 transition-colors">
-                          <td className="p-2 text-center border-r border-slate-100">
-                            <Field type="checkbox" name={`instructions.${i}.checked`} className="w-4 h-4 rounded text-blue-600" />
-                          </td>
-                          <td className="p-1 border-r border-slate-100"><Field name={`instructions.${i}.instruction`} className="w-full p-2 text-sm outline-none" /></td>
-                          <td className="p-1"><Field name={`instructions.${i}.lengthKm`} className="w-full p-2 text-sm outline-none" /></td>
+                    <tbody className="divide-y divide-slate-100">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                          <td className="px-2 py-1 text-[9px] font-bold text-slate-400 text-center bg-slate-50/50">{i + 1}</td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`length_details.${i}.length`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`length_details.${i}.fid`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100 bg-amber-50/40"><TCell name={`length_details.${i}.barcode`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100 bg-emerald-50/40"><TCell name={`length_details.${i}.start_pos`} /></td>
+                          <td className="px-1 py-1 bg-emerald-50/40"><TCell name={`length_details.${i}.end_pos`} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -124,53 +165,49 @@ const RewindingEntry = () => {
                 </div>
               </div>
 
-              {/* Bottom Details & Submission */}
-              <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                  <InputGroup label="Scrap Len (M)" name="scrapLen" icon={ChevronRight} />
-                  <InputGroup label="Bobbin Type" name="bobbinType" icon={Layers} />
-                  <InputGroup label="Opr" name="opr" icon={CheckSquare} />
-                  <InputGroup label="Bobbin Colour" name="bobbinColour" icon={Palette} />
-                  
-                  <div className="lg:col-span-4 flex justify-end gap-3 pt-4 border-t border-slate-100">
-                    <button type="submit" className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-3 rounded-xl font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95">
-                      <Save size={18} /> Submit Process
-                    </button>
-                    <button type="button" className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-10 py-3 rounded-xl font-bold transition-all">
-                      <LogOut size={18} /> Exit
-                    </button>
-                  </div>
+              {/* Rewinding Instructions Table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
+                  <ListChecks size={12} className="text-orange-500" />
+                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Rewinding Instructions</span>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-slate-50 z-10">
+                      <tr className="border-b border-slate-200">
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase w-8 text-center">✔</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase">Instruction</th>
+                        <th className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase">Length (km)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-2 py-1 text-center border-r border-slate-100">
+                            <Field type="checkbox" name={`instructions.${i}.checked`}
+                              className="w-3.5 h-3.5 rounded border-slate-300 accent-indigo-600" />
+                          </td>
+                          <td className="px-1 py-1 border-r border-slate-100">
+                            <TCell name={`instructions.${i}.instruction`} />
+                          </td>
+                          <td className="px-1 py-1">
+                            <TCell name={`instructions.${i}.length_km`} type="number" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-            </Form>
-          )}
-        </Formik>
-      </div>
-    </div>
-  );
-};
+            </div>
+            {/* ── end tables ── */}
 
-const InputGroup = ({ label, icon: Icon, variant, ...props }) => {
-  const getStyles = () => {
-    if (props.readOnly && variant === 'yellow') return "bg-yellow-50 border-yellow-200 text-yellow-800 cursor-not-allowed";
-    return "bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5";
-  };
-
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
-      <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-          <Icon size={16} />
-        </div>
-        <Field 
-          {...props} 
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-semibold transition-all outline-none ${getStyles()}`}
-        />
-      </div>
+          </Form>
+        )}
+      </Formik>
     </div>
-  );
-};
+  </div>
+);
 
 export default RewindingEntry;

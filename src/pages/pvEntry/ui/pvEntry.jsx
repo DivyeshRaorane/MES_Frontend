@@ -1,173 +1,218 @@
 import React from 'react';
 import { Formik, Form, Field } from 'formik';
-import { 
-  Scan, User, Calendar, Clock, BookOpen, MessageSquare, 
-  Save, LogOut, FileText, Activity, Hash, CheckCircle2, LayoutDashboard, ClipboardList
-} from 'lucide-react';
-import { ModuleCard, FormikSelect, FormikInput } from '../../../components/common_fields';
+import { ShieldCheck, Scan, ClipboardCheck, User, Calendar } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
-const PVEntry = () => {
-  const today = new Date().toISOString().split('T')[0];
+const today   = new Date().toISOString().split('T')[0];
+const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  const initialValues = {
-    verificationType: 'online',
-    fiberType: 'Nat or Col',
-    colType: '',
-    pvOpr: '',
-    scanBarcode: '',
-    qtyInNo: '0',
-    qtyInKms: '0.00',
-    dateTime: today,
-    shift: '',
-    pvInstruction: '',
-    pvRemarks: '',
-    fromDate: today,
-    toDate: today,
-    entryTable: Array(6).fill({
-      barcode: '', fid: '', lenKm: '', status: '', opr: '', grade: '', fType: '', remarks: ''
-    })
-  };
+const initialValues = {
+  online_pv:      false,
+  re_pv:          false,
+  barcode:        '',
+  fiber_type:     'Single Mode',   // auto
+  colour:         '',              // auto if applied
+  qty_no:         '',
+  qty_kms:        '',
+  pv_instruction: '',
+  pv_remark:      '',
+  pv_operator:    '',
+  date:           today,
+  time:           nowTime,
+  shift:          '',
+};
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 lg:p-8 font-sans text-slate-800">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        <Formik
-          initialValues={initialValues}
-          onSubmit={(values) => console.log('Form Submitted:', values)}
-        >
-          {({ values, handleChange, handleSubmit }) => (
-            <Form className="bg-white rounded-b-2xl shadow-xl border-x border-b border-slate-200 space-y-6">
-              
-              {/* Top Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-t-2xl text-white flex justify-between items-center shadow-lg">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-slate/10  text-white ">
-                    <Activity size={24} />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-white tracking-tight">PV Entry</h1>
-                    <p className="text-white text-xs font-medium uppercase tracking-wider">Physical Verification System</p>
-                  </div>
-                </div>
+const PVEntry = () => (
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
-                {/* Radio Group */}
-                <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                  {['online', 're-pv'].map((mode) => (
-                    <label key={mode} className="flex items-center gap-2 px-4 py-2 cursor-pointer rounded-lg transition-all has-[:checked]:bg-white has-[:checked]:shadow-sm">
-                      <Field 
-                        type="radio" 
-                        name="verificationType" 
-                        value={mode}
-                        className="w-4 h-4 text-blue-600" 
-                      />
-                      <span className="text-xs font-bold uppercase text-slate-600">{mode}</span>
+      <Formik
+        initialValues={initialValues}
+        onSubmit={(v) => { console.log('PV Entry:', v); alert('PV Entry Saved!'); }}
+      >
+        {({ values, resetForm }) => (
+          <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3">
+
+            {/* ── 2-column layout fills full height ── */}
+            <div className="grid grid-cols-[1.4fr_1fr] gap-3 flex-1 min-h-0">
+
+              {/* ══ COL 1: All form fields ══ */}
+              <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
+
+                {/* Verification type */}
+                <ModuleCard compact title="Verification Type" icon={<ShieldCheck size={13} className="text-blue-600" />}>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <Field type="checkbox" name="online_pv"
+                        className="w-4 h-4 rounded border-slate-300 accent-blue-600" />
+                      <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide group-hover:text-blue-600 transition-colors">
+                        Online Physical Verification
+                      </span>
                     </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 m-2">
-                {/* Left Column */}
-                <div className="xl:col-span-9 space-y-6">
-                  
-                  <ModuleCard title="Verification Parameters" icon={<LayoutDashboard size={16} className="text-blue-500" />}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormikInput label="Fiber Type" name="fiberType" readOnly className="bg-amber-50/50 border-amber-100" />
-                      <FormikInput label="Date & Time" name="dateTime" type="date" />
-                      <FormikSelect label="Shift" name="shift" options={['', 'Shift A', 'Shift B', 'Shift C']} />
-                      
-                      <FormikInput label="PV Operator" name="pvOpr" placeholder="Enter Opr Name" />
-                      <FormikInput label="Scan Barcode" name="scanBarcode" placeholder="Scan now..." />
-                      <FormikInput label="Col Type" name="colType" />
-                      
-                      <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <FormikInput label="PV Instruction" name="pvInstruction" />
-                         <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">PV Remarks</label>
-                            <Field 
-                              as="textarea"
-                              name="pvRemarks" 
-                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all min-h-[40px]"
-                            />
-                         </div>
-                      </div>
-                    </div>
-                  </ModuleCard>
-
-                  {/* Table Section */}
-                  <ModuleCard title="Entry Verification Log" icon={<ClipboardList size={16} className="text-blue-500" />}>
-                    <div className="overflow-x-auto -m-5">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-slate-50">
-                            {["Sr", "Barcode", "FID", "Len (km)", "Status", "Opr", "Grade", "F-Type", "Remarks"].map((h) => (
-                              <th key={h} className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {values.entryTable.map((_, i) => (
-                            <tr key={i} className="hover:bg-blue-50/30 transition-colors">
-                              <td className="px-4 py-2 text-xs font-bold text-slate-400">{i + 1}</td>
-                              {['barcode', 'fid', 'lenKm', 'status', 'opr', 'grade', 'fType', 'remarks'].map((field) => (
-                                <td key={field} className="px-2 py-1">
-                                  <Field 
-                                    name={`entryTable[${i}].${field}`}
-                                    className="w-full bg-transparent p-1.5 text-xs outline-none focus:bg-white border border-transparent focus:border-blue-200 rounded"
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </ModuleCard>
-                </div>
-
-                {/* Right Column */}
-                <div className="xl:col-span-3 space-y-6 mx-2">
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                    <button 
-                      type="submit" 
-                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-100 transition-all active:scale-95"
-                    >
-                      <Save size={18} /> Save Entry
-                    </button>
-                    <button type="button" className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all">
-                      <LogOut size={18} /> Exit System
-                    </button>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <Field type="checkbox" name="re_pv"
+                        className="w-4 h-4 rounded border-slate-300 accent-indigo-600" />
+                      <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide group-hover:text-indigo-600 transition-colors">
+                        Re-Physical Verification
+                      </span>
+                    </label>
                   </div>
+                </ModuleCard>
 
-                  <ModuleCard title="Reports" icon={<FileText size={16} className="text-blue-500" />}>
-                    <div className="space-y-4">
-                      <FormikInput label="From Date" name="fromDate" type="date" />
-                      <FormikInput label="To Date" name="toDate" type="date" />
-                      <button type="button" className="w-full py-2.5 bg-slate-800 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-900 transition-colors">
-                        Generate Report
+                {/* Spool identification */}
+                <ModuleCard compact title="Spool Identification" icon={<Scan size={13} className="text-indigo-600" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Barcode + scan button spans both cols */}
+                    <div className="col-span-2 flex items-end gap-2">
+                      <div className="flex-1">
+                        <FormikInput compact label="Barcode" name="barcode" placeholder="Scan or enter barcode..." />
+                      </div>
+                      <button type="button"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded uppercase hover:bg-indigo-700 transition-all h-[28px]">
+                        <Scan size={10} /> Scan
                       </button>
                     </div>
-                  </ModuleCard>
+                    <FormikInput compact label="Fiber Type"          name="fiber_type" readOnly />
+                    <FormikInput compact label="Colour (if applied)" name="colour"     readOnly />
+                    <FormikInput compact label="Quantity (No)"       name="qty_no"     type="number" placeholder="0" />
+                    <FormikInput compact label="Quantity (Kms)"      name="qty_kms"    type="number" step="0.001" placeholder="0.000" />
+                  </div>
+                </ModuleCard>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
-                      <p className="text-[10px] font-bold text-blue-400 uppercase">Qty (No)</p>
-                      <p className="text-xl font-black text-blue-700">{values.qtyInNo}</p>
+                {/* Instructions & Remarks */}
+                <ModuleCard compact title="Instructions & Remarks" icon={<ClipboardCheck size={13} className="text-emerald-600" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikTextarea compact label="PV Instruction" name="pv_instruction" rows={4} placeholder="Enter PV instructions..." />
+                    <FormikTextarea compact label="PV Remark"      name="pv_remark"      rows={4} placeholder="Enter remarks..." />
+                  </div>
+                </ModuleCard>
+
+                {/* Personnel & Timing */}
+                <ModuleCard compact title="Personnel & Timing" icon={<User size={13} className="text-orange-500" />}>
+                  <div className="grid grid-cols-4 gap-2">
+                    <FormikSelect compact label="PV Operator" name="pv_operator"
+                      options={['Select','Operator A','Operator B','Operator C','Senior Op']} />
+                    <FormikInput  compact label="Date"  name="date"  type="date" />
+                    <FormikInput  compact label="Time"  name="time"  type="time" />
+                    <FormikSelect compact label="Shift" name="shift" options={['Select','A','B','C']} />
+                  </div>
+                </ModuleCard>
+
+              </div>
+
+              {/* ══ COL 2: Summary + Status + Actions ══ */}
+              <div className="flex flex-col gap-3 min-h-0">
+
+                {/* Live summary stats */}
+                <ModuleCard compact title="Entry Summary" icon={<ClipboardCheck size={13} className="text-blue-600" />}>
+                  <div className="flex flex-col gap-2">
+                    {/* Verification mode badges */}
+                    <div className="flex gap-2">
+                      <div className={`flex-1 px-3 py-2 rounded-lg border text-center transition-all ${
+                        values.online_pv
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-400'
+                      }`}>
+                        <p className="text-[8px] font-bold uppercase tracking-wider">Online PV</p>
+                        <p className="text-xs font-black mt-0.5">{values.online_pv ? 'Active' : 'Inactive'}</p>
+                      </div>
+                      <div className={`flex-1 px-3 py-2 rounded-lg border text-center transition-all ${
+                        values.re_pv
+                          ? 'bg-indigo-600 border-indigo-600 text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-400'
+                      }`}>
+                        <p className="text-[8px] font-bold uppercase tracking-wider">Re-PV</p>
+                        <p className="text-xs font-black mt-0.5">{values.re_pv ? 'Active' : 'Inactive'}</p>
+                      </div>
                     </div>
-                    <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center">
-                      <p className="text-[10px] font-bold text-indigo-400 uppercase">Qty (KMs)</p>
-                      <p className="text-xl font-black text-indigo-700">{values.qtyInKms}</p>
+
+                    {/* Qty stats */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="px-3 py-3 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-center">
+                        <span className="text-[9px] font-bold text-blue-400 uppercase">Qty (No)</span>
+                        <span className="text-2xl font-black text-blue-700 font-mono mt-0.5">
+                          {values.qty_no || '0'}
+                        </span>
+                      </div>
+                      <div className="px-3 py-3 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col items-center">
+                        <span className="text-[9px] font-bold text-indigo-400 uppercase">Qty (Kms)</span>
+                        <span className="text-2xl font-black text-indigo-700 font-mono mt-0.5">
+                          {parseFloat(values.qty_kms || 0).toFixed(3)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Barcode preview */}
+                    <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Barcode</p>
+                      <p className="text-xs font-bold text-slate-700 font-mono truncate">
+                        {values.barcode || '—'}
+                      </p>
+                    </div>
+
+                    {/* Fiber info */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Fiber Type</p>
+                        <p className="text-xs font-bold text-slate-700">{values.fiber_type || '—'}</p>
+                      </div>
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Colour</p>
+                        <p className="text-xs font-bold text-slate-700">{values.colour || 'N/A'}</p>
+                      </div>
                     </div>
                   </div>
+                </ModuleCard>
+
+                {/* Date / Operator info */}
+                <ModuleCard compact title="Session Info" icon={<Calendar size={13} className="text-slate-500" />}>
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Date</p>
+                        <p className="text-xs font-bold text-slate-700">{values.date || '—'}</p>
+                      </div>
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Time</p>
+                        <p className="text-xs font-bold text-slate-700">{values.time || '—'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Shift</p>
+                        <p className="text-xs font-bold text-slate-700">{values.shift || '—'}</p>
+                      </div>
+                      <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Operator</p>
+                        <p className="text-xs font-bold text-slate-700 truncate">{values.pv_operator || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </ModuleCard>
+
+                {/* Actions — pushed to bottom */}
+                <div className="mt-auto flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <ResetButton compact type="button" onClick={() => resetForm()} className="flex-1">
+                      Reset
+                    </ResetButton>
+                    <SubmitButton compact type="submit" className="flex-1">
+                      Save PV Entry
+                    </SubmitButton>
+                  </div>
                 </div>
+
               </div>
-            </Form>
-          )}
-        </Formik>
-      </div>
+              {/* ══ end col 2 ══ */}
+
+            </div>
+
+          </Form>
+        )}
+      </Formik>
     </div>
-  );
-};
+  </div>
+);
 
 export default PVEntry;

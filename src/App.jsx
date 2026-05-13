@@ -38,7 +38,6 @@ import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
 import D2Issue from './pages/d2Egeing/ui/d2egeing'
 import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
 import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
-import PTAutomation from './pages/pt_Automation/ui/pt_Automation'
 import PTReport from './pages/pt_Report/ui/pt_Report'
 import CustomerAllocation from './pages/customer_Allocation/ui/customer_Allocation'
 import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
@@ -62,7 +61,6 @@ function App() {
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>
-        <Route path='prooftesting/ptautomation' element={<PTAutomation/>}/>
         <Route path='prooftesting/ptreport' element={<PTReport/>}/>
         <Route path='prooftesting/ptbreakanalysis' element={<PTBreakAnalysis/>}/>
         <Route path='quality/qcentry' element={<QCEntryScreen/>}/>

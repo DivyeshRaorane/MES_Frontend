@@ -26,7 +26,7 @@ export const ModuleCard = ({ title, icon, children, compact = false }) => (
 export const FormikInput = ({ label, name, type = "text", compact = false, readOnly = false, className = "", ...props }) => (
   <div className="flex flex-col gap-0.5">
     {label && (
-      <label className={`font-bold text-slate-500 uppercase ml-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+      <label className={`font-bold text-slate-800 uppercase ml-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
         {label}
       </label>
     )}
@@ -52,7 +52,7 @@ export const FormikInput = ({ label, name, type = "text", compact = false, readO
 export const FormikSelect = ({ label, name, options, compact = false, className = "", labelClassName = "" }) => (
   <div className={`flex flex-col gap-0.5 ${className}`}>
     {label && (
-      <label className={`font-bold text-slate-500 uppercase ml-0.5 ${labelClassName} ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+      <label className={`font-bold text-slate-800 uppercase ml-0.5 ${labelClassName} ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
         {label}
       </label>
     )}

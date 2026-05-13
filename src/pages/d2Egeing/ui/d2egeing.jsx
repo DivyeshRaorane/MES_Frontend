@@ -1,217 +1,193 @@
 import React from 'react';
-import { Formik, Form } from 'formik';
-import { 
-  Scan, Save, Trash2, LogOut, Activity, 
-  ClipboardList, Factory, Boxes, History ,FileText
-} from 'lucide-react';
-import { ModuleCard,FormikInput,FormikSelect } from '../../../components/common_fields';
+import { Formik, Form, Field } from 'formik';
+import { Scan, ClipboardList, FlaskConical, Activity } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
+/* ── Compact table-cell input ── */
+const TCell = ({ name, type = 'text' }) => (
+  <Field name={name} type={type}
+    className="w-full bg-transparent px-1.5 py-1 text-xs focus:outline-none focus:bg-blue-50 rounded transition-all" />
+);
 
+const today = new Date().toISOString().split('T')[0];
 
-const D2Issue = () => {
-  const today = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+const initialValues = {
+  scan_barcode:    '',
+  batch_id:        '',
+  chamber_no:      '',
+  date:            today,
+  plant:           '',
+  operator:        '',
+  shift_incharge:  '',
+  qty_no:          '',
+  qty_kms:         '',
+  /* table rows */
+  main_rows: Array(15).fill(null).map(() => ({
+    barcode: '', pt_len: '', d2_chamber: '', date_time: '', grade: '', select: false,
+  })),
+  h2_rows: Array(6).fill(null).map(() => ({ barcode_id: '', remarks: '' })),
+};
 
-  const initialValues = {
-    chamberNo: '3',
-    date: today,
-    batchId: '',
-    plant: '',
-    fromDate: '',
-    toDate: '',
-    operator: '',
-    shiftIncharge: '',
-    scanBarcode: '',
-    qtyInNo: '0',
-    qtyInKms: '0.00',
-  };
+/* ══════════════════════════════════════════════════════════ */
+const D2Issue = () => (
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 font-sans text-slate-800">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header Banner */}
-        
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-t-2xl text-white flex justify-between items-center shadow-lg">
-            <h1 className="text-xl font-black tracking-tight uppercase flex items-center gap-3 italic">
-              <Activity size={24} /> 
-              D2 Issue Portal
-            </h1>
-            <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-md border border-white/20">
-              <span className="text-[10px] font-bold uppercase opacity-80 italic">System Date</span>
-              <span className="font-mono font-bold text-sm">{today}</span>
-            </div>
-          </div>
+      <Formik initialValues={initialValues} onSubmit={(v) => { console.log('D2 Issue:', v); alert('Saved!'); }}>
+        {({ values, resetForm }) => (
+          <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
 
+            {/* ── Row 1: Form fields + Status summary ── */}
+            <div className="grid grid-cols-[1.6fr_1fr] gap-2 flex-shrink-0">
 
-        <Formik initialValues={initialValues} onSubmit={(v) => console.log(v)}>
-          {({ values }) => (
-            <Form className="grid grid-cols-12 gap-6 bg-white shadow-xl border-x border-b border-slate-200">
-              
-              {/* Top Controls & Status Section */}
-              <div className="col-span-12 lg:col-span-8 m-2">
-                <ModuleCard title="Primary Controls" icon={<Factory className="text-blue-500" size={18} />}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <FormikSelect 
-                      label="Select Chamber No" 
-                      name="chamberNo" 
-                      options={['3', '4', '5']} 
-                    />
-                    <FormikInput label="Current Date" name="date" readOnly />
-                    <FormikInput label="Batch ID" name="batchId" placeholder="Enter ID..." />
-                  </div>
-
-                  {/* Scan Area */}
-                  <div className="mt-8 relative group">
-                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl h-44 flex flex-col items-center justify-center transition-all group-hover:border-blue-400 group-hover:bg-blue-50/30">
-                      <Scan size={48} className="text-slate-300 group-hover:text-blue-500 transition-colors mb-3" />
-                      <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-400 group-hover:text-blue-600">
-                        Scan Barcode Here
-                      </h3>
-                      <input name="scanBarcode" className="opacity-0 absolute inset-0 cursor-pointer" autoFocus />
+              {/* Left: all form fields */}
+              <ModuleCard compact title="D2 Issue Entry" icon={<FlaskConical size={13} className="text-blue-600" />}>
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Scan barcode — spans 2 cols with button */}
+                  <div className="col-span-2 flex items-end gap-1.5">
+                    <div className="flex-1">
+                      <FormikInput compact label="Scan Barcode" name="scan_barcode" placeholder="Scan barcode..." />
                     </div>
-                  </div>
-                </ModuleCard>
-              </div>
-
-              {/* Testing Status Sidebar */}
-              <div className="col-span-12 lg:col-span-4 m-2">
-                <ModuleCard title="Testing Status" icon={<Boxes className="text-indigo-500" size={18} />}>
-                  <div className="space-y-4">
-                    <FormikInput label="Plant Location" name="plant" />
-                    
-                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-slate-800 text-white font-bold uppercase italic">
-                          <tr>
-                            <th className="py-2 px-3 text-left">Status</th>
-                            <th className="py-2 px-3 border-x border-slate-700">Qty (No)</th>
-                            <th className="py-2 px-3">Qty (Kms)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-bold">
-                          <tr className="bg-emerald-50/50">
-                            <td className="py-2.5 px-3 text-slate-500">Final Testing Done</td>
-                            <td className="py-2.5 px-3 border-x border-slate-100 text-center">-</td>
-                            <td className="py-2.5 px-3 text-center">-</td>
-                          </tr>
-                          <tr className="bg-amber-50/50">
-                            <td className="py-2.5 px-3 text-slate-500">Testing Pending</td>
-                            <td className="py-2.5 px-3 border-x border-slate-100 text-center">-</td>
-                            <td className="py-2.5 px-3 text-center">-</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Total Qty (No)</span>
-                        <span className="text-xl font-mono font-black text-slate-700">{values.qtyInNo}</span>
-                      </div>
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Total Qty (Kms)</span>
-                        <span className="text-xl font-mono font-black text-slate-700">{values.qtyInKms}</span>
-                      </div>
-                    </div>
-                  </div>
-                </ModuleCard>
-              </div>
-
-              {/* Main Data Table */}
-              <div className="col-span-12 lg:col-span-8 m-2">
-                <ModuleCard title="Production Log" icon={<ClipboardList className="text-blue-500" size={18} />}>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px] text-center">
-                      <thead className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
-                        <tr>
-                          <th className="py-3 px-2 border-r border-slate-200">Sr</th>
-                          <th className="py-3 px-2 border-r border-slate-200">Barcode</th>
-                          <th className="py-3 px-2 border-r border-slate-200">PT Len</th>
-                          <th className="py-3 px-2 border-r border-slate-200">D2 Chamber</th>
-                          <th className="py-3 px-2 border-r border-slate-200">Date/Time</th>
-                          <th className="py-3 px-2">Grade</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {Array(8).fill(0).map((_, i) => (
-                          <tr key={i} className="h-9 hover:bg-slate-50/80 transition-colors font-medium">
-                            <td className="border-r border-slate-100 text-slate-400">{i + 1}</td>
-                            <td className="border-r border-slate-100"></td>
-                            <td className="border-r border-slate-100"></td>
-                            <td className="border-r border-slate-100"></td>
-                            <td className="border-r border-slate-100"></td>
-                            <td></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </ModuleCard>
-              </div>
-
-              {/* Side Actions & H2 Details */}
-              <div className="col-span-12 lg:col-span-4 space-y-6 m-2">
-                <ModuleCard title="Personnel & Actions" icon={<History className="text-slate-500" size={18} />}>
-                  <div className="space-y-4">
-                    <FormikInput label="Operator Name" name="operator" />
-                    <FormikInput label="Shift Incharge" name="shiftIncharge" />
-                    
-                    <div className="grid grid-cols-1 gap-3 pt-4">
-                      <button type="submit" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98]">
-                        <Save size={18} /> Save Entry
-                      </button>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button type="button" className="flex items-center justify-center gap-2 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white py-2.5 rounded-xl font-bold uppercase text-[10px] transition-all">
-                          <Trash2 size={16} /> Delete
-                        </button>
-                        <button type="button" onClick={() => window.close()} className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-black text-white py-2.5 rounded-xl font-bold uppercase text-[10px] transition-all">
-                          <LogOut size={16} /> Exit
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 border-t border-slate-100 pt-6">
-                    <h3 className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">H2 Ageing Details</h3>
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      <table className="w-full text-[10px]">
-                        <thead className="bg-slate-50 border-b border-slate-200 font-bold uppercase">
-                          <tr>
-                            <th className="py-2 px-2 text-left border-r border-slate-200">Barcode ID</th>
-                            <th className="py-2 px-2 text-left">Remarks</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {Array(3).fill(0).map((_, i) => (
-                            <tr key={i} className="h-8"><td className="border-r border-slate-100"></td><td></td></tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </ModuleCard>
-
-                <ModuleCard title="Reporting" icon={<FileText className="text-emerald-500" size={18} />}>
-                  <div className="space-y-4">
-                    <FormikInput label="From Date" name="fromDate" type="date" />
-                    <FormikInput label="To Date" name="toDate" type="date" />
-                    <button type="button" className="w-full bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-600 hover:text-white py-2.5 rounded-xl font-bold uppercase text-xs transition-all">
-                      Generate Report
+                    <button type="button"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[8px] font-bold rounded uppercase hover:bg-indigo-700 transition-all h-[28px]">
+                      <Scan size={9} /> Scan
                     </button>
                   </div>
-                </ModuleCard>
+                  <FormikInput  compact label="Batch ID"          name="batch_id" />
+                  <FormikSelect compact label="D2 Chamber No"     name="chamber_no"
+                    options={['Select','Chamber 1','Chamber 2','Chamber 3','Chamber 4','Chamber 5']} />
+                  <FormikInput  compact label="Date"              name="date"           type="date" />
+                  <FormikSelect compact label="Plant"             name="plant"
+                    options={['Select','Plant A','Plant B','Plant C']} />
+                  <FormikSelect compact label="Operator"          name="operator"
+                    options={['Select','Operator A','Operator B','Operator C']} />
+                  <FormikSelect compact label="Shift Incharge"    name="shift_incharge"
+                    options={['Select','Incharge A','Incharge B','Supervisor X']} />
+                </div>
+              </ModuleCard>
+
+              {/* Right: status summary + qty */}
+              <ModuleCard compact title="Testing Status" icon={<Activity size={13} className="text-indigo-600" />}>
+                <div className="flex flex-col gap-2">
+                  {/* Status table from screenshot */}
+                  <table className="w-full text-xs border-collapse border border-slate-200 rounded overflow-hidden">
+                    <thead className="bg-slate-700 text-white">
+                      <tr>
+                        <th className="border border-slate-500 py-1.5 px-2 text-left text-[9px] font-normal"></th>
+                        <th className="border border-slate-500 py-1.5 text-[9px] font-normal text-center">Qty in No</th>
+                        <th className="border border-slate-500 py-1.5 text-[9px] font-normal text-center">Qty in Kms</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="bg-emerald-50/60">
+                        <td className="border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-700">Final Testing Done</td>
+                        <td className="border border-slate-200 h-8 text-center text-xs font-mono text-emerald-700 font-bold">—</td>
+                        <td className="border border-slate-200 h-8 text-center text-xs font-mono text-emerald-700 font-bold">—</td>
+                      </tr>
+                      <tr className="bg-amber-50/60">
+                        <td className="border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-700">Testing Pending</td>
+                        <td className="border border-slate-200 h-8 text-center text-xs font-mono text-amber-700 font-bold">—</td>
+                        <td className="border border-slate-200 h-8 text-center text-xs font-mono text-amber-700 font-bold">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Qty stat boxes */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Qty in No</label>
+                      <Field name="qty_no" type="number" placeholder="0"
+                        className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs font-bold text-blue-700 outline-none focus:ring-1 focus:ring-blue-500/20" />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Qty in Kms</label>
+                      <Field name="qty_kms" type="number" step="0.001" placeholder="0.000"
+                        className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs font-bold text-indigo-700 outline-none focus:ring-1 focus:ring-blue-500/20" />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-1 border-t border-slate-100">
+                    <ResetButton compact type="button" onClick={() => resetForm()} className="flex-1">Reset</ResetButton>
+                    <SubmitButton compact type="submit" className="flex-1">Save Entry</SubmitButton>
+                  </div>
+                </div>
+              </ModuleCard>
+            </div>
+
+            {/* ── Row 2: Main table + H2 Ageing table ── */}
+            <div className="grid grid-cols-[1.6fr_1fr] gap-2 flex-1 min-h-0">
+
+              {/* Main data table — Sr No, Barcode, PT Len, D2 Chamber, Date & Time, Grade, Select */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
+                  <ClipboardList size={12} className="text-blue-600" />
+                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">D2 Issue Log</span>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-slate-50 z-10">
+                      <tr className="border-b border-slate-200">
+                        {['Sr No','Barcode','PT Len','D2 Chamber','Date & Time','Grade','Select'].map(h => (
+                          <th key={h} className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {values.main_rows.map((_, i) => (
+                        <tr key={i} className="hover:bg-blue-50/30 transition-colors">
+                          <td className="px-2 py-1 text-[9px] font-bold text-slate-400 text-center border-r border-slate-100 w-8">{i + 1}</td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`main_rows.${i}.barcode`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`main_rows.${i}.pt_len`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`main_rows.${i}.d2_chamber`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`main_rows.${i}.date_time`} /></td>
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`main_rows.${i}.grade`} /></td>
+                          <td className="px-2 py-1 text-center">
+                            <Field type="checkbox" name={`main_rows.${i}.select`}
+                              className="w-3.5 h-3.5 rounded border-slate-300 accent-blue-600" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-            </Form>
-          )}
-        </Formik>
-      </div>
+              {/* H2 Ageing Details table */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
+                  <FlaskConical size={12} className="text-indigo-600" />
+                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">H2 Ageing Details</span>
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-slate-50 z-10">
+                      <tr className="border-b border-slate-200">
+                        <th className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase border-r border-slate-100">Barcode ID</th>
+                        <th className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {values.h2_rows.map((_, i) => (
+                        <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                          <td className="px-1 py-1 border-r border-slate-100"><TCell name={`h2_rows.${i}.barcode_id`} /></td>
+                          <td className="px-1 py-1"><TCell name={`h2_rows.${i}.remarks`} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+            {/* ── end row 2 ── */}
+
+          </Form>
+        )}
+      </Formik>
     </div>
-  );
-};
+  </div>
+);
 
 export default D2Issue;

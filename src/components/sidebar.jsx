@@ -49,13 +49,12 @@ const MENU = [
     color: 'text-emerald-400',
     children: [
       { label: 'Quality Entry',       path: '/quality/qcentry' },
-      { label: 'PV Entry',            path: '/quality/pventry' },
+      { label: 'Physical Verification ',            path: '/quality/pventry' },
       { label: 'D2 Issue',            path: '/quality/d2issue' },
       { label: 'D2 Gas Entry',        path: '/quality/d2gasconeentry' },
       { label: 'D2 Receiving',        path: '/quality/d2recieving' },
       { label: 'H2 Ageing',           path: '/quality/h2egeing' },
-      { label: 'Customer Allocation', path: '/quality/customerallocation' },
-      { label: 'Quality Report',      path: '/underdev' },
+      { label: 'Report',      path: '/underdev' },
     ],
   },
   {
@@ -68,6 +67,7 @@ const MENU = [
       { label: 'Fiber Make Checking', path: '/dispatch/fibermakingcheck' },
       { label: 'Box Scanning Entry',  path: '/dispatch/boxscanningentry' },
       { label: 'TC Generation',       path: '/dispatch/tcgeneration' },
+      { label: 'Customer Allocation', path: '/quality/customerallocation' },
     ],
   },
   {
