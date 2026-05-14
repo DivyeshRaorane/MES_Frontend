@@ -26,8 +26,11 @@ const MENU = [
       { label: 'Preform Acceptance', path: '/drawmange/acceptance' },
       { label: 'Handle Joining',     path: '/drawmange/handlejoining' },
       { label: 'Preform Allocation', path: '/drawmange/allocation' },
-      { label: 'Draw Spool Entry',   path: '/drawmange/drawspoolentry' },
-      { label: 'Reports',            path: '/underdev' },
+      { label: 'Draw Spool Entry',       path: '/drawmange/drawspoolentry' },
+      { label:  'Draw Break Ananlysis', path: '/drawmange/drawbrakanalysis'},
+      { label: 'Draw Shift Plan',       path: '/drawmange/drawshiftplan'},
+      { label: 'Draw Shift Report',     path: '/drawmange/drawshiftreport'},
+      { label: 'Reports',               path: '/underdev' },
     ],
   },
   {

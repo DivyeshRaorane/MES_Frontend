@@ -42,6 +42,7 @@ import PTReport from './pages/pt_Report/ui/pt_Report'
 import CustomerAllocation from './pages/customer_Allocation/ui/customer_Allocation'
 import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
 import FiberMakingCheck from './pages/dispatch_fiber_making/ui/dispatch_fiber_making'
+import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
 
 function App() {
 
@@ -58,6 +59,7 @@ function App() {
         <Route path='drawmange/drawspoolentry' element={<DrwaSpoolEntry/>}/>
         <Route path='drawmange/drawbrakanalysis' element={<DrawBrakAnalysis/>}/>
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
+        <Route path='drawmange/drawshiftreport' element={<DrawShiftReport/>}/>
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>
