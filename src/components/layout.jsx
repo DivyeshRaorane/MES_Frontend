@@ -16,6 +16,7 @@ const ROUTE_TITLES = {
   '/drawmange/drawshiftreport':    'Draw Shift Report',
   '/prooftesting/ptallocation':    'PT Allocation',
   '/prooftesting/ptentry':         'PT Entry',
+  '/prooftesting/ptbreakanalysis': 'PT Break Analysis',
   '/prooftesting/rewcolztentry':   'REW / COL Entry',
   '/prooftesting/ptreport':        'PT Report',
   '/quality/qcentry':              'Quality Entry',

@@ -192,6 +192,7 @@ const QCEntryScreen = () => (
                       {fi('Grade Value',    'grade')}
                       {fs('Rew Reason',     'rewReason',    ['Select','Attn High','MFD Fail','Coating','Other'])}
                       {fs('Sub Reason',     'rewSubReason', ['Select','Top','Bottom','Both'])}
+                      {fs('Fail Reason',     'failRreason', ['Select','Top','Bottom','Both'])}
                     </div>
                   </Section>
                 </Col>
@@ -307,11 +308,7 @@ const QCEntryScreen = () => (
                       {fi('BDF / Lumps',     'bdfLumps')}
                       <GridDivider label="Operator Identifiers" />
                       {fi('Spec Opr',    'specOpr')}
-                      {fi('OTDR Opr',    'otdrOpr')}
-                      {fi('CD/PMD Opr',  'cdPmdOpr')}
-                      {fi('PT Opr',      'ptOpr')}
-                      {fi('Rew Opr',     'rewOpr')}
-                      {fi('Col Opr',     'colOpr')}
+                      {fi('Comb',    'comboopr')}
                       {fi('F Type',      'fType')}
                       {fi('Colour',      'colour')}
                       {fi('OTDR No',     'otdrNo')}

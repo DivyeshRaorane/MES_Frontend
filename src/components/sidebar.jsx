@@ -41,6 +41,7 @@ const MENU = [
     children: [
       { label: 'PT Allocation',   path: '/prooftesting/ptallocation' },
       { label: 'PT Entry',        path: '/prooftesting/ptentry' },
+      { label: 'PT Break Analysis', path: '/prooftesting/ptbreakanalysis' },
       { label: 'REW/COL Entry',   path: '/prooftesting/rewcolztentry' },
       { label: 'Reports',         path: '/prooftesting/ptreport' },
     ],
