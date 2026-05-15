@@ -1,111 +1,110 @@
-import React, { useState } from 'react';
-import { Send, Edit3, ClipboardCheck, Activity, Beaker } from 'lucide-react';
-import FormField from '../../../components/formInputs';
+import React from 'react';
+import { Formik, Form } from 'formik';
+import { Scissors, Activity } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
-const Splicing = () => {
-  const [formData, setFormData] = useState({
-    testDate: '2024-05-31',
-    result: 'PASS'
-  });
+const today = new Date().toISOString().split('T')[0];
 
-  return (
-    <div className="w-full max-w-6xl mx-auto space-y-4 p-6 bg-slate-50 min-h-screen">
-      
-      {/* Header & Primary Actions */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <ClipboardCheck className="text-blue-600" size={20} />
-            Fiber Splicing Test Log
-          </h2>
-          <p className="text-xs text-slate-500">Record and analyze splice loss measurements</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-4 rounded-lg transition-all">
-            <Edit3 size={14} /> MODIFY
-          </button>
-          <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-6 rounded-lg transition-all shadow-md shadow-blue-100">
-            <Send size={14} /> SUBMIT DATA
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        {/* Section 1: Basic Information */}
-        <div className="md:col-span-3 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> General Information
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <FormField label="Test Date" type="date" value={formData.testDate} />
-            <FormField label="Barcode ID A" placeholder="Scan/Enter" />
-            <FormField label="Barcode ID B" placeholder="Scan/Enter" />
-            <FormField label="Product" type="select" options={["Product A", "Product B"]} />
-            <FormField label="Brand" type="select" options={["Brand X", "Brand Y"]} />
-            <FormField label="Operator" type="select" options={["John Doe", "Jane Smith"]} />
-          </div>
-        </div>
-
-        {/* Section 2: Input Side A & B */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="bg-white p-5 rounded-xl border-l-4 border-l-indigo-500 border border-slate-200 shadow-sm">
-            <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Activity size={14} /> Transmission Loss (A ➔ B)
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField label="1310 NM" />
-              <FormField label="1550 NM" />
-              <FormField label="1625 NM" />
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border-l-4 border-l-orange-500 border border-slate-200 shadow-sm">
-            <h3 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Activity size={14} /> Transmission Loss (B ➔ A)
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField label="1310 NM" />
-              <FormField label="1550 NM" />
-              <FormField label="1625 NM" />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Calculations & Final Status */}
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 shadow-sm">
-            <h3 className="text-xs font-black text-blue-700 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Beaker size={14} /> Avg Splice Loss
-            </h3>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="bg-white p-2 rounded border border-blue-200 shadow-inner">
-                <FormField label="Avg 1310 NM" disabled={true} />
-              </div>
-              <div className="bg-white p-2 rounded border border-blue-200 shadow-inner">
-                <FormField label="Avg 1550 NM" disabled={true} />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Final Review</h3>
-             <div className="space-y-4">
-                <FormField label="M/C Loss" />
-                <FormField 
-                  label="Final Result" 
-                  type="select" 
-                  value={formData.result}
-                  options={["PASS", "FAIL"]} 
-                />
-                <FormField label="Remarks" placeholder="Note down any issues..." />
-             </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
+const initialValues = {
+  test_date:            today,
+  barcode_id_a:         '',
+  barcode_id_b:         '',
+  mfd_a:                '',
+  mfd_b:                '',
+  product_type:         '',
+  brand_name:           '',
+  operator:             '',
+  result:               '',
+  remark:               '',
+  ab_side_1310:         '',
+  ab_side_1550:         '',
+  ab_side_1625:         '',
+  ba_side_1310:         '',
+  ba_side_1550:         '',
+  ba_side_1625:         '',
+  avg_splice_loss_1310: '',
+  avg_splice_loss_1550: '',
+  avg_splice_loss_1625: '',
+  m_c_loss:             '',
 };
+
+/* ── Measurement sub-section ── */
+const MeasureRow = ({ title, prefix }) => (
+  <div className="flex flex-col gap-1">
+    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-0.5">{title}</p>
+    <div className="grid grid-cols-3 gap-2">
+      <FormikInput compact label="1310 NM" name={`${prefix}_1310`} type="number" step="0.001" placeholder="0.000" />
+      <FormikInput compact label="1550 NM" name={`${prefix}_1550`} type="number" step="0.001" placeholder="0.000" />
+      <FormikInput compact label="1625 NM" name={`${prefix}_1625`} type="number" step="0.001" placeholder="0.000" />
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════════════════════════ */
+const Splicing = () => (
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+
+      <Formik
+        initialValues={initialValues}
+        onSubmit={(v) => { console.log('Splicing:', v); alert('Saved!'); }}
+      >
+        {({ resetForm }) => (
+          <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
+
+            {/* ── 2-column layout ── */}
+            <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+
+              {/* ══ COL 1: Identification + Other ══ */}
+              <div className="flex flex-col gap-3 min-h-0">
+
+                <ModuleCard compact title="Splicing Entry" icon={<Scissors size={13} className="text-blue-600" />}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormikInput  compact label="Test Date"    name="test_date"    readOnly />
+                    <FormikInput  compact label="Barcode ID A" name="barcode_id_a" />
+                    <FormikInput  compact label="Barcode ID B" name="barcode_id_b" />
+                    <FormikInput  compact label="MFD A"        name="mfd_a"        type="number" step="0.001" placeholder="0.000" />
+                    <FormikInput  compact label="MFD B"        name="mfd_b"        type="number" step="0.001" placeholder="0.000" />
+                    <FormikInput  compact label="Machine Loss" name="m_c_loss"     type="number" step="0.001" placeholder="0.000" />
+                    <FormikSelect compact label="Product Type" name="product_type"
+                      options={['Select','Single Mode','Multi Mode','Other']} />
+                    <FormikSelect compact label="Brand Name"   name="brand_name"
+                      options={['Select','Brand A','Brand B','Brand C']} />
+                    <FormikSelect compact label="Operator"     name="operator"
+                      options={['Select','Operator A','Operator B','Operator C']} />
+                    <FormikSelect compact label="Result"       name="result"
+                      options={['Select','Pass','Fail']} />
+                  </div>
+                  <div className="mt-2">
+                    <FormikTextarea compact label="Remark" name="remark" rows={3} placeholder="Enter remarks..." />
+                  </div>
+                </ModuleCard>
+
+              </div>
+
+              {/* ══ COL 2: Measurements ══ */}
+              <ModuleCard compact title="Splice Loss Measurements" icon={<Activity size={13} className="text-indigo-600" />}>
+                <div className="flex flex-col gap-3 h-full">
+                  <MeasureRow title="From A → B Side"      prefix="ab_side" />
+                  <MeasureRow title="From B → A Side"      prefix="ba_side" />
+                  <MeasureRow title="Average Splice Loss"  prefix="avg_splice_loss" />
+                </div>
+              </ModuleCard>
+
+            </div>
+
+            {/* ── Actions ── */}
+            <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
+              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              <SubmitButton compact type="submit">Submit Entry</SubmitButton>
+            </div>
+
+          </Form>
+        )}
+      </Formik>
+    </div>
+  </div>
+);
 
 export default Splicing;

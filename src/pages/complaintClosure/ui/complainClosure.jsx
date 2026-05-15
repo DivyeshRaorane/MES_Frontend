@@ -1,107 +1,140 @@
 import React from 'react';
-import { 
-  FileCheck, 
-  CalendarCheck, 
-  UserCheck, 
-  ShieldCheck, 
-  CheckCircle,
-  History,
-  AlertCircle,
-  Info
-} from 'lucide-react';
-import FormField from '../../../components/formInputs';
+import { Formik, Form } from 'formik';
+import { useLocation } from 'react-router-dom';
+import { FileCheck } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
+const today = new Date().toISOString().split('T')[0];
+
+const defaultValues = {
+  complaint_no:             '',
+  date_of_closure:          today,
+  complaint_closed_by:      '',
+  capa_report_no:           '',
+  closure_remark:           '',
+  raised_by:                '',
+  name_customer_vendor:     '',
+  date_of_complaint:        '',
+  date_reporting_complaint: '',
+  complaint_type:           '',
+  product_details:          '',
+  purchase_order_no:        '',
+  po_qty:                   '',
+  reject_qty:               '',
+  shipment_date:            '',
+  grn_no:                   '',
+  test_certificate_no:      '',
+  complaint_feedback:       '',
+};
+
+/* ── Section label ── */
+const SectionLabel = ({ label, color = 'text-blue-600' }) => (
+  <p className={`text-[9px] font-bold uppercase tracking-wider ${color} mb-1.5`}>{label}</p>
+);
+
+/* ══════════════════════════════════════════════════════════ */
 const ComplaintClosure = () => {
+  const location = useLocation();
+  /* Pre-fill from complaint table row click */
+  const prefill  = location.state?.complaint || {};
+  const initVals = { ...defaultValues, ...prefill };
+
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 p-6 bg-slate-50 min-h-screen">
-      
-      {/* 1. Page Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-100">
-            <FileCheck size={24} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Complaint Closure</h1>
-            <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">Resolution & CAPA Reporting</p>
-          </div>
-        </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-all shadow-md active:scale-95 uppercase">
-          <CheckCircle size={16} /> Finalize Closure
-        </button>
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+
+        <Formik
+          initialValues={initVals}
+          enableReinitialize
+          onSubmit={(v) => { console.log('Complaint Closure:', v); alert('Saved!'); }}
+        >
+          {({ resetForm }) => (
+            <Form className="flex flex-col flex-1 overflow-y-auto px-4 py-3 gap-3">
+
+              {/* ── Section 1: Complaint Closure ── */}
+              <ModuleCard compact title="Complaint Closure" icon={<FileCheck size={13} className="text-emerald-600" />}>
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    <FormikSelect compact label="Complaint No."       name="complaint_no"
+                      options={['--Complaint No--','CP00000001','CP00000002','CP00000003','CP00000004']} />
+                    <FormikInput  compact label="Date of Closure"     name="date_of_closure"    type="date" />
+                    <FormikSelect compact label="Complaint Closed By" name="complaint_closed_by"
+                      options={['--Select Type--','Quality Manager','Tech Lead','Supervisor']} />
+                    <FormikInput  compact label="CAPA Report No."     name="capa_report_no" />
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <FormikTextarea compact label="Closure Remark" name="closure_remark" rows={3}
+                        placeholder="Document the resolution steps and verification details..." />
+                    </div>
+                    <div className="pb-0.5">
+                      <SubmitButton compact type="submit">Submit</SubmitButton>
+                    </div>
+                  </div>
+                </div>
+              </ModuleCard>
+
+              {/* ── Section 2: Raised By ── */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
+                <div className="grid grid-cols-4 gap-2">
+                  <FormikSelect compact label="Raised By" name="raised_by"
+                    options={['--Select Type--','Sales','Quality','Production','Customer']} />
+                </div>
+              </div>
+
+              {/* ── Section 3: Customer/Vendor Details ── */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
+                <SectionLabel label="Customer/Vendor Details" color="text-blue-600" />
+                <div className="grid grid-cols-3 gap-2">
+                  <FormikSelect compact label="Name of Customer/Vendor" name="name_customer_vendor"
+                    options={['--Select Type--','Vendor A','Vendor B','Customer X','Customer Y']} />
+                  <FormikInput  compact label="Date of Complaint"           name="date_of_complaint"          type="date" />
+                  <FormikInput  compact label="Date of Reporting Complaint" name="date_reporting_complaint"   type="date" />
+                </div>
+              </div>
+
+              {/* ── Section 4: Nature of Complaint ── */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
+                <SectionLabel label="Nature of Complaint" color="text-indigo-600" />
+                <div className="grid grid-cols-3 gap-2">
+                  <FormikSelect compact label="Complaint Type" name="complaint_type"
+                    options={['--Select Type--','Product Performance','Delivery','Packaging','Documentation','Other']} />
+                  <div className="col-span-2">
+                    <FormikInput compact label="Product Details" name="product_details" />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Section 5: Delivery Details ── */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
+                <SectionLabel label="Delivery Details" color="text-orange-600" />
+                <div className="grid grid-cols-4 gap-2">
+                  <FormikInput compact label="Purchase Order No."    name="purchase_order_no" />
+                  <FormikInput compact label="PO QTY"               name="po_qty"             type="number" />
+                  <FormikInput compact label="Reject QTY"           name="reject_qty"         type="number" />
+                  <FormikInput compact label="Shipment Date"        name="shipment_date"      type="date" />
+                  <FormikInput compact label="GRN No."              name="grn_no" />
+                  <FormikInput compact label="Test Certificate No." name="test_certificate_no" />
+                </div>
+              </div>
+
+              {/* ── Section 6: Complaint/Feedback Details ── */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
+                <SectionLabel label="Complaint/Feedback Details" color="text-rose-600" />
+                <FormikTextarea compact label="" name="complaint_feedback" rows={4}
+                  placeholder="Enter complaint or feedback details..." />
+              </div>
+
+              {/* ── Reset ── */}
+              <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              </div>
+
+            </Form>
+          )}
+        </Formik>
       </div>
-
-      {/* 2. Primary Closure Fields */}
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-        {/* Decorative background element */}
-        <div className="absolute top-0 right-0 p-4 opacity-5">
-           <ShieldCheck size={120} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 mb-1">
-               <Info size={14} />
-               <span className="text-[10px] font-bold uppercase">Ticket Reference</span>
-            </div>
-            <FormField label="Complaint No." type="select" options={["--Select Complaint--", "CP001", "CP002"]} />
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 mb-1">
-               <CalendarCheck size={14} />
-               <span className="text-[10px] font-bold uppercase">Timeline</span>
-            </div>
-            <FormField label="Date of Closure" type="date" />
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 mb-1">
-               <UserCheck size={14} />
-               <span className="text-[10px] font-bold uppercase">Authorization</span>
-            </div>
-            <FormField label="Complaint Closed By" type="select" options={["--Select User--", "Quality Manager", "Tech Lead"]} />
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-slate-400 mb-1">
-               <History size={14} />
-               <span className="text-[10px] font-bold uppercase">Compliance</span>
-            </div>
-            <FormField label="CAPA Report No." placeholder="Enter Report ID" />
-          </div>
-        </div>
-
-        {/* Closure Remark Area */}
-        <div className="space-y-3">
-          <label className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            Final Closure Remarks
-          </label>
-          <textarea 
-            className="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none transition-all placeholder:text-slate-400 shadow-inner"
-            placeholder="Document the resolution steps and verification details..."
-          ></textarea>
-        </div>
-      </div>
-
-      {/* 3. Reference Summary Section (ReadOnly) */}
-      <div className="bg-slate-100/50 p-6 rounded-2xl border border-dashed border-slate-300">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Original Complaint Context</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-70 grayscale-[0.5]">
-          <FormField label="Raised By" disabled value="Sales Department" />
-          <FormField label="Customer/Vendor" disabled value="Precision Optics Ltd" />
-          <FormField label="Complaint Type" disabled value="Product Performance" />
-        </div>
-      </div>
-
-      {/* 4. Help Note */}
-      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-        <AlertCircle size={18} className="text-blue-500 mt-0.5" />
-        <p className="text-xs text-blue-700 leading-relaxed">
-          <strong>Note:</strong> Closing a complaint will archive the record and notify the relevant stakeholders. Ensure the <strong>CAPA Report</strong> is attached to the physical file before submitting.
-        </p>
-      </div>
-
     </div>
   );
 };

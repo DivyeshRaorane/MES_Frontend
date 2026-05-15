@@ -28,9 +28,6 @@ import MacrobendContainer from './components/macrobendContainer'
 import TRH_Cycle from './pages/trh_cycle/ui/trh_cycle'
 import TEMP_Cycle from './pages/temp_cycle/ui/temp_cycle'
 import TRHTempCycleContainer from './components/trhTempContainer'
-import ShortTermEntry from './pages/shortTermEntry/ui/shortTermEntry'
-import LongTermEntry from './pages/longTermEntry/ui/longTermEntry'
-import ComplaintRegister from './pages/complaintReg/ui/cRegister'
 import ComplaintStatusMonitor from './pages/complaintTable/ui/complaintTable'
 import ComplaintClosure from './pages/complaintClosure/ui/complainClosure'
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
@@ -45,6 +42,9 @@ import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
 import FiberMakingCheck from './pages/dispatch_fiber_making/ui/dispatch_fiber_making'
 import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
 import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entry'
+import Splicing from './pages/splicing/ui/splicing'
+import ShortTermContainer from './components/short_term_container'
+import CustomerComplaintContainer from './components/customer_complaint_container'
 
 function App() {
 
@@ -84,9 +84,10 @@ function App() {
         <Route path='dispatch/tcgeneration' element={<TCGenerationDashboard/>}/>
         <Route path='qa/macrobendC' element={<MacrobendContainer/>}/>
         <Route path='qa/trhtempentry' element={<TRHTempCycleContainer/>}/>
-        <Route path='qa/shorttermentry' element={<ShortTermEntry/>}/>
-        <Route path='qa/longtermentry' element={<LongTermEntry/>}/>
-        <Route path='customer/complaint' element={<ComplaintRegister/>}/>
+        <Route path='qa/trhcycle' element={<TRH_Cycle/>}/>
+        <Route path='qa/shorttermentry' element={<ShortTermContainer/>}/>
+        <Route path='qa/splicing' element={<Splicing/>}/>
+        <Route path='qa/customer' element={<CustomerComplaintContainer/>}/>
         <Route path='customer/complaintstatus' element={<ComplaintStatusMonitor/>}/>
         <Route path='customer/complaintclosure' element={<ComplaintClosure/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>

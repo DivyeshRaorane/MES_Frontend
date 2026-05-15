@@ -64,6 +64,19 @@ const MENU = [
     ],
   },
   {
+    key: 'qa',
+    label: 'Quality Assuranc',
+    icon: MessageSquareWarning,
+    color: 'text-rose-400',
+    children: [
+      { label: 'Temperature', path: '/qa/trhtempentry'},
+      { label: 'TRH Cycle',   path: '/qa/trhcycle'},
+      { label: 'Splicing', path: '/qa/splicing'},
+      { label: 'Short Term Entry', path: '/qa/shorttermentry'},
+      { label: 'Customer Complaint',  path: '/qa/customer' },
+    ],
+  },
+  {
     key: 'dispatch',
     label: 'Dispatch',
     icon: Truck,
@@ -74,17 +87,6 @@ const MENU = [
       { label: 'Box Scanning Entry',  path: '/dispatch/boxscanningentry' },
       { label: 'TC Generation',       path: '/dispatch/tcgeneration' },
       { label: 'Customer Allocation', path: '/quality/customerallocation' },
-    ],
-  },
-  {
-    key: 'complaint',
-    label: 'Customer Complaint',
-    icon: MessageSquareWarning,
-    color: 'text-rose-400',
-    children: [
-      { label: 'Complaint Entry',  path: '/customer/complaint' },
-      { label: 'Complaints',       path: '/customer/complaintstatus' },
-      { label: 'Closure',          path: '/customer/complaintclosure' },
     ],
   },
   {

@@ -1,132 +1,221 @@
-import React, { useState } from 'react';
-import { Thermometer, Timer, Activity, Layers, UserCheck, PlayCircle } from 'lucide-react';
-import FormField from '../../../components/formInputs';
+import React from 'react';
+import { Formik, Form, Field, FieldArray } from 'formik';
+import { Droplets, Activity, Plus, Minus } from 'lucide-react';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
-const TRH_Cycle = () => {
-    const [activeCycle, setActiveCycle] = useState(1);
+/* ── Compact table cell ── */
+const TC = ({ name, type = 'text', placeholder = '', w = 'w-20' }) => (
+  <Field name={name} type={type} placeholder={placeholder}
+    className={`${w} bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 focus:border-blue-300 text-center transition-all`} />
+);
 
-    // Mock data structure for the 4 cycles shown in your image
-    const cycles = [
-        { id: 1, steps: [{ temp: 23, rh: 50 }, { temp: 85, rh: 95 }, { temp: 85, rh: 95 }, { temp: -10, rh: 0 }] },
-        { id: 2, steps: [{ temp: 23, rh: 50 }, { temp: 85, rh: 95 }, { temp: 85, rh: 95 }, { temp: -10, rh: 0 }] },
-        { id: 3, steps: [{ temp: 23, rh: 50 }, { temp: 85, rh: 95 }, { temp: 85, rh: 95 }, { temp: -10, rh: 0 }] },
-        { id: 4, steps: [{ temp: 23, rh: 50 }, { temp: 85, rh: 95 }, { temp: 85, rh: 95 }, { temp: -10, rh: 0 }] },
-    ];
+/* ── Compact select ── */
+const TS = ({ name, options }) => (
+  <div className="relative">
+    <Field as="select" name={name}
+      className="w-24 appearance-none bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 cursor-pointer pr-4">
+      {options.map(o => <option key={o}>{o}</option>)}
+    </Field>
+    <span className="pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-slate-400 text-[8px]">▾</span>
+  </div>
+);
 
-    return (
-        <div className="w-full max-w-7xl mx-auto space-y-6 p-6 bg-slate-50 min-h-screen">
+/* ── Fixed steps per cycle (from screenshot) ── */
+const STEPS = [
+  { temp: 23,  rh: 50 },
+  { temp: 85,  rh: 95 },
+  { temp: 85,  rh: 95 },
+  { temp: -10, rh: 0  },
+];
 
-            {/* 1. Header Metadata Section */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
-                    <Layers className="text-violet-600" size={22} />
-                    <h2 className="text-lg font-bold text-slate-800">Test Configuration & Initial Attenuation</h2>
-                </div>
+const makeStep = (temp, rh) => ({
+  temp, rh,
+  trh_date: '', trh_time: '',
+  attn_1310: '', attn_1550: '', attn_1625: '',
+  tested_by: '',
+});
 
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-4">
-                    <FormField label="Start Date" type="date" />
-                    <FormField label="Start Time" type="time" />
-                    <FormField label="End Date" type="date" />
-                    <FormField label="End Time" type="time" />
+const makeCycle = () => ({ steps: STEPS.map(s => makeStep(s.temp, s.rh)) });
 
-                    {/* NEW LINE: Initial Attenuation Card */}
-                    <div className="col-span-full mt-2">
-                        <div className="bg-violet-50 p-5 rounded-2xl border border-violet-100 flex flex-col md:flex-row md:items-center gap-6 shadow-sm">
-                            <div className="flex items-center gap-3 min-w-[180px]">
-                                <div className="bg-violet-600 p-2 rounded-lg text-white">
-                                    <Activity size={18} />
-                                </div>
-                                <span className="text-sm font-black text-violet-800 uppercase tracking-wider">Initial Attenuation</span>
-                            </div>
+const today   = new Date().toISOString().split('T')[0];
+const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-                            <div className="flex flex-1 gap-4">
-                                <div className="flex-1 max-w-[200px]">
-                                    <FormField label="AT 1310 NM" placeholder="Value" />
-                                </div>
-                                <div className="flex-1 max-w-[200px]">
-                                    <FormField label="AT 1550 NM" placeholder="Value" />
-                                </div>
-                                <div className="flex-1 max-w-[200px]">
-                                    <FormField label="AT 1625 NM" placeholder="Value" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <FormField label="Fibre ID" />
-                    <FormField label="Preform ID" />
-                    <FormField label="Tower No" />
-                    <FormField label="Spool ID" />
-                    <FormField label="Testing Standard" type="select" options={["IEC", "TIA", "ISO"]} />
-                    <FormField label="Length" />
-                    <FormField label="Marker A" />
-                    <FormField label="Marker B" />
-                    <div className="md:col-span-2">
-                        <FormField label="Remark" placeholder="General test notes..." />
-                    </div>
-                </div>
-            </div>
-
-            {/* 2. Cycle Data Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <PlayCircle size={18} className="text-orange-500" />
-                        Environmental Cycles (Temperature/Humidity)
-                    </h3>
-                    <div className="flex gap-1 bg-slate-200 p-1 rounded-lg">
-                        {[1, 2, 3, 4].map(num => (
-                            <button
-                                key={num}
-                                onClick={() => setActiveCycle(num)}
-                                className={`px-4 py-1 text-xs font-bold rounded-md transition-all ${activeCycle === num ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:bg-slate-300'}`}
-                            >
-                                Cycle {num}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
-                    {/* Table Header */}
-                    <div className="grid grid-cols-7 bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider p-3 text-center">
-                        <div className="flex items-center justify-center gap-1"><Thermometer size={12} /> Temp (°C)</div>
-                        <div className="flex items-center justify-center gap-1"><Timer size={12} /> RH (%)</div>
-                        <div>TRH Date</div>
-                        <div>TRH Time</div>
-                        <div className="col-span-2 border-x border-slate-700">Attenuation (dB/km) [1310 | 1550 | 1625]</div>
-                        <div>Tested By</div>
-                    </div>
-
-                    {/* Table Body - Only showing active cycle to keep UI clean */}
-                    <div className="divide-y divide-slate-100">
-                        {cycles.find(c => c.id === activeCycle).steps.map((step, idx) => (
-                            <div key={idx} className="grid grid-cols-7 gap-4 p-3 items-center hover:bg-orange-50/30 transition-colors">
-                                <div className="text-center font-bold text-slate-700 bg-slate-100 py-2 rounded-lg">{step.temp}°C</div>
-                                <div className="text-center font-bold text-blue-600 bg-blue-50 py-2 rounded-lg">{step.rh}%</div>
-                                <FormField type="date" />
-                                <FormField type="time" />
-                                <div className="col-span-2 flex gap-2">
-                                    <FormField placeholder="1310" />
-                                    <FormField placeholder="1550" />
-                                    <FormField placeholder="1625" />
-                                </div>
-                                <FormField type="select" options={["Divyesh", "Admin", "Operator"]} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="flex justify-end gap-3 pt-4">
-                <button className="px-8 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all">SAVE DRAFT</button>
-                <button className="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-lg shadow-orange-200 transition-all flex items-center gap-2">
-                    <UserCheck size={18} /> COMPLETE TEST
-                </button>
-            </div>
-        </div>
-    );
+const initialValues = {
+  start_date:    today,
+  start_time:    nowTime,
+  end_date:      '',
+  end_time:      '',
+  fiber_id:      '',
+  preform_id:    '',
+  tower_id:      '',
+  spool_id:      '',
+  test_standard: '',
+  length:        '',
+  remark:        '',
+  at_1310:       '',
+  at_1550:       '',
+  at_1625:       '',
+  cycles:        [makeCycle()],
 };
+
+/* ══════════════════════════════════════════════════════════ */
+const TRH_Cycle = () => (
+  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden">
+      <Formik initialValues={initialValues}
+        onSubmit={(v) => { console.log('TRH Cycle:', v); alert('Saved!'); }}>
+        {({ resetForm }) => (
+          <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
+
+            {/* ── Header fields ── */}
+            <ModuleCard compact title="TRH Cycle Entry" icon={<Droplets size={13} className="text-violet-600" />}>
+              <div className="grid grid-cols-4 gap-2">
+                <FormikInput  compact label="Start Date"       name="start_date"    type="date" />
+                <FormikInput  compact label="Start Time"       name="start_time"    type="time" />
+                <FormikInput  compact label="End Date"         name="end_date"      type="date" />
+                <FormikInput  compact label="End Time"         name="end_time"      type="time" />
+                <FormikInput  compact label="Fiber ID"         name="fiber_id" />
+                <FormikInput  compact label="Preform ID"       name="preform_id" />
+                <FormikInput  compact label="Tower ID"         name="tower_id" />
+                <FormikInput  compact label="Spool ID"         name="spool_id" />
+                <FormikSelect compact label="Testing Standard" name="test_standard"
+                  options={['Select','IEC 60793','ITU-T G.652','ITU-T G.657','TIA','ISO','Other']} />
+                <FormikInput  compact label="Length"           name="length"        type="number" />
+                <div className="col-span-2">
+                  <FormikTextarea compact label="Remark" name="remark" rows={2} placeholder="General test notes..." />
+                </div>
+              </div>
+
+              {/* Initial Attenuation */}
+              <div className="mt-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Activity size={12} className="text-violet-600" />
+                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Initial Attenuation</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <FormikInput compact label="At 1310 NM" name="at_1310" type="number" step="0.001" placeholder="0.000" />
+                  <FormikInput compact label="At 1550 NM" name="at_1550" type="number" step="0.001" placeholder="0.000" />
+                  <FormikInput compact label="At 1625 NM" name="at_1625" type="number" step="0.001" placeholder="0.000" />
+                </div>
+              </div>
+            </ModuleCard>
+
+            {/* ── FieldArray cycles table ── */}
+            <FieldArray name="cycles">
+              {({ push, remove, form }) => (
+                <div className="flex flex-col flex-1 min-h-0 gap-1.5">
+
+                  {/* Add / Remove cycle buttons */}
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button type="button" onClick={() => push(makeCycle())}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">
+                      <Plus size={11} /> Add Cycle
+                    </button>
+                    <button type="button"
+                      onClick={() => form.values.cycles.length > 1 && remove(form.values.cycles.length - 1)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">
+                      <Minus size={11} /> Remove Cycle
+                    </button>
+                    <span className="text-[9px] text-slate-400 font-medium self-center">
+                      {form.values.cycles.length} cycle{form.values.cycles.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Scrollable table */}
+                  <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="overflow-auto flex-1">
+                      <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
+                        <thead className="sticky top-0 z-20">
+                          {/* Group header */}
+                          <tr className="bg-slate-800 text-white">
+                            <th rowSpan={2} className="px-3 py-2 text-[8px] font-bold uppercase border-r border-slate-600 text-center w-16 align-middle">No. of Cycle</th>
+                            <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase border-r border-slate-600 text-center align-middle">Temp (°C)</th>
+                            <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase border-r border-slate-600 text-center align-middle">RH (%)</th>
+                            <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase border-r border-slate-600 text-center align-middle">TRH Date</th>
+                            <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase border-r border-slate-600 text-center align-middle">TRH Time</th>
+                            <th colSpan={3} className="px-2 py-1.5 text-[8px] font-bold uppercase text-center border-r border-slate-600 bg-blue-700">
+                              Attenuation in DB/KM
+                            </th>
+                            <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase text-center align-middle">Tested By</th>
+                          </tr>
+                          <tr className="bg-slate-700 text-slate-200">
+                            {['1310 NM','1550 NM','1625 NM'].map(h => (
+                              <th key={h} className="px-2 py-1.5 text-[8px] font-bold uppercase text-center border-r border-slate-600 bg-blue-800/60">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {form.values.cycles.map((cycle, ci) =>
+                            cycle.steps.map((step, si) => (
+                              <tr key={`${ci}-${si}`}
+                                className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${si === 0 ? 'border-t-2 border-t-slate-300' : ''}`}>
+                                {/* Cycle No — spans all 4 step rows */}
+                                {si === 0 && (
+                                  <td rowSpan={cycle.steps.length}
+                                    className="px-2 py-1 text-xs font-bold text-slate-600 text-center border-r border-slate-200 bg-slate-50/80 align-middle">
+                                    {ci + 1}
+                                  </td>
+                                )}
+                                {/* Temp */}
+                                <td className="px-2 py-1 text-center border-r border-slate-100">
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    step.temp === 23  ? 'bg-blue-100 text-blue-700' :
+                                    step.temp === 85  ? 'bg-rose-100 text-rose-700' :
+                                                        'bg-indigo-100 text-indigo-700'
+                                  }`}>{step.temp}°C</span>
+                                </td>
+                                {/* RH */}
+                                <td className="px-2 py-1 text-center border-r border-slate-100">
+                                  <span className="text-[10px] font-bold text-blue-600">{step.rh}%</span>
+                                </td>
+                                {/* TRH Date */}
+                                <td className="px-1 py-1 border-r border-slate-100">
+                                  <TC name={`cycles.${ci}.steps.${si}.trh_date`} type="date" w="w-28" />
+                                </td>
+                                {/* TRH Time */}
+                                <td className="px-1 py-1 border-r border-slate-100">
+                                  <TC name={`cycles.${ci}.steps.${si}.trh_time`} type="time" w="w-24" />
+                                </td>
+                                {/* Attenuation */}
+                                <td className="px-1 py-1 border-r border-slate-100 bg-blue-50/20">
+                                  <TC name={`cycles.${ci}.steps.${si}.attn_1310`} placeholder="—" />
+                                </td>
+                                <td className="px-1 py-1 border-r border-slate-100 bg-blue-50/20">
+                                  <TC name={`cycles.${ci}.steps.${si}.attn_1550`} placeholder="—" />
+                                </td>
+                                <td className="px-1 py-1 border-r border-slate-100 bg-blue-50/20">
+                                  <TC name={`cycles.${ci}.steps.${si}.attn_1625`} placeholder="—" />
+                                </td>
+                                {/* Tested By */}
+                                <td className="px-1 py-1">
+                                  <TS name={`cycles.${ci}.steps.${si}.tested_by`}
+                                    options={['Select','Op A','Op B','Op C','Manager']} />
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </FieldArray>
+
+            {/* ── Actions ── */}
+            <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
+              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              <SubmitButton compact type="submit">Submit</SubmitButton>
+            </div>
+
+          </Form>
+        )}
+      </Formik>
+    </div>
+  </div>
+);
 
 export default TRH_Cycle;
