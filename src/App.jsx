@@ -40,9 +40,11 @@ import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
 import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
 import PTReport from './pages/pt_Report/ui/pt_Report'
 import CustomerAllocation from './pages/customer_Allocation/ui/customer_Allocation'
+import QCInOut from './pages/qc_in_out/ui/qc_in_out'
 import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
 import FiberMakingCheck from './pages/dispatch_fiber_making/ui/dispatch_fiber_making'
 import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
+import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entry'
 
 function App() {
 
@@ -60,6 +62,7 @@ function App() {
         <Route path='drawmange/drawbrakanalysis' element={<DrawBrakAnalysis/>}/>
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
         <Route path='drawmange/drawshiftreport' element={<DrawShiftReport/>}/>
+        <Route path='drawmange/drawtimeloss' element={<DrawTimelossEntry/>}/>
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>
@@ -71,6 +74,7 @@ function App() {
         <Route path='quality/d2gasconeentry' element={<D2gas_ConeEntry/>}/>
         <Route path='quality/d2recieving' element={<D2Recieving/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
+        <Route path='quality/qcinout' element={<QCInOut/>}/>
         <Route path='quality/customerallocation' element={<CustomerAllocation/>}/>
         <Route path='dispatch/dispatchchecking' element={<DispatchChecking/>}/>
         <Route path='dispatch/fibermakingcheck' element={<FiberMakingCheck/>}/>
