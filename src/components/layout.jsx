@@ -34,6 +34,8 @@ const ROUTE_TITLES = {
   '/dispatch/fgfiberallocation':   'FG Fiber Allocation',
   '/dispatch/fgrejection':         'FG Rejection',
   '/dispatch/tcgeneration':        'TC Generation',
+  '/dispatch/fgfiberrejection':    'FG Fiber Rejection',
+  '/dispatch/packinglist':         'Packing List Generation',
   '/qa/macrobendC':                'Macrobend',
   '/qa/trhtempentry':              'TRH & Temp Entry',
   '/qa/trhcycle':                  'TRH Cycle',

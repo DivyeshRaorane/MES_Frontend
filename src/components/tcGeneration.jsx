@@ -1,218 +1,324 @@
-import React from 'react';
-import { Formik, Form } from 'formik';
-import { 
-  Save, 
-  Edit3, 
-  Barcode, 
-  Package, 
-  FileText, 
-  Printer, 
-  Truck, 
-  Layers,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react';
-import * as Yup from 'yup';
-import { ModuleCard,FormikInput,FormikSelect } from './common_fields';
+import React, { useState } from 'react';
+import { FileText, Download, Printer, Package } from 'lucide-react';
+import { ModuleCard, FormikInput } from './common_fields';
+import { SubmitButton, ResetButton } from './common_buttons';
 
+/* ── Dummy PO data ── */
+const PO_MASTER = {
+  'PO-2024-001': {
+    product:        'G.652.D Single Mode Fiber',
+    po_date:        '2024-05-01',
+    consignee:      'Precision Optics Ltd, Mumbai',
+    test_report_no: 'TR-2024-0451',
+    dispatch:       '2024-05-15',
+    total_qty_km:   '4500.000',
+    total_bobbin:   10,
+  },
+  'PO-2024-002': {
+    product:        'G.657.A1 Bend Insensitive Fiber',
+    po_date:        '2024-04-20',
+    consignee:      'Fiber Tech Inc, Delhi',
+    test_report_no: 'TR-2024-0388',
+    dispatch:       '2024-05-10',
+    total_qty_km:   '3800.500',
+    total_bobbin:   8,
+  },
+};
+
+/* ── Dummy fiber rows ── */
+const makeFiberRows = (n) => Array.from({ length: n }, (_, i) => ({
+  id:           i,
+  product:      'G.652.D',
+  batch_id:     `B-${2024}${String(i+1).padStart(3,'0')}`,
+  box_no:       `BOX-${String(Math.floor(i/4)+1).padStart(2,'0')}`,
+  charged_len:  (450 + i * 2.5).toFixed(3),
+  actual_len:   (449 + i * 2.5).toFixed(3),
+  attn_1310:    (0.330 + i * 0.001).toFixed(3),
+  attn_1550:    (0.190 + i * 0.001).toFixed(3),
+  attn_1383:    (0.400 + i * 0.002).toFixed(3),
+  attn_1625:    (0.210 + i * 0.001).toFixed(3),
+  mfd_1310:     (9.20  + i * 0.01).toFixed(2),
+  mfd_1550:     (10.40 + i * 0.01).toFixed(2),
+  fiber_cutoff: (1260  + i).toFixed(0),
+  cable_cutoff: (1230  + i).toFixed(0),
+  zdw:          (1313  + i * 0.1).toFixed(1),
+  zds:          (0.086 + i * 0.0001).toFixed(4),
+  disp_1550:    (17.0  + i * 0.05).toFixed(2),
+  disp_1625:    (21.5  + i * 0.05).toFixed(2),
+  pmd:          (0.04  + i * 0.001).toFixed(3),
+  clad_dia:     (125.0 + i * 0.01).toFixed(2),
+  core_clad_conc:(0.30 + i * 0.01).toFixed(2),
+  clad_noncirc: (0.5   + i * 0.01).toFixed(2),
+  coat_noncirc: (0.8   + i * 0.01).toFixed(2),
+  coat_dia_unc: (242   + i * 0.1).toFixed(1),
+  coat_clad_conc:(1.0  + i * 0.01).toFixed(2),
+  fiber_curl:   (4.0   + i * 0.1).toFixed(1),
+}));
+
+/* ── Editable spec sections from screenshots ── */
+const SPEC_SECTIONS = [
+  {
+    title: 'Macro Bend Loss',
+    rows: [
+      { label: '1 Turn, 10 mm Radius',  key: 'mb_1turn',  default: '≤0.75 dB at 1550\n≤1.5 dB at 1625' },
+      { label: '10 Turn, 15 mm Radius', key: 'mb_10turn', default: '≤0.25 dB at 1550\n≤1.0 dB at 1625' },
+    ],
+  },
+  {
+    title: 'Mechanical Characteristics',
+    rows: [
+      { label: 'Proof Test Levels',                key: 'mech_proof',    default: '≥ 100 kpsi (0.69 GPa) or 1% strain' },
+      { label: 'Coating strip force',              key: 'mech_coat',     default: '≥ 1.3 N (0.3 lbf) and 5.0 N (1.1 lbf)' },
+      { label: 'Tensile Strength - Aged (Median)', key: 'mech_aged',     default: '≥ 3.03 GPa' },
+      { label: 'Tensile Strength - Un Aged (Median)',key:'mech_unaged',  default: '≥ 3.80 GPa' },
+    ],
+  },
+  {
+    title: 'Environmental Characteristics',
+    rows: [
+      { label: 'Temperature dependence\nInduced attenuation, -60°C to +85°C at 1310,1550,1625 nm',                                          key: 'env_temp',    default: '≤ 0.05 dB/km' },
+      { label: 'Temperature humidity cycling\nInduced attenuation, -10°C to +85°C and 95% relative humidity at 1310, 1550,1625 nm',          key: 'env_thc',     default: '≤ 0.05 dB/km' },
+      { label: 'High temperature and humidity aging 85°C at 85% RH, 30 days\nInduced attenuation at 1310, 1550, 1625 nm due to aging',       key: 'env_htha',    default: '≤ 0.05 dB/km' },
+      { label: 'Water immersion, 30 days\nInduced attenuation due to water immersion at 23 ± 2°C at 1310, 1550, 1625nm',                     key: 'env_water',   default: '≤ 0.05 dB/km' },
+      { label: 'Accelerated aging (Temperature), 30 days\nInduced attenuation due to temperature aging at 85 ± 2°C at 1310, 1550, 1625nm',  key: 'env_accel',   default: '≤ 0.05 dB/km' },
+    ],
+  },
+  {
+    title: 'Other Performance Characteristics',
+    rows: [
+      { label: 'Effective group index of refraction',                                                                                          key: 'opc_egir',    default: '1.4670 at 1310 nm\n1.4675 at 1550 nm\n1.4680 at 1625 nm' },
+      { label: 'Attenuation in the wavelength region from\n1285 - 1330 nm in reference to the attenuation at 1310 nm',                       key: 'opc_attn1',   default: '≤ 0.03 dB/km' },
+      { label: 'Attenuation in the wavelength region from\n1525 - 1575 nm in reference to the attenuation at 1550 nm',                       key: 'opc_attn2',   default: '≤ 0.02 dB/km' },
+      { label: 'Point discontinuities at 1310 nm & 1550 nm',                                                                                  key: 'opc_pd',      default: '≤ 0.05 dB' },
+      { label: 'Dynamic fatigue parameter (Nd)',                                                                                               key: 'opc_nd',      default: '≥ 20' },
+    ],
+  },
+];
+
+/* ── Table column definitions ── */
+const COLS = [
+  { key: 'product',      label: 'Product'                          },
+  { key: 'batch_id',     label: 'Batch ID'                         },
+  { key: 'box_no',       label: 'Box No.'                          },
+  { key: 'charged_len',  label: 'Charged Length (km)'              },
+  { key: 'actual_len',   label: 'Actual Length (km)'               },
+  { key: 'attn_1310',    label: 'Attenuation 1310nm (dB/km)'       },
+  { key: 'attn_1550',    label: 'Attenuation 1550nm (dB/km)'       },
+  { key: 'attn_1383',    label: 'Attenuation 1383nm (dB/km)'       },
+  { key: 'attn_1625',    label: 'Attenuation 1625nm (dB/km)'       },
+  { key: 'mfd_1310',     label: 'Mode Field Dia 1310nm (µm)'       },
+  { key: 'mfd_1550',     label: 'Mode Field Dia 1550nm (µm)'       },
+  { key: 'fiber_cutoff', label: 'Fiber Cutoff Wavelength (nm)'     },
+  { key: 'cable_cutoff', label: 'Cable Cutoff Wavelength (nm)'     },
+  { key: 'zdw',          label: 'Zero Dispersion Wavelength (nm)'  },
+  { key: 'zds',          label: 'Zero Dispersion Slope (ps/nm².km)'},
+  { key: 'disp_1550',    label: 'Dispersion at 1550nm (ps/nm.km)'  },
+  { key: 'disp_1625',    label: 'Dispersion at 1625nm (ps/nm.km)'  },
+  { key: 'pmd',          label: 'PMD Coefficient (ps/√km)'         },
+  { key: 'clad_dia',     label: 'Cladding Diameter (µm)'           },
+  { key: 'core_clad_conc',label:'Core-Clad Concentricity Error (µm)'},
+  { key: 'clad_noncirc', label: 'Cladding Non-Circularity (%)'     },
+  { key: 'coat_noncirc', label: 'Coating Non-Circularity (%)'      },
+  { key: 'coat_dia_unc', label: 'Coating Diameter Uncolored (µm)'  },
+  { key: 'coat_clad_conc',label:'Coating-Cladding Concentricity Error (µm)'},
+  { key: 'fiber_curl',   label: 'Fiber Curl (m)'                   },
+];
+
+/* ── CSV export ── */
+const exportCSV = (rows, poNo) => {
+  const header = COLS.map(c => `"${c.label}"`).join(',');
+  const body   = rows.map(r => COLS.map(c => `"${r[c.key]}"`).join(',')).join('\n');
+  const blob   = new Blob([header + '\n' + body], { type: 'text/csv' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a'); a.href = url; a.download = `TC_${poNo}.csv`; a.click();
+  URL.revokeObjectURL(url);
+};
+
+/* ══════════════════════════════════════════════════════════ */
 const TCGenerationDashboard = () => {
-  const initialValues = {
-    scanBarcode: '',
-    fid: '',
-    coatType: '',
-    productType: '',
-    grade: '',
-    customerLen: '',
-    tcSelection: '',
-    boxSelection: ''
-  };
-
-  const validationSchema = Yup.object({
-    scanBarcode: Yup.string().required('Required'),
+  const [poInput,   setPoInput]   = useState('');
+  const [poData,    setPoData]    = useState(null);
+  const [fiberRows, setFiberRows] = useState([]);
+  const [specVals,  setSpecVals]  = useState(() => {
+    const init = {};
+    SPEC_SECTIONS.forEach(s => s.rows.forEach(r => { init[r.key] = r.default; }));
+    return init;
   });
 
-  const onSubmit = (values) => {
-    console.log('Processing Logistics Data:', values);
+  /* ── Load PO ── */
+  const loadPO = () => {
+    const d = PO_MASTER[poInput.trim()];
+    if (!d) { alert(`PO not found. Try: PO-2024-001 or PO-2024-002`); return; }
+    setPoData(d);
+    setFiberRows(makeFiberRows(d.total_bobbin));
   };
 
+  /* ── Reset ── */
+  const handleReset = () => { setPoInput(''); setPoData(null); setFiberRows([]); };
+
+  /* ── Submit ── */
+  const handleSubmit = () => {
+    if (!poData) { alert('Load a PO first.'); return; }
+    console.log('TC Submit:', { poInput, poData, fiberRows, specVals });
+    alert('Test Certificate generated successfully!');
+  };
+
+  /* ── Edit spec cell ── */
+  const editSpec = (key, val) => setSpecVals(prev => ({ ...prev, [key]: val }));
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 font-sans">
-      <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={onSubmit}
-      >
-        {() => (
-          <div className="max-w-6xl mx-auto">
-          <Form className="bg-white rounded-2xl shadow-xl border-x border-b border-slate-200 space-y-6">
-            
-            {/* Top Control Bar */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-t-2xl text-white flex justify-between items-center shadow-lg">
-              <div className="flex items-center gap-4">
-                <div className="bg-slate/10 p-2 rounded-lg text-white ">
-                  <Truck size={24} />
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
+
+          {/* ── PO Input + Summary ── */}
+          <ModuleCard compact title="TC Generation" icon={<FileText size={13} className="text-blue-600" />}>
+            <div className="flex flex-col gap-2">
+              {/* PO input row */}
+              <div className="flex items-end gap-2">
+                <div className="flex flex-col gap-0.5 w-44">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Purchase Order No.</label>
+                  <input value={poInput} onChange={e => setPoInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && loadPO()}
+                    placeholder="e.g. PO-2024-001"
+                    className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20" />
                 </div>
-                <h1 className="text-xl font-bold tracking-tight text-white">Logistics & TC Management</h1>
-              </div>
-              <div className="flex gap-3">
-                <button type="button" className="flex items-center gap-2 px-6 py-2 bg-white hover:bg-slate-50 text-slate-600 rounded-lg font-bold transition-all border border-slate-300">
-                  <Edit3 size={18} /> Modify
+                <button type="button" onClick={loadPO}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all h-[28px]">
+                  Load PO
                 </button>
-                <button type="submit" className="flex items-center gap-2 px-8 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-all shadow-md">
-                  <Save size={18} /> Save Entry
-                </button>
-              </div>
-            </div>
 
-            {/* Primary Input Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 m-2">
-              <div className="lg:col-span-2">
-                <FormikInput 
-                  label="Scan Barcode" 
-                  name="scanBarcode" 
-                  placeholder="Scan..." 
-                  className="border-indigo-400 rounded-sm ring-2 ring-indigo-50"
-                />
+                {/* Export buttons */}
+                {poData && (
+                  <div className="flex gap-1.5 ml-auto">
+                    <button type="button" onClick={() => exportCSV(fiberRows, poInput)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded hover:bg-emerald-700 transition-all">
+                      <Download size={10} /> CSV
+                    </button>
+                    <button type="button" onClick={() => window.print()}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 transition-all">
+                      <Printer size={10} /> PDF
+                    </button>
+                  </div>
+                )}
               </div>
-              <FormikInput label="Fid" name="fid" />
-              <FormikInput label="Coat Type" name="coatType" />
-              <FormikInput label="Product Type" name="productType" />
-              <FormikInput label="Grade" name="grade" />
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              
-              {/* Left Column: Tables */}
-              <div className="lg:col-span-4 space-y-4 m-2">
-                <ModuleCard title="Current Box Details" icon={<Package size={18} className="text-indigo-500"/>}>
-                  <table className="w-full text-xs text-left">
-                    <thead className="text-slate-500 font-bold border-b border-slate-100">
-                      <tr>
-                        <th className="pb-2">Box No</th>
-                        <th className="pb-2">Barcode</th>
-                        <th className="pb-2">Opt Len</th>
-                        <th className="pb-2">Cust Len</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {[1, 2, 3].map((i) => (
-                        <tr key={i} className="text-slate-600 hover:bg-slate-50">
-                          <td className="py-2.5 font-medium text-slate-900">BX-00{i}</td>
-                          <td className="py-2.5 font-mono">9920-X</td>
-                          <td className="py-2.5 text-slate-500">25.4</td>
-                          <td className="py-2.5 text-slate-500">25.0</td>
+              {/* PO summary fields */}
+              {poData && (
+                <div className="grid grid-cols-7 gap-2 pt-1 border-t border-slate-100">
+                  {[
+                    { label: 'Product',        val: poData.product        },
+                    { label: 'PO Date',         val: poData.po_date        },
+                    { label: 'Consignee',       val: poData.consignee      },
+                    { label: 'Test Report No.', val: poData.test_report_no },
+                    { label: 'Dispatch Date',   val: poData.dispatch       },
+                    { label: 'Total Qty (km)',  val: poData.total_qty_km   },
+                    { label: 'Total Bobbins',   val: poData.total_bobbin   },
+                  ].map(({ label, val }) => (
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">{label}</span>
+                      <span className="text-[10px] font-bold text-slate-700 truncate" title={String(val)}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ModuleCard>
+
+          {/* ── Main fiber data table ── */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: '35vh' }}>
+            <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
+              <Package size={12} className="text-blue-600" />
+              <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Fiber Test Data</span>
+              {fiberRows.length > 0 && (
+                <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{fiberRows.length} rows</span>
+              )}
+            </div>
+            <div className="overflow-auto flex-1">
+              <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
+                <thead className="sticky top-0 bg-slate-800 z-10">
+                  <tr>
+                    {COLS.map(c => (
+                      <th key={c.key}
+                        className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 last:border-0 min-w-[90px]">
+                        {c.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {fiberRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={COLS.length} className="px-4 py-8 text-center text-[10px] text-slate-400">
+                        Load a PO to view fiber test data
+                      </td>
+                    </tr>
+                  ) : fiberRows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-blue-50/20 transition-colors">
+                      {COLS.map(c => (
+                        <td key={c.key} className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100 last:border-0 whitespace-nowrap">
+                          {row[c.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Editable spec sections ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex flex-col gap-2">
+              {SPEC_SECTIONS.map(section => (
+                <div key={section.title} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  {/* Section header — blue like screenshot */}
+                  <div className="bg-blue-600 px-3 py-1.5">
+                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">{section.title}</span>
+                  </div>
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      {section.rows.map(row => (
+                        <tr key={row.key} className="border-b border-slate-100 last:border-0">
+                          {/* Label */}
+                          <td className="px-3 py-2 text-xs text-slate-700 font-medium w-1/2 align-top whitespace-pre-line border-r border-slate-200">
+                            {row.label}
+                          </td>
+                          {/* Editable value */}
+                          <td className="px-2 py-1.5 w-1/2">
+                            <textarea
+                              value={specVals[row.key]}
+                              onChange={e => editSpec(row.key, e.target.value)}
+                              rows={specVals[row.key]?.split('\n').length || 1}
+                              className="w-full bg-transparent text-xs text-slate-700 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5 resize-none border border-transparent focus:border-blue-200 transition-all"
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                </ModuleCard>
-
-                <ModuleCard title="Box Summary" icon={<Layers size={18} className="text-indigo-500"/>}>
-                  <table className="w-full text-xs text-left">
-                    <thead className="text-slate-500 font-bold border-b border-slate-100">
-                      <tr>
-                        <th className="pb-2">Box No</th>
-                        <th className="pb-2 text-center">Bobbin Count</th>
-                        <th className="pb-2 text-right">Qty</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      <tr className="text-slate-900 font-bold bg-slate-50/50">
-                        <td className="py-2.5">TOTAL</td>
-                        <td className="py-2.5 text-center">12</td>
-                        <td className="py-2.5 text-right text-indigo-600">304.8m</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </ModuleCard>
-              </div>
-
-              {/* Middle Column: Specs & Generation */}
-              <div className="lg:col-span-5 space-y-4">
-                <ModuleCard 
-                  title="Customer Specification" 
-                  icon={<CheckCircle2 size={16} className="text-emerald-500" />}
-                >
-                  <div className="space-y-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded border border-slate-100 transition-colors">
-                        <span className="text-xs font-medium text-slate-700">Spec Parameter Alpha-{i}</span>
-                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                      </div>
-                    ))}
-                  </div>
-                </ModuleCard>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <ActionButton label="Generate TC" icon={<FileText size={18}/>} />
-                  <ActionButton label="Generate Pallet Sticker" icon={<Package size={18}/>} />
                 </div>
-
-                <div className="space-y-2">
-                  <PrintButton label="Print Box Sticker" barcode="9920-X-BX01" />
-                  <PrintButton label="Print Pallet Sticker" barcode="PLT-2026-04" />
-                </div>
-              </div>
-
-              {/* Right Column: Details & Scanning Feedback */}
-              <div className="lg:col-span-3 space-y-4 mx-2">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm h-[180px]">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Customer Details</h3>
-                  <div className="text-sm text-slate-400 italic flex items-center justify-center h-full border-2 border-dashed border-slate-100 rounded-lg">
-                    No customer selected
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                  <PrintButton label="Print Cust Details" barcode="CUST-99" small />
-                  <div className="grid grid-cols-1 gap-2">
-                    <FormikSelect 
-                      label="Select TC" 
-                      name="tcSelection" 
-                      options={['Batch 001-A', 'Batch 002-B']} 
-                    />
-                    <FormikSelect 
-                      label="Select Box" 
-                      name="boxSelection" 
-                      options={['BX-ALPHA-01', 'BX-BETA-02']} 
-                    />
-                  </div>
-                </div>
-
-                {/* Scanning Remarks Area */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex flex-col items-center text-center">
-                    <AlertCircle size={28} className="text-amber-500 mb-2" />
-                    <h2 className="text-lg font-bold text-amber-900 uppercase">Scanning Remarks</h2>
-                    <p className="text-amber-700 text-xs font-medium mt-1">AWAITING BARCODE INPUT</p>
-                  </div>
-                </div>
-              </div>
-
+              ))}
             </div>
-          </Form>
           </div>
-        )}
-      </Formik>
+
+          {/* ── Actions ── */}
+          <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
+            <ResetButton compact type="button" onClick={handleReset}>Reset</ResetButton>
+            <button type="button" onClick={handleSubmit}
+              disabled={!poData}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                !poData ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700'
+              }`}>
+              <FileText size={12} /> Generate TC
+            </button>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };
-
-// Internal UI Helpers
-const ActionButton = ({ label, icon }) => (
-  <button type="button" className="flex items-center justify-center gap-2 py-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-700 transition-all uppercase tracking-tight shadow-sm active:scale-95 w-full">
-    {icon} {label}
-  </button>
-);
-
-const PrintButton = ({ label, barcode, small }) => (
-  <div className={`flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-300 hover:bg-white transition-all cursor-pointer group ${small ? 'py-1.5' : 'py-3'}`}>
-    <div className="flex items-center gap-2">
-      <Printer size={small ? 14 : 18} className="text-slate-400 group-hover:text-indigo-500" />
-      <span className={`${small ? 'text-[10px]' : 'text-xs'} font-bold text-slate-600 uppercase`}>{label}</span>
-    </div>
-    <span className="font-mono text-[10px] text-slate-400 font-bold">{barcode}</span>
-  </div>
-);
 
 export default TCGenerationDashboard;

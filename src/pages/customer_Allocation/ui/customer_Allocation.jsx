@@ -1,192 +1,300 @@
-import React from 'react';
-import { Formik, Form, Field } from 'formik';
-import { 
-  FileUp, XCircle, PlayCircle, ChevronRight, 
-  ChevronLeft, ClipboardList, Layers, CheckSquare, 
-  FileText, UploadCloud, Trash2, Database
-} from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { PlayCircle, Upload, CheckSquare, Users, FileText, Trash2 } from 'lucide-react';
 import { ModuleCard } from '../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
+/* ── Dummy customer specs ── */
+const CUSTOMER_SPECS = [
+  { value: 'SPEC-G652D',  label: 'G.652.D — Standard SMF'          },
+  { value: 'SPEC-G657A1', label: 'G.657.A1 — Bend Insensitive'     },
+  { value: 'SPEC-G657A2', label: 'G.657.A2 — High Bend Insensitive' },
+  { value: 'SPEC-G654E',  label: 'G.654.E — Ultra Low Loss'         },
+  { value: 'SPEC-G651',   label: 'G.651 — Multimode 50/125'         },
+  { value: 'SPEC-CUSTOM1',label: 'Custom Spec — Batch A'            },
+  { value: 'SPEC-CUSTOM2',label: 'Custom Spec — Batch B'            },
+];
+
+/* ── Dummy fiber table data ── */
+const DUMMY_FIBERS = [
+  { id: 'FIB-001', fiber_id: 'TEF524220', length: '450.320', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-002', fiber_id: 'TEF524195', length: '380.100', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-003', fiber_id: 'TEF524194', length: '512.750', remark: 'Hold',      status: 'On Hold'   },
+  { id: 'FIB-004', fiber_id: 'TEF524180', length: '290.000', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-005', fiber_id: 'TEF524175', length: '601.200', remark: 'Rework',    status: 'Rework'    },
+  { id: 'FIB-006', fiber_id: 'TEF524160', length: '420.500', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-007', fiber_id: 'TEF524145', length: '355.800', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-008', fiber_id: 'TEF524130', length: '480.000', remark: 'Inspection',status: 'On Hold'   },
+  { id: 'FIB-009', fiber_id: 'TEF524115', length: '390.600', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-010', fiber_id: 'TEF524100', length: '525.300', remark: 'Normal',    status: 'Available' },
+];
+
+/* ══════════════════════════════════════════════════════════ */
 const CustomerAllocation = () => {
-  const initialValues = {
-    fiberType: 'Natural',
-    specifications: Array.from({ length: 12 }, (_, i) => ({ id: i, name: `Spec Item - Batch 00${i + 1}` })),
-    selectedSpecs: [],
-    uploadedFile: null,
-    allocationRecords: [
-      { id: 'ALC-0982-001', date: '2026-05-01' },
-      { id: 'ALC-0982-002', date: '2026-05-02' },
-      { id: 'ALC-0982-003', date: '2026-05-03' },
-    ]
+  const [selectedSpecs,  setSelectedSpecs]  = useState([]);
+  const [uploadEnabled,  setUploadEnabled]  = useState(false);
+  const [uploadedFile,   setUploadedFile]   = useState(null);
+  const [tableData,      setTableData]      = useState([]);
+  const [checkedRows,    setCheckedRows]    = useState({});
+  const [allChecked,     setAllChecked]     = useState(false);
+  const fileRef = useRef(null);
+
+  /* ── Dropdown select → add to side box ── */
+  const [dropdownVal, setDropdownVal] = useState('');
+
+  const addSpec = (val) => {
+    if (!val || selectedSpecs.includes(val)) return;
+    setSelectedSpecs(prev => [...prev, val]);
+    setDropdownVal('');
   };
 
-  const onSubmit = (values) => {
-    console.log('Running Allocation for:', values.selectedSpecs);
-    alert(`Allocation Process Started for ${values.selectedSpecs.length} items`);
+  const removeSpec = (val) => setSelectedSpecs(prev => prev.filter(v => v !== val));
+
+  /* ── File upload ── */
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (f) setUploadedFile(f);
   };
+
+  /* ── Run Allocation — distribute fibers across selected specs ── */
+  const runAllocation = () => {
+    if (selectedSpecs.length === 0) { alert('Please select at least one customer spec.'); return; }
+    /* Distribute dummy fibers round-robin across selected specs */
+    const enriched = DUMMY_FIBERS.map((f, i) => ({
+      ...f,
+      spec: selectedSpecs[i % selectedSpecs.length],
+      spec_label: CUSTOMER_SPECS.find(s => s.value === selectedSpecs[i % selectedSpecs.length])?.label || '',
+    }));
+    setTableData(enriched);
+    setCheckedRows({});
+    setAllChecked(false);
+  };
+
+  /* ── Row checkbox ── */
+  const toggleRow = (id) => setCheckedRows(prev => ({ ...prev, [id]: !prev[id] }));
+
+  /* ── Select all ── */
+  const toggleAll = () => {
+    const next = !allChecked;
+    setAllChecked(next);
+    const map = {};
+    tableData.forEach(r => { map[r.id] = next; });
+    setCheckedRows(map);
+  };
+
+  /* ── Submit allocation ── */
+  const handleSubmit = () => {
+    const selected = tableData.filter(r => checkedRows[r.id]);
+    if (selected.length === 0) { alert('Please select at least one fiber row to allocate.'); return; }
+    console.log('Allocating to customer:', selectedSpecs, 'Fibers:', selected);
+    alert(`Allocated ${selected.length} fiber(s) to selected customer spec(s).`);
+    setCheckedRows({});
+    setAllChecked(false);
+  };
+
+  const selectedCount = tableData.filter(r => checkedRows[r.id]).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      <div className="max-w-6xl mx-auto">
-      {/* 1. TOP HEADER (Independent) */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-t-2xl text-white flex justify-between items-center shadow-lg">
-        
-          <div className="flex items-center gap-4">
-            <div className="bg-slate/10 p-2">
-              <Layers size={22} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black text-white tracking-tight uppercase leading-none">Customer Allocation</h1>
-              <p className="text-white text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Inventory assignment engine</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-             <div className="px-3 py-1 bg-slate-800 rounded-md border border-slate-700">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">System Status: </span>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase">Online</span>
-             </div>
-          </div>
-        
-      </div>
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
 
-      <div className="max-w-[1400px] bg-white rounded-b-2xl shadow-xl border-x border-b border-slate-200 mx-auto px-6 pb-10">
-        <Formik initialValues={initialValues} onSubmit={onSubmit}>
-          {({ values, setFieldValue }) => (
-            <Form>
-              {/* 2. MODE SWITCHER & CONTROLS */}
-              <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-6">
-                <div className="w-full md:w-72">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Fiber Classification</span>
-                  <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                    {['Natural', 'Col'].map((type) => (
-                      <label key={type} className="flex-1 text-center cursor-pointer py-2 rounded-lg transition-all has-[:checked]:bg-blue-600 has-[:checked]:text-white text-slate-500 text-xs font-black uppercase tracking-tighter">
-                        <Field type="radio" name="fiberType" value={type} className="sr-only" />
-                        {type}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+          {/* ── Top controls ── */}
+          <ModuleCard compact title="Customer Allocation" icon={<Users size={13} className="text-blue-600" />}>
+            <div className="flex flex-wrap items-end gap-4">
 
-                <div className="flex gap-2 w-full md:w-auto">
-                   <button type="button" className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-                      <FileUp size={14} /> Import Bulk
-                   </button>
-                   <button type="button" className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-                      <Trash2 size={14} className="text-rose-500" /> Clear All
-                   </button>
-                </div>
-              </div>
-
-              {/* 3. MAIN CONTENT GRID */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Left Side: Spec Master */}
-                <div className="lg:col-span-4">
-                  <ModuleCard title="Specification Master" icon={<Database size={16} className="text-blue-600" />}>
-                    <div className="h-[500px] overflow-y-auto pr-2 space-y-1 custom-scrollbar">
-                      {values.specifications.map((spec) => (
-                        <div 
-                          key={spec.id}
-                          onClick={() => {
-                              const newSelected = [...values.selectedSpecs, spec];
-                              const newSpecs = values.specifications.filter(s => s.id !== spec.id);
-                              setFieldValue('selectedSpecs', newSelected);
-                              setFieldValue('specifications', newSpecs);
-                          }}
-                          className="p-3 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:border-blue-400 hover:bg-blue-50 cursor-pointer flex justify-between items-center group transition-all"
-                        >
-                          <span>{spec.name}</span>
-                          <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500" />
-                        </div>
+              {/* Dropdown + selected specs side box */}
+              <div className="flex gap-3 flex-1 min-w-[320px] items-start">
+                {/* Dropdown */}
+                <div className="flex flex-col gap-1 w-56">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Select Customer Spec</label>
+                  <div className="relative">
+                    <select
+                      value={dropdownVal}
+                      onChange={e => addSpec(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500/20 outline-none cursor-pointer pr-6"
+                    >
+                      <option value="">-- Select Spec --</option>
+                      {CUSTOMER_SPECS.filter(s => !selectedSpecs.includes(s.value)).map(({ value, label }) => (
+                        <option key={value} value={value}>{label}</option>
                       ))}
-                    </div>
-                  </ModuleCard>
-                </div>
-
-                {/* Transfer Arrows */}
-                <div className="lg:col-span-1 flex lg:flex-col justify-center items-center gap-3 opacity-30">
-                  <div className="p-2 bg-slate-200 rounded-full"><ChevronRight size={20} className="rotate-90 lg:rotate-0" /></div>
-                  <div className="p-2 bg-slate-200 rounded-full"><ChevronLeft size={20} className="rotate-90 lg:rotate-0" /></div>
-                </div>
-
-                {/* Right Side: Allocation Queue & Results */}
-                <div className="lg:col-span-7 space-y-6">
-                  
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
-                      <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <ClipboardList size={14} /> Allocation Queue
-                      </h3>
-                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black">{values.selectedSpecs.length} ITEMS READY</span>
-                    </div>
-                    
-                    <div className="p-4 h-[250px] overflow-y-auto bg-slate-50/30">
-                      {values.selectedSpecs.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400 italic text-xs gap-3">
-                           <UploadCloud size={32} strokeWidth={1} />
-                           Move specifications here to process
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {values.selectedSpecs.map((spec) => (
-                            <div key={spec.id} className="flex items-center justify-between bg-white p-3 border border-blue-100 rounded-xl shadow-sm">
-                              <span className="text-[11px] font-bold text-slate-700">{spec.name}</span>
-                              <button 
-                                type="button"
-                                onClick={() => {
-                                  const newSpecs = [...values.specifications, spec];
-                                  const newSelected = values.selectedSpecs.filter(s => s.id !== spec.id);
-                                  setFieldValue('specifications', newSpecs);
-                                  setFieldValue('selectedSpecs', newSelected);
-                                }}
-                                className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"
-                              >
-                                <XCircle size={16} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4 bg-slate-50 border-t border-slate-200">
-                      <button type="submit" className="w-full flex items-center justify-center gap-3 bg-slate-900 hover:bg-blue-600 text-white rounded-xl py-4 transition-all shadow-xl shadow-slate-200 group">
-                        <PlayCircle size={22} className="text-blue-400 group-hover:text-white" />
-                        <span className="font-black tracking-[0.2em] uppercase text-xs">Run Allocation Engine</span>
-                      </button>
-                    </div>
+                    </select>
+                    <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">▾</span>
                   </div>
+                </div>
 
-                  {/* Bottom History Table */}
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-white">
-                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <CheckSquare size={14} className="text-emerald-500" /> Recent Successes
-                      </h3>
-                      <button type="button" className="text-[10px] font-bold text-blue-600 hover:underline">VIEW ALL REPORTS</button>
-                    </div>
-                    <table className="w-full">
-                      <tbody className="divide-y divide-slate-50">
-                        {values.allocationRecords.map((record) => (
-                          <tr key={record.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-5 py-3 text-[11px] font-mono font-bold text-blue-600 underline decoration-blue-100 cursor-pointer">{record.id}</td>
-                            <td className="px-5 py-3 text-[11px] font-bold text-slate-500">{record.date}</td>
-                            <td className="px-5 py-3 text-right">
-                              <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded font-black text-[9px] uppercase tracking-tighter">Verified</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Selected specs side box */}
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">
+                    Selected Specs
+                    {selectedSpecs.length > 0 && (
+                      <span className="ml-1.5 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-[8px] font-bold">{selectedSpecs.length}</span>
+                    )}
+                  </label>
+                  <div className="min-h-[34px] max-h-16 overflow-y-auto border border-slate-200 rounded bg-slate-50 p-1.5 flex flex-wrap gap-1">
+                    {selectedSpecs.length === 0 ? (
+                      <span className="text-[9px] text-slate-400 italic self-center ml-1">No specs selected</span>
+                    ) : selectedSpecs.map(val => {
+                      const spec = CUSTOMER_SPECS.find(s => s.value === val);
+                      return (
+                        <span key={val} className="flex items-center gap-1 bg-blue-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+                          {spec?.label}
+                          <button type="button" onClick={() => removeSpec(val)} className="hover:text-blue-200 transition-colors ml-0.5">×</button>
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-            </Form>
-          )}
-        </Formik>
+
+              {/* Upload checkbox + file input */}
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={uploadEnabled}
+                    onChange={e => { setUploadEnabled(e.target.checked); if (!e.target.checked) setUploadedFile(null); }}
+                    className="w-4 h-4 rounded border-slate-300 accent-blue-600"
+                  />
+                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Upload File</span>
+                </label>
+                {uploadEnabled && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".xlsx,.pdf"
+                      onChange={handleFile}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 text-[9px] font-bold rounded hover:bg-slate-200 transition-all"
+                    >
+                      <Upload size={11} /> Choose File
+                    </button>
+                    {uploadedFile ? (
+                      <div className="flex items-center gap-1 text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded px-2 py-1">
+                        <FileText size={10} />
+                        <span className="max-w-[120px] truncate">{uploadedFile.name}</span>
+                        <button type="button" onClick={() => setUploadedFile(null)} className="ml-1 text-rose-500 hover:text-rose-700">
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-slate-400">xlsx or pdf</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Run Allocation button */}
+              <button
+                type="button"
+                onClick={runAllocation}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <PlayCircle size={14} className="text-blue-400" />
+                Run Allocation
+              </button>
+            </div>
+          </ModuleCard>
+
+          {/* ── Fiber table ── */}
+          <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <CheckSquare size={12} className="text-blue-600" />
+                <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Fiber Allocation List</span>
+                {tableData.length > 0 && (
+                  <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">
+                    {tableData.length} records
+                  </span>
+                )}
+              </div>
+              {selectedCount > 0 && (
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  {selectedCount} selected
+                </span>
+              )}
+            </div>
+
+            <div className="overflow-y-auto flex-1">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 bg-slate-50 z-10">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-3 py-2 w-10 border-r border-slate-100">
+                      <input
+                        type="checkbox"
+                        checked={allChecked}
+                        onChange={toggleAll}
+                        disabled={tableData.length === 0}
+                        className="w-3.5 h-3.5 rounded border-slate-300 accent-blue-600 disabled:opacity-40"
+                      />
+                    </th>
+                    {['Fiber ID','Spec','Length (km)','Remark','Status'].map(h => (
+                      <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {tableData.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-12 text-center text-[10px] text-slate-400">
+                        Select customer specs and click <strong>Run Allocation</strong> to load fiber data
+                      </td>
+                    </tr>
+                  ) : tableData.map(row => (
+                    <tr key={row.id}
+                      className={`transition-colors ${checkedRows[row.id] ? 'bg-blue-50/40' : 'hover:bg-slate-50/50'}`}>
+                      <td className="px-3 py-2 border-r border-slate-100">
+                        <input
+                          type="checkbox"
+                          checked={!!checkedRows[row.id]}
+                          onChange={() => toggleRow(row.id)}
+                          className="w-3.5 h-3.5 rounded border-slate-300 accent-blue-600"
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{row.fiber_id}</td>
+                      <td className="px-3 py-2 text-xs font-mono text-slate-600 border-r border-slate-100">{row.length}</td>
+                      <td className="px-3 py-2 text-xs text-slate-600 border-r border-slate-100">{row.remark}</td>
+                      <td className="px-3 py-2">
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                          row.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
+                          row.status === 'On Hold'   ? 'bg-amber-100 text-amber-700'    :
+                                                       'bg-rose-100 text-rose-700'
+                        }`}>{row.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Actions ── */}
+          <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
+            <ResetButton compact type="button"
+              onClick={() => { setTableData([]); setCheckedRows({}); setAllChecked(false); setSelectedSpecs([]); setUploadedFile(null); setUploadEnabled(false); }}>
+              Reset
+            </ResetButton>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={selectedCount === 0}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                selectedCount === 0
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700'
+              }`}
+            >
+              <CheckSquare size={12} />
+              Allocate to Customer {selectedCount > 0 ? `(${selectedCount})` : ''}
+            </button>
+          </div>
+
+        </div>
       </div>
-    </div>
     </div>
   );
 };

@@ -40,6 +40,12 @@ import CustomerAllocation from './pages/customer_Allocation/ui/customer_Allocati
 import QCInOut from './pages/qc_in_out/ui/qc_in_out'
 import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
 import FiberMakingCheck from './pages/dispatch_fiber_making/ui/dispatch_fiber_making'
+import FGFiberRejection from './pages/fg_fiber_rejection/ui/fg_fiber_rejection'
+import PackingListGeneration from './pages/packing_list_gen/ui/packing_list_generation'
+import ModulaInOut from './pages/modula_in_out/ui/modula_in_out'
+import CustomerEnquiry from './pages/order_and_dispatch_management/customer_enquiry/ui/customer_enquiry'
+import CustomerEnquiryList from './pages/order_and_dispatch_management/customer_enquiry_list/ui/customer_enquiry_list'
+import CustomerEnquiryFormPage from './pages/order_and_dispatch_management/customer_enquiry/ui/customer_enquiry_form'
 import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
 import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entry'
 import Splicing from './pages/splicing/ui/splicing'
@@ -75,13 +81,19 @@ function App() {
         <Route path='quality/d2recieving' element={<D2Recieving/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
-        <Route path='quality/customerallocation' element={<CustomerAllocation/>}/>
+        <Route path='fg/customerallocation' element={<CustomerAllocation/>}/>
         <Route path='dispatch/dispatchchecking' element={<DispatchChecking/>}/>
         <Route path='dispatch/fibermakingcheck' element={<FiberMakingCheck/>}/>
         <Route path='dispatch/boxscanningentry' element={<BoxScanningEntry/>}/>
-        <Route path='dispatch/fgfiberallocation' element={<FGFiberAllocation/>}/>
-        <Route path='dispatch/fgrejection' element={<FGRejectinContainer/>}/>
-        <Route path='dispatch/tcgeneration' element={<TCGenerationDashboard/>}/>
+        <Route path='fg/fgfiberallocation' element={<FGFiberAllocation/>}/>
+        <Route path='fg/tcgeneration' element={<TCGenerationDashboard/>}/>
+        <Route path='fg/fiberrejection' element={<FGFiberRejection/>}/>
+        <Route path='fg/packinglist' element={<PackingListGeneration/>}/>
+        <Route path='fg/modulainout' element={<ModulaInOut/>}/>
+        <Route path='order/customerenquiry' element={<CustomerEnquiry/>}/>
+        <Route path='order/enquirylist' element={<CustomerEnquiryList/>}/>
+        <Route path='order/enquiryform' element={<CustomerEnquiryFormPage/>}/>
+        <Route path='order/customerenquirylist' element={<CustomerEnquiryList/>}/>
         <Route path='qa/macrobendC' element={<MacrobendContainer/>}/>
         <Route path='qa/trhtempentry' element={<TRHTempCycleContainer/>}/>
         <Route path='qa/trhcycle' element={<TRH_Cycle/>}/>
