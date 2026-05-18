@@ -186,7 +186,7 @@ const PrerformAllocation = () => {
                         <FormikSelect compact label="Product Type" name="product_type" options={['A', 'B', 'X']} />
                         <FormikSelect compact label="Process Type" name="process_type" options={['A', 'B', 'X']} />
                       </div>
-                      <FormikTextarea compact label="Process Remarks" name="remarks" placeholder="Enter observations..." rows={2} />
+                      <FormikTextarea compact label="Draw Instruction" name="remarks" placeholder="Auto fetched..." rows={2} />
                     </div>
 
                     {/* Right: Measurements */}
@@ -202,7 +202,11 @@ const PrerformAllocation = () => {
                         <FormikInput compact label="Cone L" name="coneL" type="number" placeholder="0.00" />
                       </div>
                       <FormikInput compact label="Average Diameter" name="avgDia" type="number" placeholder="Calculated average" />
+                      <div>
+                      <FormikTextarea compact label="Process Remarks" name="remarks" placeholder="Enter observations..." rows={2} />
                     </div>
+                    </div>
+                    
                   </div>
 
                   {/* Footer actions */}

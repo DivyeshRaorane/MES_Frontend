@@ -103,7 +103,15 @@ const PTEntry = () => {
 
             return (
               <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+<div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Entry</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
                 {/* ══ 4-column main grid ══ */}
                 <div className="grid grid-cols-[1fr_1fr_1.1fr_1.2fr] gap-2 flex-1 min-h-0">
 
@@ -385,16 +393,7 @@ const PTEntry = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex justify-between gap-2 flex-shrink-0">
-                      <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                      <div className="flex gap-1.5">
-                        <button type="button"
-                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-bold hover:bg-blue-200 transition-all">
-                          Check Flow
-                        </button>
-                        <SubmitButton compact type="submit">Save PT Entry</SubmitButton>
-                      </div>
-                    </div>
+                    
                   </div>
 
                 </div>

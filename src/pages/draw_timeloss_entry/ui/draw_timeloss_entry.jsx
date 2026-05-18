@@ -30,14 +30,13 @@ const makeRow = () => ({
 const today = new Date().toISOString().split('T')[0];
 
 const initialValues = {
-  dt_shendra:    false,
   floor_type:    '',          // 'furnace' | 'ground'
   date:          today,
   shift:         '',
   phase:         '',
   operator:      '',
   shift_incharge:'',
-  rows:          Array.from({ length: 5 }, makeRow),
+  rows:          Array.from({ length: 4}, makeRow),
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -51,19 +50,21 @@ const DrawTimelossEntry = () => (
       >
         {({ values, setFieldValue, resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+<div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw TimeLoss Entry</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
             {/* ── Header fields ── */}
-            <ModuleCard compact title="Draw Timeloss Entry" icon={<Clock size={13} className="text-blue-600" />}>
+            <ModuleCard compact title="Default Entry" icon={<Clock size={13} className="text-blue-600" />}>
               <div className="flex flex-col gap-2">
 
-                {/* Row 1: DT Shendra checkbox + Floor radio buttons */}
+                
                 <div className="flex items-center gap-6 pb-2 border-b border-slate-100">
-                  {/* DT Shendra checkbox */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Field type="checkbox" name="dt_shendra"
-                      className="w-4 h-4 rounded border-slate-300 accent-blue-600" />
-                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">DT Shendra</span>
-                  </label>
 
                   {/* Floor type radio buttons */}
                   <div className="flex items-center gap-1.5">
@@ -106,7 +107,7 @@ const DrawTimelossEntry = () => (
                 <div className="flex flex-col flex-1 min-h-0 gap-1.5">
 
                   {/* Add / Remove buttons */}
-                  <div className="flex gap-2 flex-shrink-0">
+                  {/*<div className="flex gap-2 flex-shrink-0">
                     <button type="button"
                       onClick={() => push(makeRow())}
                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">
@@ -117,7 +118,7 @@ const DrawTimelossEntry = () => (
                       className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">
                       <Minus size={11} /> Remove Row
                     </button>
-                  </div>
+                  </div>*/}
 
                   {/* Scrollable table */}
                   <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
@@ -207,13 +208,6 @@ const DrawTimelossEntry = () => (
                 </div>
               )}
             </FieldArray>
-
-            {/* ── Reset + Submit ── */}
-            <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-              <SubmitButton compact type="submit">Submit Entry</SubmitButton>
-            </div>
-
           </Form>
         )}
       </Formik>

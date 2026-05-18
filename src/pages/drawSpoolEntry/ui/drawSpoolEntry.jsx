@@ -1,8 +1,19 @@
-import React from 'react';
-import { Formik, Form, Field } from 'formik';
-import { Database, Layers, Activity, Table, Eye, Cpu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Formik, Form, Field, FieldArray } from 'formik';
+import { Plus, Trash2 } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
-import { FormikSelect, FormikInput, FormikTextarea, ModuleCard } from '../../../components/common_fields';
+import { FormikSelect, FormikInput, FormikTextarea } from '../../../components/common_fields';
+
+/* ── Compact section label ── */
+const SL = ({ title, color = 'text-blue-700' }) => (
+  <p className={`text-[9px] font-bold uppercase tracking-wider ${color} border-b border-slate-100 pb-0.5 mb-1`}>{title}</p>
+);
+
+/* ── Compact table cell ── */
+const TCell = ({ name }) => (
+  <Field name={name}
+    className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 transition-all" />
+);
 
 const getCurrentShift = () => {
   const h = new Date().getHours();
@@ -11,240 +22,254 @@ const getCurrentShift = () => {
   return 'C';
 };
 
-const dummyPitchData = [
-  { flowType: 'Standard', startLength: 0, endLength: 50, pitchChange: 50 },
-  { flowType: 'HighSpeed', startLength: 50, endLength: 120, pitchChange: 70 },
-];
+const today = new Date().toISOString().split('T')[0];
 
 const initialValues = {
-  drawTower: '', preformId: 'PF-AUTO-9982', preformWeight: '',
-  preformType: '', productType: '', fid: '', spoolId: '',
-  entryDate: new Date().toISOString().split('T')[0],
-  shift: getCurrentShift(),
-  startDate: '', startTime: '', endDate: '', endTime: '',
-  drawnLength: '', spoolStatus: 'OK', drawnSpool: '', remark: '',
-  primaryCoat: 'P-COAT-V1', secondaryCoat: 'S-COAT-V2',
-  primPress: '', secPress: '', primCoatBatch: '', secCoatBatch: '',
-  drawLineSpeed: '', drawTension: '', furnacePower: '', preSequence: '',
-  furnaceArgon: '', furnaceHe: '', tubeHe: '', co2Flow: '', N2Flow: '', uvAir: '',
-  shiftIncharge: '', furnaceOperator: '', dieOperator: '', groundOperator: '',
-  pitchDetails: dummyPitchData,
-  drawnBreak: false, breakReason: '', windingObs: '', scratchesObs: '',
-  spoolChangeOver: '', dieClean: '',
-  processRemark: 'Select', drawBreakReason: '',
-  totalPitchChangeLength: '120', totalScrap: '5.2',
-  trial: false,
+  tower_no: '', preform_id: 'PF-AUTO-9982', shift: getCurrentShift(),
+  draw_barcode_id: '', drawn_len_km: '0', cumm_len_km: '0',
+  start_date: today, start_time: '', spool_id: '', preform_wt_kg: '0',
+  drawn_wt_kg: '0', theoretical_len_km: '0',
+  end_date: today, end_time: '', piece_no: '', preform_type: '',
+  adjust_km: '0.15', product_type: '',
+  line_speed: '0', bot_end_scrap: '', draw_seq: '', power: '0',
+  bare_fiber_tension: '0', allan_key_taken_at: '0',
+  die_no: '', die_cleaned: '', fsu: '', temp: '0',
+  humidity: '0', change_over_time: '0',
+  undrawn: '', wind_spool_cndtn: '', spool_condition: '',
+  draw_break: '', spool_end_type: '',
+  remarks: '', manual_entry_reason: '',
+  shift_inc: '', process_opr: '', furnace_opr: '',
+  die_opr: '', rampup_opr: '', spool_end_opr: '',
+  primary_pressure: '', primary_cons_kg: '', primary_coating: '',
+  primary_batch: '', secondary_pressure: '', secondary_cons_kg: '',
+  secondary_coating: '', secondary_batch: '',
+  draw_flaws: [],
 };
 
+const CONSUMPTION_TABS = ['Coating'];
+{/*['Coating', 'Furnace Gas', 'Nitrogen Gas', 'Helium Gas', 'CO2 Gas'];*/ }
+
 /* ══════════════════════════════════════════════════════════ */
-const DrawSpoolEntry = () => (
-  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
-      <Formik initialValues={initialValues} onSubmit={(v) => console.log('Submit:', v)}>
-        {({ values }) => (
-          <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3">
+const DrawSpoolEntry = () => {
+  const [activeConsTab, setActiveConsTab] = useState('Coating');
 
-            {/* ── 3-column grid fills remaining height ── */}
-            <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
+  return (
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <Formik initialValues={initialValues} onSubmit={(v) => console.log('Submit:', v)}>
+          {({ values, resetForm }) => (
+            <Form className="flex flex-col flex-1 overflow-hidden">
 
-              {/* ══ COL 1: Main Requirements ══ */}
-              <ModuleCard
-                compact
-                title="Main Requirements"
-                icon={<Database size={13} className="text-blue-600" />}
-              >
-                {/* inner scroll if viewport is very short */}
-                <div className="flex flex-col gap-1 overflow-y-auto h-full">
-                  <div className="grid grid-cols-3 gap-1">
-                    <FormikSelect compact label="Draw Tower" name="drawTower" options={['Select', 'Tower 1', 'Tower 2']} />
-                    <FormikInput compact label="Preform ID" name="preformId" readOnly />
-                    <FormikInput compact label="Preform Wt" name="preformWeight" type="number" step="0.01" />
-                    <FormikSelect compact label="Preform Type" name="preformType" options={['Select', 'Type A', 'Type B']} />
-                    <FormikSelect compact label="Product Type" name="productType" options={['Select', 'Single Mode', 'Multi Mode']} />
-                    <FormikInput compact label="Spool ID" name="spoolId" />
-                    <FormikInput compact label="FID" name="fid" />
-                    <FormikInput compact label="Entry Date" name="entryDate" type="date" />
-                    <FormikInput compact label="Shift" name="shift" readOnly />
-                    <FormikInput compact label="Drawn Weight" name="drawnweight" type="number" />
-                    <FormikInput compact label="Drawn Length" name="drawnLength" type="number" />
-                    <FormikSelect compact label="Winding Obs" name="windingObs" options={['Select', 'Poor', 'Good']} />
-                    <FormikSelect compact label="Scratches Obs" name="scratchesObs" options={['Select', 'Nil', 'Minor', 'Major']} />
-                    <FormikInput compact label="Top End Scrap" name="drawnLength" type="number" />
-                    <FormikInput compact label="Bottom End Scrap" name="drawnLength" type="number" />
-                    <FormikInput compact label="Balance weight" name="drawnLength" type="number" />
-                    <FormikSelect compact label="Die Clean" name="dieClean" options={['Select', 'Yes', 'No']} />
-                    <FormikInput compact label="Start Date" name="startDate" type="date" />
-                    <FormikInput compact label="Start Time" name="startTime" type="time" />
-                    <FormikInput compact label="End Date" name="endDate" type="date" />
-                    <FormikInput compact label="End Time" name="endTime" type="time" />
-                    <FormikSelect compact label="Spool Status" name="spoolStatus" options={['OK', 'Not OK']} />
-                    {values.spoolStatus === 'Not OK' && (
-                      <FormikSelect compact label="Drawn Spool" name="drawnSpool" options={['Select', 'Scrap', 'Hold', 'Rework']} />
-                    )}
-                    {/* Work Details fields */}
-                    <FormikSelect compact label="Shift Incharge" name="shiftIncharge" options={['Select', 'Incharge A', 'Incharge B']} />
-                    <FormikSelect compact label="Furnace Operator" name="furnaceOperator" options={['Select', 'Operator 1', 'Operator 2']} />
-                    <FormikSelect compact label="Die Operator" name="dieOperator" options={['Select', 'Op 3', 'Op 4']} />
-                    <FormikSelect compact label="Ground Operator" name="groundOperator" options={['Select', 'Op 5', 'Op 6']} />
-                  </div>
-                  <FormikTextarea compact label="Process Remark" name="remark" rows={2} placeholder="Enter remarks..." />
+              {/* ── Top action bar ── */}
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
                 </div>
-              </ModuleCard>
+              </div>
 
-              {/* ══ COL 2: Coating | Process Params | Gas Flow ══ */}
-              <div className="flex flex-col gap-2 min-h-0">
+              {/* ── 2-column body — no scroll ── */}
+              <div className="flex gap-2 flex-1 min-h-0 px-2 py-2 overflow-hidden">
 
-                <ModuleCard compact title="Coating & Batch" icon={<Layers size={13} className="text-indigo-600" />}>
-                  <div className="grid grid-cols-3 gap-1">
-                    <FormikInput compact label="Primary Coat" name="primaryCoat" readOnly />
-                    <FormikInput compact label="Secondary Coat" name="secondaryCoat" readOnly />
-                    <FormikSelect compact label="Coating Type" name="coating_type" options={['Select', 'Batch-01', 'Batch-02']} />
-                    <FormikInput compact label="Prim Press" name="primPress" />
-                    <FormikInput compact label="Sec Press" name="secPress" />
-                    <FormikSelect compact label="Prim Coat Batch" name="primCoatBatch" options={['Select', 'Batch-01', 'Batch-02']} />
-                    <FormikSelect compact label="Sec Coat Batch" name="secCoatBatch" options={['Select', 'S-Batch-01', 'S-Batch-02']} />
-                    <FormikInput compact label="Process Type" name="process_type" />
+                {/* ══ LEFT COLUMN ══ */}
+                <div className="flex flex-col gap-2 flex-1 min-w-0 overflow-hidden">
+
+                  {/* Initial Parameters */}
+                  <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-shrink-0">
+                    <SL title="Initial Parameters" />
+                    <div className="grid grid-cols-8 gap-x-2 gap-y-1">
+                      <FormikSelect compact label="Tower No" name="tower_no" options={['Select', 'Tower 1', 'Tower 2', 'Tower 3']} />
+                      <FormikInput compact label="Preform ID" name="preform_id" readOnly />
+                      <FormikInput compact label="Preform Wt(KG)" name="preform_wt_kg" type="number" />
+                      <FormikInput compact label="Preform Type" name="preform_type" readOnly />
+                      <FormikInput compact label="Spool ID" name="draw_barcode_id" />
+                      <FormikInput compact label="Product Type" name="product_type" readOnly />
+                      <FormikInput compact label="Drawn Wt(KG)" name="drawn_wt_kg" type="number" />
+                      <FormikInput compact label="Drawn Len(KM)" name="drawn_len_km" type="number" />
+                      <FormikInput compact label="Balance Weight" name="balance_weight" type="number" />
+                      <FormikSelect compact label="Shift" name="shift" options={['A', 'B', 'C']} />
+
+                      <FormikInput compact label="Start Date" name="start_date" type="date" />
+                      <FormikInput compact label="Start Time" name="start_time" type="time" />
+
+                      <FormikInput compact label="End Date" name="end_date" type="date" />
+                      <FormikInput compact label="End Time" name="end_time" type="time" />
+                      <FormikInput compact label="Entry Date" name="entry_date" type="date" />
+                      <FormikInput compact label="Spool Number" name="spool_no" type='number' />
+
+                    </div>
                   </div>
-                </ModuleCard>
 
-                <ModuleCard compact title="Process Parameters" icon={<Activity size={13} className="text-emerald-600" />}>
-                  <div className="grid grid-cols-3 gap-1">
-                    <FormikInput compact label="Draw Line Speed" name="drawLineSpeed" type="number" />
-                    <FormikInput compact label="Draw Tension" name="drawTension" type="number" />
-                    <FormikInput compact label="Furnace Power" name="furnacePower" type="number" />
-                    <FormikInput compact label="Pre. Sequence" name="preSequence" type="number" />
-                    <FormikInput compact label="Furnace Argon" name="furnaceArgon" />
-                    <FormikInput compact label="Furnace He" name="furnaceHe" />
-                    <FormikInput compact label="Tube He" name="tubeHe" />
-                    <FormikInput compact label="CO2 Flow" name="co2Flow" />
-                    <FormikInput compact label="N2 Flow" name="N2Flow" />
-                    <FormikInput compact label="UV Air" name="uvAir" />
-                    {/* Remark + conditional Draw Break Reason in same row */}
-                    <FormikSelect compact label="Remark" name="processRemark"
-                      options={['Select', 'OK', 'Not OK']} />
-                    {values.processRemark === 'Not OK' && (
-                      <FormikSelect compact label="Draw Break Reason" name="drawBreakReason"
-                        options={['Select', 'Tension High', 'Gas Issue', 'Bubble', 'Coating Defect', 'Other']} />
-                    )}
-                  </div>
-                </ModuleCard>
+                  {/* Draw Parameters */}
+                  <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-shrink-0">
+                    <SL title="Draw Parameters" />
+                    <div className="grid grid-cols-8 gap-x-2 gap-y-1">
+                      <FormikInput compact label="Draw Line Speed" name="line_speed" type="number" />
+                      <FormikInput compact label="Draw Tension" name="draw_tenstion" />
+                      <FormikInput compact label="Furnace Power" name="furnace_power" />
+                      <FormikInput compact label="Preform Sequence" name="preform_sequence" type="number" />
+                      <FormikInput compact label="Furnace Argon" name="furnace_argon" type="number" />
+                      <FormikInput compact label="Furnace HE" name="furnace_he" type="number" />
 
-                {/* Indication + Trial */}
-                <ModuleCard compact title="Additional" icon={<Activity size={13} className="text-slate-500" />}>
-                  <div className="grid grid-cols-3 gap-1 items-end">
-                    <FormikSelect compact label="Indication Fiber Cut" name="indication_fiber_cut"
-                      options={['Select', 'Cut', 'Sample', 'Break']} />
-                    {/* Trial checkbox — styled consistently */}
-                    <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 transition-all h-[30px] self-end">
-                      <Field
-                        type="checkbox"
-                        name="trial"
-                        className="w-3.5 h-3.5 rounded border-slate-300 accent-indigo-600"
+                      <FormikInput compact label="Tube HE" name="tube_he" />
+                      <FormikInput compact label="CO2 Flow" name="co2_flow" />
+                      <FormikInput compact label="N2 Flow" name="n2_flow" />
+                      <FormikInput compact label="UV Air" name="uv_air" type="text" />
+                      <FormikSelect compact label="Winding Observation" name="winding_observation" options={['Select', 'Yes', 'No']} />
+                      <FormikSelect compact label="Scr Observation" name="scratches_observation" options={['Select', 'Yes', 'No']} />
+
+                      <FormikInput compact label="Top End Scrap" name="top_end_scrap" />
+                      <FormikInput compact label="Bottom End Scrap" name="bottom_end_csrap" />
+
+                      <FormikSelect compact label="Die Clean" name="die_clean" options={['Select', 'Yes', 'No']} />
+                      <FormikSelect compact label="Spool Status" name="spool_status" options={['Select', 'Ok', 'Not Ok']} />
+                      {values.spool_status == "Not Ok" && (
+                        <FormikSelect 
+                        compact
+                        label="Reason"
+                        name="spool_not_ok_reason"
+                        options={["Select","Scrap","Hold","Rework"]}
+                        />
+                      )}
+                      <FormikSelect
+                        compact
+                        label="Indication Fiber Cut"
+                        name="indication_fiber_cut"
+                        options={['Select', 'cut', 'sample', 'break', 'trial']}
                       />
-                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Trial</span>
-                    </label>
-                  </div>
-                </ModuleCard>
-              </div>
 
-              {/* ══ COL 3: PitchChange | Observations | Totals + Actions ══ */}
-              <div className="flex flex-col gap-3 min-h-0">
+                      {/* Conditional Reason Dropdown */}
+                      {values.indication_fiber_cut !== 'Select' && (
+                        <FormikSelect
+                          compact
+                          label={`${values.indication_fiber_cut} Reason`}
+                          name="indication_reason"
+                          options={['Select', 'Yes', 'No']}
+                        />
+                      )}
+                      <div className="col-span-3">
+                        <FormikTextarea compact label="Remarks" name="remarks" rows={1} placeholder="" />
+                      </div>
 
-                {/* PitchChange Details — no scroll, min 10 visible rows */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                  <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Table size={13} className="text-purple-600" />
-                      <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">PitchChange Details</span>
                     </div>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-700 text-[9px] font-bold rounded-lg uppercase"
-                    >
-                      <Cpu size={11} /> Automation
-                    </button>
                   </div>
-                  {/* No scroll — always shows min 10 rows */}
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        {['Flow Type', 'Start Len', 'End Len', 'Pitch Kms'].map(h => (
-                          <th key={h} className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {/* real data rows */}
-                      {values.pitchDetails.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-1.5 text-slate-700">{row.flowType}</td>
-                          <td className="px-3 py-1.5 text-slate-600">{row.startLength}</td>
-                          <td className="px-3 py-1.5 text-slate-600">{row.endLength}</td>
-                          <td className="px-3 py-1.5 font-mono text-emerald-600 font-bold">{row.pitchChange}</td>
-                        </tr>
+
+                  {/* Consumption Details */}
+                  <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-1 min-h-0">
+                    <SL title="Consumption Details" />
+                    {/* Tab bar */}
+                    <div className="flex gap-1 mb-1.5">
+                      {CONSUMPTION_TABS.map(tab => (
+                        <button key={tab} type="button" onClick={() => setActiveConsTab(tab)}
+                          className={`px-2.5 py-0.5 text-[9px] font-bold rounded transition-all ${activeConsTab === tab ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}>
+                          {tab}
+                        </button>
                       ))}
-                      {/* empty filler rows to guarantee min 10 visible rows */}
-                      {Array.from({ length: Math.max(0, 10 - values.pitchDetails.length) }).map((_, idx) => (
-                        <tr key={`empty-${idx}`} className="border-b border-slate-50">
-                          <td className="px-3 py-1.5 text-transparent select-none">—</td>
-                          <td className="px-3 py-1.5" />
-                          <td className="px-3 py-1.5" />
-                          <td className="px-3 py-1.5" />
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    </div>
+                    {activeConsTab === 'Coating' && (
+                      <div className="grid grid-cols-5 gap-x-2 gap-y-1">
+                        <FormikSelect compact label="Primary Coating" name="primary_coating" options={['Select', 'P-COAT-V1', 'P-COAT-V2']} />
+                        <FormikSelect compact label="Secondary Coating" name="secondary_coating" options={['Select', 'S-COAT-V1', 'S-COAT-V2']} />
+                        <FormikSelect compact label="Coating Type" name="coating_type" options={['Select', 'S-Batch-01', 'S-Batch-02']} />
+                        <FormikInput compact label="Primary Pressure" name="primary_pressure" type="number" />
+                        <FormikInput compact label="Secondary Pressure" name="secondary_pressure" type="number" />
+                        <FormikSelect compact label="Primary Batch" name="primary_batch" options={['Select', 'Batch-01', 'Batch-02']} />
+                        <FormikSelect compact label="Secondary Batch" name="secondary_batch" options={['Select', 'S-Batch-01', 'S-Batch-02']} />
+                        <FormikInput compact label="Process Type" name="process_type" type="text" />
+                      </div>
+                    )}
+                    {activeConsTab !== 'Coating' && (
+                      <p className="text-[9px] text-slate-400 text-center py-3">{activeConsTab} fields — coming soon</p>
+                    )}
+                  </div>
+
                 </div>
+                {/* ══ end left column ══ */}
 
-                {/* Observations & Break */}
-                <ModuleCard compact title="Trial Confirmaton" icon={<Eye size={13} className="text-red-600" />}>
-                  <div className="grid grid-cols-2 gap-2">
-                    <FormikInput compact label="FID for trial" name="fid_for_trial" />
-                    <button class="relative inline-flex items-center gap-1 px-1 py-1 text-white font-semibold text-sm rounded-sm 
-bg-gradient-to-r from-purple-600 to-blue-500 
-shadow-lg shadow-blue-500/30 
-transition-all duration-300 
-hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40 
-active:scale-95 overflow-hidden">
+                {/* ══ RIGHT COLUMN ══ */}
+                <div className="flex flex-col gap-2 w-72 flex-shrink-0 overflow-hidden">
 
-                      🚀 Click For Stage Trial
-                    </button>
-                  </div>
-                </ModuleCard>
-
-                {/* Totals + Action buttons */}
-                <div className="flex flex-col gap-2 mt-1">
-                  <div className="grid grid-cols-3 gap-1">
-                    <div className="px-1 py-1 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col">
-                      <span className="text-[7px] font-bold text-indigo-400 uppercase">Total Pitch Change Length</span>
-                      <span className="text-base font-black text-indigo-700">{values.totalPitchChangeLength} Kms</span>
-                    </div>
-                    <div className="px-1 py-1 bg-rose-50 rounded-xl border border-rose-100 flex flex-col">
-                      <span className="text-[7px] font-bold text-rose-400 uppercase">Total Scrap</span>
-                      <span className="text-base font-black text-rose-700">{values.totalScrap} Kg</span>
-                    </div>
-                    <div className="px-1 py-1 bg-rose-50 rounded-xl border border-rose-100 flex flex-col">
-                      <span className="text-[7px] font-bold text-Slate-400 uppercase">Drawn Breaks</span>
-                      <span className="text-base font-black text-slate-700">{values?.k || 4}</span>
+                  {/* Operator Details */}
+                  <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-shrink-0">
+                    <SL title="Operator Details" />
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                      <FormikSelect compact label="Shift Inc." name="shift_inc" options={['Please Select', 'Incharge A', 'Incharge B']} />
+                      <FormikSelect compact label="Furnace Opr." name="furnace_opr" options={['Please Select', 'Op C', 'Op D']} />
+                      <FormikSelect compact label="Die Opr." name="die_opr" options={['Please Select', 'Op E', 'Op F']} />
+                      <FormikSelect compact label="Ground Opr." name="ground_opr" options={['Please Select', 'Op G', 'Op H']} />
                     </div>
                   </div>
-                  <div className="flex justify-between gap-3">
-                    <ResetButton compact>Reset</ResetButton>
-                    <SubmitButton compact>Submit Entry</SubmitButton>
-                  </div>
+
+                  {/* Draw Flaws Details */}
+                  <FieldArray name="draw_flaws">
+                    {({ push, remove, form }) => (
+                      <div className="border border-slate-200 rounded bg-white flex flex-col flex-1 min-h-0">
+                        <div className="flex items-center justify-between px-2 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+                          <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Draw Flaws Details</span>
+                          <div className="flex gap-1">
+                            <button type="button"
+                              className="px-2 py-0.5 bg-blue-600 text-white text-[8px] font-bold rounded hover:bg-blue-700 transition-all">
+                              Get Draw Flaws
+                            </button>
+                            <button type="button"
+                              onClick={() => push({ flaw: '', position1: '', position2: '', defect_len: '', act_cut_len: '' })}
+                              className="flex items-center gap-0.5 px-2 py-0.5 bg-emerald-600 text-white text-[8px] font-bold rounded hover:bg-emerald-700 transition-all">
+                              <Plus size={9} />Add Rows
+                            </button>
+                          </div>
+                        </div>
+                        <div className="overflow-y-auto flex-1 px-2 py-1">
+                          {form.values.draw_flaws.length === 0 ? (
+                            <p className="text-[9px] text-slate-400 text-center py-4">Click "Add Rows" to add entries</p>
+                          ) : (
+                            <table className="w-full text-left border-collapse">
+                              <thead className="sticky top-0 bg-slate-50 z-10">
+                                <tr className="border-b border-slate-200">
+                                  {['Flaw', 'P1', 'P2', 'Def Len', 'Act Cut', ''].map(h => (
+                                    <th key={h} className="px-0.5 py-1 text-[8px] font-bold text-slate-500 uppercase">{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {form.values.draw_flaws.map((_, idx) => (
+                                  <tr key={idx}>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.flaw`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.position1`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.position2`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.defect_len`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.act_cut_len`} /></td>
+                                    <td className="px-0.5 py-0.5 text-center">
+                                      <button type="button" onClick={() => remove(idx)}
+                                        className="text-slate-300 hover:text-rose-500 transition-colors">
+                                        <Trash2 size={10} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </FieldArray>
+
                 </div>
+                {/* ══ end right column ══ */}
 
               </div>
-              {/* ══ end col 3 ══ */}
+              {/* ── end 2-col body ── */}
 
-            </div>
-            {/* ══ end 3-col grid ══ */}
-
-          </Form>
-        )}
-      </Formik>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default DrawSpoolEntry;

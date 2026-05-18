@@ -5,38 +5,31 @@ import { ModuleCard, FormikInput, FormikSelect } from '../../../components/commo
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
 const pendingIds = [
-  'TEFC21081044','TEF322227062','TEF522026022','TEFB22119021','TEF223134096',
-  'TEF423278081','TEF423277100','TEF423289023','TEF523361010','TEF523388022',
-  'TEF523127081','TEF523349072','TEF523349073','TEF523323108','TEF523329091',
-  'TA2A22125052','TA2A22127053','TEF423006072','TEF623020250','TEF623248040',
-  'TEF623032050','TA2A22136105','TEF623046062','TEF623490030','TEF723007040',
-  'TEF423074022','TEF423028010',
+  'TEFC21081044', 'TEF322227062', 'TEF522026022', 'TEFB22119021', 'TEF223134096',
+  'TEF423278081', 'TEF423277100', 'TEF423289023', 'TEF523361010', 'TEF523388022',
+  'TEF523127081', 'TEF523349072', 'TEF523349073', 'TEF523323108', 'TEF523329091',
+  'TA2A22125052', 'TA2A22127053', 'TEF423006072', 'TEF623020250', 'TEF623248040',
+  'TEF623032050', 'TA2A22136105', 'TEF623046062', 'TEF623490030', 'TEF723007040',
+  'TEF423074022', 'TEF423028010',
 ];
 
 const initialValues = {
-  fiberId:          '',
-  dtNo:             '',
-  breakLen:         '',
-  cmLen:            '',
-  power:            '',
-  drawSeq:          '',
-  tension:          '',
-  breakType:        '',
-  category:         '',
-  remark:           '',
-  brkCollectedBy:   '',
-  fiberPassedBy:    '',
-  preformLoadedBy:  '',
-  lineStartedFrom:  '',
-  entryDoneBy:      '',
-  mainBreakType:    '',
-  subReason:        '',
-  nextSubReason:    '',
-  distFromPeriphery:'',
-  particleSize:     '',
-  flawSize:         '',
-  bsaRemark:        '',
-  bsaDoneBy:        '',
+  fiberId: '',
+  dtNo: '',
+  breakLen: '',
+  breakType: '',
+  category: '',
+  remark: '',
+  brkCollectedBy: '',
+  entryDoneBy: '',
+  mainBreakType: '',
+  subReason: '',
+  nextSubReason: '',
+  distFromPeriphery: '',
+  particleSize: '',
+  flawSize: '',
+  bsaRemark: '',
+  bsaDoneBy: '',
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -54,53 +47,56 @@ const DrawBrakAnalysis = () => {
         <Formik initialValues={initialValues} onSubmit={(v) => { console.log('Draw Break Analysis:', v); alert('Saved!'); }}>
           {({ resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
               {/* ── 3-column grid ── */}
-              <div className="grid grid-cols-3 gap-2 flex-1 min-h-0">
+              <div className="grid grid-cols-2 gap-2 flex-1 h-auto">
 
                 {/* ══ COL 1: Main Break Info ══ */}
                 <ModuleCard compact title="Break Information" icon={<Activity size={13} className="text-blue-600" />}>
-                  <div className="grid grid-cols-2 gap-1.5 overflow-y-auto h-full">
-                    <FormikInput  compact label="Fiber ID"           name="fiberId" />
-                    <FormikInput  compact label="DT No."             name="dtNo" />
-                    <FormikInput  compact label="Break Len"          name="breakLen"  type="number" />
-                    <FormikInput  compact label="CM Len"             name="cmLen"     type="number" />
-                    <FormikInput  compact label="Power"              name="power"     type="number" />
-                    <FormikInput  compact label="Draw Seq."          name="drawSeq" />
-                    <FormikInput  compact label="Tension"            name="tension"   type="number" />
-                    <FormikSelect compact label="Break Type"         name="breakType"
-                      options={['Select','Particle','Neckdown','Cladding','Surface']} />
-                    <FormikSelect compact label="Category"           name="category"
-                      options={['Select','Cat A','Cat B','Cat C']} />
-                    <FormikInput  compact label="Remark"             name="remark" />
-                    <FormikInput  compact label="Brk Collected By"   name="brkCollectedBy" />
-                    <FormikInput  compact label="Fiber Passed By"    name="fiberPassedBy" />
-                    <FormikInput  compact label="Preform Loaded By"  name="preformLoadedBy" />
-                    <FormikInput  compact label="Line Started From"  name="lineStartedFrom" />
-                    <FormikInput  compact label="Entry Done By"      name="entryDoneBy" />
+                  <div className="grid grid-cols-4 gap-1">
+                    <FormikInput compact label="Fiber ID" name="fiberId" />
+                    <FormikInput compact label="DT No." name="dtNo" />
+                    <FormikInput compact label="Break Len" name="breakLen" type="number" />
+                    <FormikSelect compact label="Break Type" name="breakType"
+                      options={['Select', 'Particle', 'Neckdown', 'Cladding', 'Surface']} />
+                    <FormikSelect compact label="Category" name="category"
+                      options={['Select', 'Cat A', 'Cat B', 'Cat C']} />
+                    <FormikInput compact label="Remark" name="remark" />
+                    <FormikInput compact label="Brk Collected By" name="brkCollectedBy" />
+                    <FormikInput compact label="Entry Done By" name="entryDoneBy" />
                   </div>
                 </ModuleCard>
 
                 {/* ══ COL 2: BSA Analysis ══ */}
                 <ModuleCard compact title="BSA Analysis" icon={<ClipboardList size={13} className="text-indigo-600" />}>
-                  <div className="grid grid-cols-2 gap-1.5 overflow-y-auto h-full">
-                    <FormikSelect compact label="Main Break Type"     name="mainBreakType"
-                      options={['Select','Particle','Neckdown','Cladding','Surface']} />
-                    <FormikSelect compact label="Sub Reason"          name="subReason"
-                      options={['Select','Internal Bubble','External Scratch','Other']} />
-                    <FormikSelect compact label="Next Sub Reason"     name="nextSubReason"
-                      options={['Select','N-Sub 1','N-Sub 2','N-Sub 3']} />
-                    <FormikInput  compact label="Dist From Periphery" name="distFromPeriphery" type="number" />
-                    <FormikInput  compact label="Particle Size"       name="particleSize"       type="number" />
-                    <FormikInput  compact label="Flaw Size"           name="flawSize"           type="number" />
-                    <FormikInput  compact label="BSA Remark"          name="bsaRemark" />
-                    <FormikSelect compact label="BSA Done By"         name="bsaDoneBy"
-                      options={['Select','Analyst A','Analyst B','Supervisor']} />
+                  <div className="grid grid-cols-4 gap-1">
+                    <FormikSelect compact label="Main Break Type" name="mainBreakType"
+                      options={['Select', 'Particle', 'Neckdown', 'Cladding', 'Surface']} />
+                    <FormikSelect compact label="Sub Reason" name="subReason"
+                      options={['Select', 'Internal Bubble', 'External Scratch', 'Other']} />
+                    <FormikSelect compact label="Next Sub Reason" name="nextSubReason"
+                      options={['Select', 'N-Sub 1', 'N-Sub 2', 'N-Sub 3']} />
+                    <FormikInput compact label="Dist From Periphery" name="distFromPeriphery" type="number" />
+                    <FormikInput compact label="Particle Size" name="particleSize" type="number" />
+                    <FormikInput compact label="Flaw Size" name="flawSize" type="number" />
+                    <FormikInput compact label="BSA Remark" name="bsaRemark" />
+                    <FormikSelect compact label="BSA Done By" name="bsaDoneBy"
+                      options={['Select', 'Analyst A', 'Analyst B', 'Supervisor']} />
                   </div>
                 </ModuleCard>
 
                 {/* ══ COL 3: BSA Pending IDs ══ */}
-                <div className="flex flex-col gap-2 min-h-0">
+                
+                <div className="col-span-2">
+                  
                   <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                     {/* Header with search */}
                     <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between gap-2 flex-shrink-0">
@@ -113,7 +109,7 @@ const DrawBrakAnalysis = () => {
                       </div>
                       {/* Search */}
                       <div className="relative">
-                        <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={15} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Search..."
@@ -126,7 +122,7 @@ const DrawBrakAnalysis = () => {
 
                     {/* Scrollable ID grid */}
                     <div className="overflow-y-auto flex-1 p-2">
-                      <div className="grid grid-cols-2 gap-1">
+                      <div className="grid grid-cols-5 gap-1">
                         {filtered.map((id, i) => (
                           <div
                             key={i}
@@ -145,23 +141,12 @@ const DrawBrakAnalysis = () => {
                     </div>
                   </div>
                 </div>
-
-              </div>
+</div>
+             
               {/* ── end 3-col grid ── */}
 
               {/* ── Action buttons — below form ── */}
-              <div className="flex justify-between items-center gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-[9px] font-bold uppercase hover:bg-orange-200 transition-all"
-                  >
-                    Modify
-                  </button>
-                  <SubmitButton compact type="submit">Submit Entry</SubmitButton>
-                </div>
-              </div>
+
 
             </Form>
           )}

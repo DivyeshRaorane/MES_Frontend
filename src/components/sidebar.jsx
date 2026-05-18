@@ -92,16 +92,7 @@ const MENU = [
       { label: 'Customer Allocation', path: '/fg/customerallocation' },
     ],
   },
-  {
-    key: 'materialorder',
-    label: 'Material & Order',
-    icon: Truck,
-    color: 'text-orange-400',
-    children: [
-      { label: 'Customer Enquiry', path: '/order/customerenquiry' },
-      { label: 'Enquiry List',     path: '/order/enquirylist'     },
-    ],
-  },
+ 
   {
     key: 'settings',
     label: 'Settings',

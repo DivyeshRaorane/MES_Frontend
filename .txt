@@ -1,1 +1,13 @@
 <link rel="icon" type="image/png" href="./src/assets/MES_Logo.PNG" >
+
+
+ {
+    key: 'materialorder',
+    label: 'Material & Order',
+    icon: Truck,
+    color: 'text-orange-400',
+    children: [
+      { label: 'Customer Enquiry', path: '/order/customerenquiry' },
+      { label: 'Enquiry List',     path: '/order/enquirylist'     },
+    ],
+  },

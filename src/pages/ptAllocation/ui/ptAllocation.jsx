@@ -52,6 +52,7 @@ const PTAllocation = () => {
         >
           {({ handleReset }) => (
             <Form>
+              
               <div className="grid grid-cols-5 gap-2">
                 <FormikInput  compact label="Scan Drawn Spool Barcode" name="drawn_spool_id" placeholder="Scan Spool..." />
                 <FormikInput  compact label="Date"                     name="date"           type="date" readOnly />

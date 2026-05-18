@@ -20,45 +20,45 @@ const TInput = ({ value, onChange, disabled = false, defaultValue }) => (
 );
 
 const TABLE_COLS = [
-  { label: '✔',          key: 'check',          w: 'w-8'  },
-  { label: 'DT',         key: 'dt',             w: 'w-10' },
-  { label: 'Theo Speed', key: 'theoSpeed',      w: ''     },
-  { label: 'Actual Speed',key:'actualSpeed',    w: ''     },
-  { label: 'C/O Num',    key: 'coNum',          w: ''     },
-  { label: 'C/O Time',   key: 'coTime',         w: ''     },
-  { label: 'C/O TL',     key: 'coTl',           w: ''     },
-  { label: 'FC TL',      key: 'fcTl',           w: ''     },
-  { label: 'PM TL',      key: 'pmTl',           w: ''     },
-  { label: 'Downtime',   key: 'downtime',       w: ''     },
-  { label: 'Draw Plan',  key: 'drawPlan',       w: ''     },
-  { label: 'Shift Time', key: 'shiftTime',      w: ''     },
+  { label: '✔', key: 'check', w: 'w-8' },
+  { label: 'DT', key: 'dt', w: 'w-10' },
+  { label: 'Theo Speed', key: 'theoSpeed', w: '' },
+  { label: 'Actual Speed', key: 'actualSpeed', w: '' },
+  { label: 'C/O Num', key: 'coNum', w: '' },
+  { label: 'C/O Time', key: 'coTime', w: '' },
+  { label: 'C/O TL', key: 'coTl', w: '' },
+  { label: 'FC TL', key: 'fcTl', w: '' },
+  { label: 'PM TL', key: 'pmTl', w: '' },
+  { label: 'Downtime', key: 'downtime', w: '' },
+  { label: 'Draw Plan', key: 'drawPlan', w: '' },
+  { label: 'Shift Time', key: 'shiftTime', w: '' },
 ];
 
 const makeRows = () =>
-  Array.from({ length: 10 }, (_, i) => ({
-    id:          i + 1,
-    check:       false,
-    dt:          i + 1,
-    theoSpeed:   3000,
+  Array.from({ length: 4 }, (_, i) => ({
+    id: i + 1,
+    check: false,
+    dt: i + 1,
+    theoSpeed: 3000,
     actualSpeed: '',
-    coNum:       0,
-    coTime:      0,
-    coTl:        '',
-    fcTl:        0,
-    pmTl:        0,
-    downtime:    0,
-    drawPlan:    '',
-    shiftTime:   480,
+    coNum: 0,
+    coTime: 0,
+    coTl: '',
+    fcTl: 0,
+    pmTl: 0,
+    downtime: 0,
+    drawPlan: '',
+    shiftTime: 480,
   }));
 
-const TOTALS = ['30000','0','0','0','—','0','0','0','0','4800'];
+const TOTALS = ['30000', '0', '0', '0', '—', '0', '0', '0', '0', '4800'];
 
 const initialValues = {
-  entryDate:     new Date().toISOString().split('T')[0],
-  shift:         '',
-  dieTeam:       '',
-  groundTeam:    '',
-  furnaceTeam:   '',
+  entryDate: new Date().toISOString().split('T')[0],
+  shift: '',
+  dieTeam: '',
+  groundTeam: '',
+  furnaceTeam: '',
   shiftIncharge: '',
 };
 
@@ -79,32 +79,27 @@ const DrawShiftPlan = () => {
         >
           {({ resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Shift Plan</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
               {/* ── Form fields — single row ── */}
               <ModuleCard compact title="Shift Plan Entry" icon={<RefreshCcw size={13} className="text-blue-600" />}>
                 <div className="grid grid-cols-6 gap-2">
-                  <FormikInput  compact label="Entry Date"     name="entryDate"     type="date" />
-                  <FormikSelect compact label="Shift"          name="shift"         options={['Select','A','B','C','General']} />
-                  <FormikSelect compact label="Die Team"       name="dieTeam"       options={['Select','Team Alpha','Team Beta']} />
-                  <FormikSelect compact label="Ground Team"    name="groundTeam"    options={['Select','Ground 1','Ground 2']} />
-                  <FormikSelect compact label="Furnace Team"   name="furnaceTeam"   options={['Select','Furnace A','Furnace B']} />
-                  <FormikSelect compact label="Shift Incharge" name="shiftIncharge" options={['Select','John Doe','Jane Smith']} />
+                  <FormikInput compact label="Entry Date" name="entryDate" type="date" />
+                  <FormikSelect compact label="Shift" name="shift" options={['Select', 'A', 'B', 'C', 'General']} />
+                  <FormikSelect compact label="Die Team" name="dieTeam" options={['Select', 'Team Alpha', 'Team Beta']} />
+                  <FormikSelect compact label="Ground Team" name="groundTeam" options={['Select', 'Ground 1', 'Ground 2']} />
+                  <FormikSelect compact label="Furnace Team" name="furnaceTeam" options={['Select', 'Furnace A', 'Furnace B']} />
+                  <FormikSelect compact label="Shift Incharge" name="shiftIncharge" options={['Select', 'John Doe', 'Jane Smith']} />
                 </div>
               </ModuleCard>
 
-              {/* ── Action buttons — below form, above table ── */}
-              <div className="flex justify-between items-center gap-2 flex-shrink-0">
-                <ResetButton compact type="button" onClick={() => { resetForm(); setRows(makeRows()); }}>
-                  Reset
-                </ResetButton>
-                <div className="flex gap-2">
-                  <button type="button"
-                    className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-[9px] font-bold uppercase hover:bg-orange-200 transition-all">
-                    Modify
-                  </button>
-                  <SubmitButton compact type="submit">Submit Plan</SubmitButton>
-                </div>
-              </div>
 
               {/* ── Table — fills remaining height, scrolls internally ── */}
               <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">

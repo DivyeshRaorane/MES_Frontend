@@ -20,7 +20,7 @@ const HandleJoining = () => {
     preformId: '',
     wt: 'Automatic', dia: 'Automatic', cutoff: 'Automatic', mfd: 'Automatic',preform_type: 'Automatic',
     dia1: '', dia2: '', dia3: '', dia4: '', dia5: '',
-    handleLen: '', handleDia: '', handleType: 'New',
+    handleLen: '', handleDia: '', handleType: 'New',coneLength: '',
     remarks: '',
     h2Flow1:      { flow: 0, time: 0 },
     h2Flow2:      { flow: 0, time: 0 },
@@ -43,7 +43,15 @@ const HandleJoining = () => {
         >
           {({ values }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
-
+<div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Handle Joining</span>
+                <div className="flex gap-1.5">
+                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
               {/* ── Row 1: Preform & WIP | Measurement Logs ── */}
               <div className="grid grid-cols-2 gap-3">
 
@@ -74,7 +82,7 @@ const HandleJoining = () => {
                     </div>
                     {/* Auto fields */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                      {['wt', 'dia', 'cutoff', 'mfd','preform_type'].map((f) => (
+                      {['wt', 'cutoff', 'mfd','preform_type'].map((f) => (
                         <div key={f} className="flex justify-between items-center">
                           <span className="text-[9px] font-bold text-slate-400 uppercase">{f}</span>
                           <span className="text-[11px] font-semibold text-slate-700">{values[f]}</span>
@@ -99,7 +107,7 @@ const HandleJoining = () => {
                     <div className="grid grid-cols-4 gap-1.5">
                       <FormikInput  compact label="Handle Length"   name="handleLen" type="number" />
                       <FormikInput  compact label="Handle Diameter" name="handleDia" type="number" />
-                      <FormikSelect compact label="Handle Type"     name="handleType" options={['New','Rework']} />
+                      <FormikInput compact label="Cone Length"     name="coneLength: '',"  />
                       <FormikInput  compact label="Handle Number" name="handlenumber" type="number" />
                     </div>
                   </div>
@@ -143,10 +151,6 @@ const HandleJoining = () => {
                     rows={2}
                     placeholder="Enter quality or process remarks..."
                   />
-                </div>
-                <div className="flex gap-3 pb-0.5">
-                  <ResetButton compact>Reset Fields</ResetButton>
-                  <SubmitButton compact>Save Joining Record</SubmitButton>
                 </div>
               </div>
 
