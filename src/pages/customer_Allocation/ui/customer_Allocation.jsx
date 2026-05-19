@@ -5,37 +5,37 @@ import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
 /* ── Dummy customer specs ── */
 const CUSTOMER_SPECS = [
-  { value: 'SPEC-G652D',  label: 'G.652.D — Standard SMF'          },
-  { value: 'SPEC-G657A1', label: 'G.657.A1 — Bend Insensitive'     },
+  { value: 'SPEC-G652D', label: 'G.652.D — Standard SMF' },
+  { value: 'SPEC-G657A1', label: 'G.657.A1 — Bend Insensitive' },
   { value: 'SPEC-G657A2', label: 'G.657.A2 — High Bend Insensitive' },
-  { value: 'SPEC-G654E',  label: 'G.654.E — Ultra Low Loss'         },
-  { value: 'SPEC-G651',   label: 'G.651 — Multimode 50/125'         },
-  { value: 'SPEC-CUSTOM1',label: 'Custom Spec — Batch A'            },
-  { value: 'SPEC-CUSTOM2',label: 'Custom Spec — Batch B'            },
+  { value: 'SPEC-G654E', label: 'G.654.E — Ultra Low Loss' },
+  { value: 'SPEC-G651', label: 'G.651 — Multimode 50/125' },
+  { value: 'SPEC-CUSTOM1', label: 'Custom Spec — Batch A' },
+  { value: 'SPEC-CUSTOM2', label: 'Custom Spec — Batch B' },
 ];
 
 /* ── Dummy fiber table data ── */
 const DUMMY_FIBERS = [
-  { id: 'FIB-001', fiber_id: 'TEF524220', length: '450.320', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-002', fiber_id: 'TEF524195', length: '380.100', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-003', fiber_id: 'TEF524194', length: '512.750', remark: 'Hold',      status: 'On Hold'   },
-  { id: 'FIB-004', fiber_id: 'TEF524180', length: '290.000', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-005', fiber_id: 'TEF524175', length: '601.200', remark: 'Rework',    status: 'Rework'    },
-  { id: 'FIB-006', fiber_id: 'TEF524160', length: '420.500', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-007', fiber_id: 'TEF524145', length: '355.800', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-008', fiber_id: 'TEF524130', length: '480.000', remark: 'Inspection',status: 'On Hold'   },
-  { id: 'FIB-009', fiber_id: 'TEF524115', length: '390.600', remark: 'Normal',    status: 'Available' },
-  { id: 'FIB-010', fiber_id: 'TEF524100', length: '525.300', remark: 'Normal',    status: 'Available' },
+  { id: 'FIB-001', fiber_id: 'TEF524220', length: '450.320', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-002', fiber_id: 'TEF524195', length: '380.100', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-003', fiber_id: 'TEF524194', length: '512.750', remark: 'Hold', status: 'On Hold' },
+  { id: 'FIB-004', fiber_id: 'TEF524180', length: '290.000', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-005', fiber_id: 'TEF524175', length: '601.200', remark: 'Rework', status: 'Rework' },
+  { id: 'FIB-006', fiber_id: 'TEF524160', length: '420.500', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-007', fiber_id: 'TEF524145', length: '355.800', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-008', fiber_id: 'TEF524130', length: '480.000', remark: 'Inspection', status: 'On Hold' },
+  { id: 'FIB-009', fiber_id: 'TEF524115', length: '390.600', remark: 'Normal', status: 'Available' },
+  { id: 'FIB-010', fiber_id: 'TEF524100', length: '525.300', remark: 'Normal', status: 'Available' },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
 const CustomerAllocation = () => {
-  const [selectedSpecs,  setSelectedSpecs]  = useState([]);
-  const [uploadEnabled,  setUploadEnabled]  = useState(false);
-  const [uploadedFile,   setUploadedFile]   = useState(null);
-  const [tableData,      setTableData]      = useState([]);
-  const [checkedRows,    setCheckedRows]    = useState({});
-  const [allChecked,     setAllChecked]     = useState(false);
+  const [selectedSpecs, setSelectedSpecs] = useState([]);
+  const [uploadEnabled, setUploadEnabled] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [tableData, setTableData] = useState([]);
+  const [checkedRows, setCheckedRows] = useState({});
+  const [allChecked, setAllChecked] = useState(false);
   const fileRef = useRef(null);
 
   /* ── Dropdown select → add to side box ── */
@@ -97,7 +97,14 @@ const CustomerAllocation = () => {
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+            <div className="flex gap-1.5">
+              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              <SubmitButton compact type="submit">Submit</SubmitButton>
+              <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+            </div>
+          </div>
           {/* ── Top controls ── */}
           <ModuleCard compact title="Customer Allocation" icon={<Users size={13} className="text-blue-600" />}>
             <div className="flex flex-wrap items-end gap-4">
@@ -232,7 +239,7 @@ const CustomerAllocation = () => {
                         className="w-3.5 h-3.5 rounded border-slate-300 accent-blue-600 disabled:opacity-40"
                       />
                     </th>
-                    {['Fiber ID','Spec','Length (km)','Remark','Status'].map(h => (
+                    {['Fiber ID', 'Spec', 'Length (km)', 'Remark', 'Status'].map(h => (
                       <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
                     ))}
                   </tr>
@@ -259,38 +266,16 @@ const CustomerAllocation = () => {
                       <td className="px-3 py-2 text-xs font-mono text-slate-600 border-r border-slate-100">{row.length}</td>
                       <td className="px-3 py-2 text-xs text-slate-600 border-r border-slate-100">{row.remark}</td>
                       <td className="px-3 py-2">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                          row.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
-                          row.status === 'On Hold'   ? 'bg-amber-100 text-amber-700'    :
-                                                       'bg-rose-100 text-rose-700'
-                        }`}>{row.status}</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${row.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
+                            row.status === 'On Hold' ? 'bg-amber-100 text-amber-700' :
+                              'bg-rose-100 text-rose-700'
+                          }`}>{row.status}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-
-          {/* ── Actions ── */}
-          <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-            <ResetButton compact type="button"
-              onClick={() => { setTableData([]); setCheckedRows({}); setAllChecked(false); setSelectedSpecs([]); setUploadedFile(null); setUploadEnabled(false); }}>
-              Reset
-            </ResetButton>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={selectedCount === 0}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                selectedCount === 0
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700'
-              }`}
-            >
-              <CheckSquare size={12} />
-              Allocate to Customer {selectedCount > 0 ? `(${selectedCount})` : ''}
-            </button>
           </div>
 
         </div>

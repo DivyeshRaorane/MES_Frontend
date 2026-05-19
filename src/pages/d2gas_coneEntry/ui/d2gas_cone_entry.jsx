@@ -47,7 +47,14 @@ const D2GasConeEntry = () => (
 
           return (
             <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3">
-
+ <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">D2 Gas</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit">Submit</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+              </div>
+            </div>
               {/* ── Single centred card ── */}
               <div className="flex flex-1 items-start justify-center overflow-y-auto">
                 <div className="w-full">
@@ -122,12 +129,6 @@ const D2GasConeEntry = () => (
                       <div className="grid grid-cols-2 gap-2">
                         <FormikInput compact label="Total No of Bobbin (Auto)" name="total_no_bobbin" readOnly placeholder="Auto-calculated..." />
                         <FormikInput compact label="Qty"                        name="qty"             type="number" placeholder="0" />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex justify-between gap-3 pt-2 border-t border-slate-100">
-                        <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                        <SubmitButton compact type="submit">Submit</SubmitButton>
                       </div>
 
                     </div>

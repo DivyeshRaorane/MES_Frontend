@@ -94,9 +94,8 @@ const DrawShiftReport = () => (
 <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Shift Report</span>
                 <div className="flex gap-1.5">
-                  <button type="button" className="px-3 py-1 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">Save</button>
-                  <SubmitButton compact type="submit">Submit</SubmitButton>
                   <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>                  
                   <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
                 </div>
               </div>

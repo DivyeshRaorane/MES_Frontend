@@ -81,7 +81,14 @@ const PVEntry = () => {
         <Formik initialValues={initialFormValues} onSubmit={() => {}}>
           {({ values, setFieldValue, resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+ <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Pysical Verification</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit">Submit</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+              </div>
+            </div>
               {/* ── Top section: form fields ── */}
               <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 flex-shrink-0">
 
@@ -273,18 +280,7 @@ const PVEntry = () => {
               </div>
 
               {/* ── Save + Reset below table ── */}
-              <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-                <ResetButton compact type="button" onClick={() => { resetForm(); setTableRows([]); }}>
-                  Reset All
-                </ResetButton>
-                <SubmitButton
-                  type="button"
-                  onClick={() => handleSave(values)}
-                  disabled={tableRows.length === 0}
-                  >
-                  <Save size={12} /> Save {tableRows.length > 0 ? `(${tableRows.length})` : ''}
-                </SubmitButton>
-              </div>
+              
 
             </Form>
           )}

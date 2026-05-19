@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Scan, ClipboardList, FlaskConical, Plus, Trash2, FolderOpen, Save } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
+import { ResetButton,SubmitButton } from '../../../components/common_buttons';
 import SelectionModal from '../../../components/selectionModal';
 
 /* ── helpers ── */
@@ -124,7 +125,14 @@ const D2Issue = () => {
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+ <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">D2 Issue Entry</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit">Submit</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+              </div>
+            </div>
           {/* ── Header fields ── */}
           <ModuleCard compact title="D2 Issue Entry" icon={<FlaskConical size={13} className="text-blue-600" />}>
             <div className="grid grid-cols-5 gap-2 items-end">

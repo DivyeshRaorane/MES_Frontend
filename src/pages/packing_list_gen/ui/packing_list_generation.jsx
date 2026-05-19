@@ -5,13 +5,13 @@ import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 
 /* ── Dummy PO data ── */
 const PO_DATA = {
-  'PO-1001': { qty: 16, length: '450.000', colour: 'Blue',    customer: 'Precision Optics Ltd' },
-  'PO-1002': { qty: 8,  length: '380.500', colour: 'Natural', customer: 'Fiber Tech Inc'       },
-  'PO-1003': { qty: 24, length: '520.200', colour: 'Red',     customer: 'Global Cables Co'     },
+  'PO-1001': { qty: 16, length: '450.000', colour: 'Blue', customer: 'Precision Optics Ltd' },
+  'PO-1002': { qty: 8, length: '380.500', colour: 'Natural', customer: 'Fiber Tech Inc' },
+  'PO-1003': { qty: 24, length: '520.200', colour: 'Red', customer: 'Global Cables Co' },
 };
 
 let bobCounter = 1;
-const dummyBobbin = () => `BOB-${String(bobCounter++).padStart(5,'0')}`;
+const dummyBobbin = () => `BOB-${String(bobCounter++).padStart(5, '0')}`;
 
 /* ── Stat card ── */
 const StatCard = ({ label, value, max, color }) => (
@@ -26,17 +26,17 @@ const StatCard = ({ label, value, max, color }) => (
 /* ══════════════════════════════════════════════════════════ */
 const PackingListGeneration = () => {
   /* ── PO / config state ── */
-  const [poNo,       setPoNo]       = useState('');
-  const [poData,     setPoData]     = useState(null);
+  const [poNo, setPoNo] = useState('');
+  const [poData, setPoData] = useState(null);
   const [boxContain, setBoxContain] = useState('');
-  const [stackContain,setStackContain] = useState('');
-  const [scanInput,  setScanInput]  = useState('');
+  const [stackContain, setStackContain] = useState('');
+  const [scanInput, setScanInput] = useState('');
 
   /* ── Scanning state ── */
-  const [bobbins,    setBobbins]    = useState([]);   // all scanned bobbin IDs
-  const [boxes,      setBoxes]      = useState([]);   // [{ boxNo, bobbins:[] }]
-  const [stacks,     setStacks]     = useState([]);   // [{ stackNo, boxes:[] }]
-  const [done,       setDone]       = useState(false);
+  const [bobbins, setBobbins] = useState([]);   // all scanned bobbin IDs
+  const [boxes, setBoxes] = useState([]);   // [{ boxNo, bobbins:[] }]
+  const [stacks, setStacks] = useState([]);   // [{ stackNo, boxes:[] }]
+  const [done, setDone] = useState(false);
 
   const scanRef = useRef(null);
 
@@ -78,8 +78,8 @@ const PackingListGeneration = () => {
     const newBoxes = [];
     for (let i = 0; i < Math.floor(newBobbins.length / bc); i++) {
       newBoxes.push({
-        boxNo:    `${poNo}-BOX-${i + 1}`,
-        bobbins:  newBobbins.slice(i * bc, (i + 1) * bc),
+        boxNo: `${poNo}-BOX-${i + 1}`,
+        bobbins: newBobbins.slice(i * bc, (i + 1) * bc),
       });
     }
     setBoxes(newBoxes);
@@ -89,7 +89,7 @@ const PackingListGeneration = () => {
     for (let i = 0; i < Math.floor(newBoxes.length / sc); i++) {
       newStacks.push({
         stackNo: `${poNo}-STK-${i + 1}`,
-        boxes:   newBoxes.slice(i * sc, (i + 1) * sc).map(b => b.boxNo),
+        boxes: newBoxes.slice(i * sc, (i + 1) * sc).map(b => b.boxNo),
       });
     }
     setStacks(newStacks);
@@ -115,13 +115,20 @@ const PackingListGeneration = () => {
   const bc = parseInt(boxContain) || 0;
   const sc = parseInt(stackContain) || 0;
   const currentBoxBobbins = bc > 0 ? bobbins.length % bc : 0;
-  const currentBoxNo      = boxes.length + (currentBoxBobbins > 0 ? 1 : 0);
+  const currentBoxNo = boxes.length + (currentBoxBobbins > 0 ? 1 : 0);
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+            <div className="flex gap-1.5">
+              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+              <SubmitButton compact type="submit">Submit</SubmitButton>
+              <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+            </div>
+          </div>
           {/* ── Config card ── */}
           <ModuleCard compact title="Packing List Generation" icon={<Package size={13} className="text-blue-600" />}>
             <div className="flex flex-col gap-2">
@@ -144,10 +151,10 @@ const PackingListGeneration = () => {
                 {poData && (
                   <div className="flex items-center gap-3 ml-2 flex-wrap">
                     {[
-                      { label: 'Customer',  val: poData.customer },
+                      { label: 'Customer', val: poData.customer },
                       { label: 'Qty (Bobbins)', val: poData.qty },
-                      { label: 'Length (km)',   val: poData.length },
-                      { label: 'Colour',        val: poData.colour },
+                      { label: 'Length (km)', val: poData.length },
+                      { label: 'Colour', val: poData.colour },
                     ].map(({ label, val }) => (
                       <div key={label} className="flex flex-col">
                         <span className="text-[8px] font-bold text-slate-400 uppercase">{label}</span>
@@ -198,9 +205,9 @@ const PackingListGeneration = () => {
                   <div className="flex gap-2 ml-auto">
                     <StatCard label="Bobbins" value={bobbins.length} max={poData?.qty}
                       color="bg-blue-50 border-blue-200 text-blue-700" />
-                    <StatCard label="Boxes"   value={boxes.length}   max={bc && poData ? Math.ceil(poData.qty / bc) : null}
+                    <StatCard label="Boxes" value={boxes.length} max={bc && poData ? Math.ceil(poData.qty / bc) : null}
                       color="bg-indigo-50 border-indigo-200 text-indigo-700" />
-                    <StatCard label="Stacks"  value={stacks.length}  max={bc && sc && poData ? Math.ceil(Math.ceil(poData.qty / bc) / sc) : null}
+                    <StatCard label="Stacks" value={stacks.length} max={bc && sc && poData ? Math.ceil(Math.ceil(poData.qty / bc) / sc) : null}
                       color="bg-emerald-50 border-emerald-200 text-emerald-700" />
                   </div>
                 </div>
@@ -294,21 +301,6 @@ const PackingListGeneration = () => {
                 </table>
               </div>
             </div>
-          </div>
-
-          {/* ── Actions ── */}
-          <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-            <ResetButton compact type="button" onClick={fullReset}>Reset</ResetButton>
-            <button type="button" onClick={handleSubmit}
-              disabled={bobbins.length === 0}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                bobbins.length === 0
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700'
-              }`}>
-              <Package size={12} />
-              Submit Packing List
-            </button>
           </div>
 
         </div>

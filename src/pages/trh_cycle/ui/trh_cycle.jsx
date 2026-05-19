@@ -23,10 +23,10 @@ const TS = ({ name, options }) => (
 
 /* ── Fixed steps per cycle (from screenshot) ── */
 const STEPS = [
-  { temp: 23,  rh: 50 },
-  { temp: 85,  rh: 95 },
-  { temp: 85,  rh: 95 },
-  { temp: -10, rh: 0  },
+  { temp: 23, rh: 50 },
+  { temp: 85, rh: 95 },
+  { temp: 85, rh: 95 },
+  { temp: -10, rh: 0 },
 ];
 
 const makeStep = (temp, rh) => ({
@@ -38,25 +38,25 @@ const makeStep = (temp, rh) => ({
 
 const makeCycle = () => ({ steps: STEPS.map(s => makeStep(s.temp, s.rh)) });
 
-const today   = new Date().toISOString().split('T')[0];
+const today = new Date().toISOString().split('T')[0];
 const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 const initialValues = {
-  start_date:    today,
-  start_time:    nowTime,
-  end_date:      '',
-  end_time:      '',
-  fiber_id:      '',
-  preform_id:    '',
-  tower_id:      '',
-  spool_id:      '',
+  start_date: today,
+  start_time: nowTime,
+  end_date: '',
+  end_time: '',
+  fiber_id: '',
+  preform_id: '',
+  tower_id: '',
+  spool_id: '',
   test_standard: '',
-  length:        '',
-  remark:        '',
-  at_1310:       '',
-  at_1550:       '',
-  at_1625:       '',
-  cycles:        [makeCycle()],
+  length: '',
+  remark: '',
+  at_1310: '',
+  at_1550: '',
+  at_1625: '',
+  cycles: [makeCycle()],
 };
 
 /* ══════════════════════════════════════════════════════════ */
@@ -67,21 +67,28 @@ const TRH_Cycle = () => (
         onSubmit={(v) => { console.log('TRH Cycle:', v); alert('Saved!'); }}>
         {({ resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit">Submit</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+              </div>
+            </div>
             {/* ── Header fields ── */}
             <ModuleCard compact title="TRH Cycle Entry" icon={<Droplets size={13} className="text-violet-600" />}>
               <div className="grid grid-cols-4 gap-2">
-                <FormikInput  compact label="Start Date"       name="start_date"    type="date" />
-                <FormikInput  compact label="Start Time"       name="start_time"    type="time" />
-                <FormikInput  compact label="End Date"         name="end_date"      type="date" />
-                <FormikInput  compact label="End Time"         name="end_time"      type="time" />
-                <FormikInput  compact label="Fiber ID"         name="fiber_id" />
-                <FormikInput  compact label="Preform ID"       name="preform_id" />
-                <FormikInput  compact label="Tower ID"         name="tower_id" />
-                <FormikInput  compact label="Spool ID"         name="spool_id" />
+                <FormikInput compact label="Start Date" name="start_date" type="date" />
+                <FormikInput compact label="Start Time" name="start_time" type="time" />
+                <FormikInput compact label="End Date" name="end_date" type="date" />
+                <FormikInput compact label="End Time" name="end_time" type="time" />
+                <FormikInput compact label="Fiber ID" name="fiber_id" />
+                <FormikInput compact label="Preform ID" name="preform_id" />
+                <FormikInput compact label="Tower ID" name="tower_id" />
+                <FormikInput compact label="Spool ID" name="spool_id" />
                 <FormikSelect compact label="Testing Standard" name="test_standard"
-                  options={['Select','IEC 60793','ITU-T G.652','ITU-T G.657','TIA','ISO','Other']} />
-                <FormikInput  compact label="Length"           name="length"        type="number" />
+                  options={['Select', 'IEC 60793', 'ITU-T G.652', 'ITU-T G.657', 'TIA', 'ISO', 'Other']} />
+                <FormikInput compact label="Length" name="length" type="number" />
                 <div className="col-span-2">
                   <FormikTextarea compact label="Remark" name="remark" rows={2} placeholder="General test notes..." />
                 </div>
@@ -140,7 +147,7 @@ const TRH_Cycle = () => (
                             <th rowSpan={2} className="px-2 py-2 text-[8px] font-bold uppercase text-center align-middle">Tested By</th>
                           </tr>
                           <tr className="bg-slate-700 text-slate-200">
-                            {['1310 NM','1550 NM','1625 NM'].map(h => (
+                            {['1310 NM', '1550 NM', '1625 NM'].map(h => (
                               <th key={h} className="px-2 py-1.5 text-[8px] font-bold uppercase text-center border-r border-slate-600 bg-blue-800/60">{h}</th>
                             ))}
                           </tr>
@@ -160,11 +167,10 @@ const TRH_Cycle = () => (
                                 )}
                                 {/* Temp */}
                                 <td className="px-2 py-1 text-center border-r border-slate-100">
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                    step.temp === 23  ? 'bg-blue-100 text-blue-700' :
-                                    step.temp === 85  ? 'bg-rose-100 text-rose-700' :
-                                                        'bg-indigo-100 text-indigo-700'
-                                  }`}>{step.temp}°C</span>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${step.temp === 23 ? 'bg-blue-100 text-blue-700' :
+                                      step.temp === 85 ? 'bg-rose-100 text-rose-700' :
+                                        'bg-indigo-100 text-indigo-700'
+                                    }`}>{step.temp}°C</span>
                                 </td>
                                 {/* RH */}
                                 <td className="px-2 py-1 text-center border-r border-slate-100">
@@ -191,7 +197,7 @@ const TRH_Cycle = () => (
                                 {/* Tested By */}
                                 <td className="px-1 py-1">
                                   <TS name={`cycles.${ci}.steps.${si}.tested_by`}
-                                    options={['Select','Op A','Op B','Op C','Manager']} />
+                                    options={['Select', 'Op A', 'Op B', 'Op C', 'Manager']} />
                                 </td>
                               </tr>
                             ))
@@ -204,12 +210,6 @@ const TRH_Cycle = () => (
                 </div>
               )}
             </FieldArray>
-
-            {/* ── Actions ── */}
-            <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-              <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-              <SubmitButton compact type="submit">Submit</SubmitButton>
-            </div>
 
           </Form>
         )}

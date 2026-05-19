@@ -8,28 +8,28 @@ import { Formik, Form } from 'formik';
 let testCounter = 1;
 const fetchBarcode = (barcode) => ({
   barcode,
-  fiber_type:   'Single Mode',
-  colour:       barcode.startsWith('C') ? 'Blue' : '—',
-  qty_kms:      (Math.random() * 10 + 1).toFixed(3),
-  grade:        ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
-  pt_len:       (Math.random() * 500 + 100).toFixed(1),
-  scanned_at:   new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+  fiber_type: 'Single Mode',
+  colour: barcode.startsWith('C') ? 'Blue' : '—',
+  qty_kms: (Math.random() * 10 + 1).toFixed(3),
+  grade: ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
+  pt_len: (Math.random() * 500 + 100).toFixed(1),
+  scanned_at: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
 });
 
 const today = new Date().toISOString().split('T')[0];
 
 const initialFormValues = {
-  stage:    'QC',
-  date:     today,
-  user:     '',
-  shift:    '',
-  barcode:  '',
+  stage: 'QC',
+  date: today,
+  user: '',
+  shift: '',
+  barcode: '',
 };
 
 /* ══════════════════════════════════════════════════════════ */
 const QCInOut = () => {
-  const [rows, setRows]     = useState([]);
-  const scanRef             = useRef(null);
+  const [rows, setRows] = useState([]);
+  const scanRef = useRef(null);
 
   const addRow = (barcode, setFieldValue) => {
     if (!barcode.trim()) return;
@@ -51,22 +51,29 @@ const QCInOut = () => {
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
-        <Formik initialValues={initialFormValues} onSubmit={() => {}}>
+        <Formik initialValues={initialFormValues} onSubmit={() => { }}>
           {({ values, setFieldValue, resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+                <div className="flex gap-1.5">
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
               {/* ── Header fields ── */}
               <ModuleCard compact title="QC In / Out Entry" icon={<ClipboardCheck size={13} className="text-blue-600" />}>
                 <div className="flex flex-col gap-2">
 
                   {/* Stage + Date + User + Shift */}
                   <div className="grid grid-cols-4 gap-2">
-                    <FormikInput  compact label="Stage" name="stage" readOnly />
-                    <FormikInput  compact label="Date"  name="date"  type="date" />
-                    <FormikSelect compact label="User"  name="user"
-                      options={['Select','User A','User B','User C','Senior Op']} />
+                    <FormikInput compact label="Stage" name="stage" readOnly />
+                    <FormikInput compact label="Date" name="date" type="date" />
+                    <FormikSelect compact label="User" name="user"
+                      options={['Select', 'User A', 'User B', 'User C', 'Senior Op']} />
                     <FormikSelect compact label="Shift" name="shift"
-                      options={['Select','A','B','C']} />
+                      options={['Select', 'A', 'B', 'C']} />
                   </div>
 
                   {/* Barcode scan row */}
@@ -92,7 +99,7 @@ const QCInOut = () => {
                     </button>
                     {/* Test button */}
                     <button type="button"
-                      onClick={() => addRow(`TEST-${String(testCounter++).padStart(4,'0')}`, setFieldValue)}
+                      onClick={() => addRow(`TEST-${String(testCounter++).padStart(4, '0')}`, setFieldValue)}
                       className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded uppercase hover:bg-amber-600 transition-all h-[28px]">
                       <Plus size={10} /> Test
                     </button>
@@ -120,7 +127,7 @@ const QCInOut = () => {
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr className="border-b border-slate-200">
-                        {['#','Barcode ID','Fiber Type','Colour','Qty (Kms)','Grade','PT Len','Scanned At',''].map(h => (
+                        {['#', 'Barcode ID', 'Fiber Type', 'Colour', 'Qty (Kms)', 'Grade', 'PT Len', 'Scanned At', ''].map(h => (
                           <th key={h} className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">
                             {h}
                           </th>
@@ -142,11 +149,10 @@ const QCInOut = () => {
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.colour}</td>
                           <td className="px-2 py-1.5 text-xs font-mono text-emerald-700 font-bold border-r border-slate-100">{row.qty_kms}</td>
                           <td className="px-2 py-1.5 border-r border-slate-100">
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                              row.grade === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                              row.grade === 'B' ? 'bg-amber-100 text-amber-700' :
-                                                  'bg-rose-100 text-rose-700'
-                            }`}>{row.grade}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${row.grade === 'A' ? 'bg-emerald-100 text-emerald-700' :
+                                row.grade === 'B' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-rose-100 text-rose-700'
+                              }`}>{row.grade}</span>
                           </td>
                           <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.pt_len}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-400 border-r border-slate-100">{row.scanned_at}</td>
@@ -161,25 +167,6 @@ const QCInOut = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-              {/* ── Reset + Submit ── */}
-              <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-                <ResetButton compact type="button" onClick={() => { resetForm(); setRows([]); }}>
-                  Reset
-                </ResetButton>
-                <button
-                  type="button"
-                  onClick={() => handleSave(values)}
-                  disabled={rows.length === 0}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95
-                    ${rows.length === 0
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700'}`}
-                >
-                  <ClipboardCheck size={12} />
-                  Submit Entry {rows.length > 0 ? `(${rows.length})` : ''}
-                </button>
               </div>
 
             </Form>

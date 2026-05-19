@@ -170,7 +170,14 @@ const TCGenerationDashboard = () => {
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-
+ <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit">Generate TC</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+              </div>
+            </div>
           {/* ── PO Input + Summary ── */}
           <ModuleCard compact title="TC Generation" icon={<FileText size={13} className="text-blue-600" />}>
             <div className="flex flex-col gap-2">
@@ -300,19 +307,6 @@ const TCGenerationDashboard = () => {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* ── Actions ── */}
-          <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-            <ResetButton compact type="button" onClick={handleReset}>Reset</ResetButton>
-            <button type="button" onClick={handleSubmit}
-              disabled={!poData}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                !poData ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700'
-              }`}>
-              <FileText size={12} /> Generate TC
-            </button>
           </div>
 
         </div>

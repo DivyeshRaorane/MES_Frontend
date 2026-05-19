@@ -12,18 +12,18 @@ const makeBatchId = (tankNo, date) => {
   return `H2G-${d}-T${t}`;
 };
 
-const today   = new Date().toISOString().split('T')[0];
+const today = new Date().toISOString().split('T')[0];
 const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 /* ── Table row definitions ── */
 const TABLE_ROWS = [
-  { key: 'date',            label: 'Date'            },
-  { key: 'attn_1240',       label: 'Attn 1240'       },
-  { key: 'attn_1310',       label: 'Attn 1310'       },
-  { key: 'attn_1383_oh',    label: 'Attn 1383(OH)'   },
-  { key: 'attn_1550',       label: 'Attn 1550'       },
-  { key: 'attn_1625',       label: 'Attn 1625'       },
-  { key: 'attn_testing_opr',label: 'Attn Testing Opr'},
+  { key: 'date', label: 'Date' },
+  { key: 'attn_1240', label: 'Attn 1240' },
+  { key: 'attn_1310', label: 'Attn 1310' },
+  { key: 'attn_1383_oh', label: 'Attn 1383(OH)' },
+  { key: 'attn_1550', label: 'Attn 1550' },
+  { key: 'attn_1625', label: 'Attn 1625' },
+  { key: 'attn_testing_opr', label: 'Attn Testing Opr' },
 ];
 
 const PERIODS = ['before', 'after', '14_days'];
@@ -35,10 +35,10 @@ const tableInit = TABLE_ROWS.reduce((acc, row) => {
 }, {});
 
 const initialValues = {
-  tank_no:  '',
+  tank_no: '',
   batch_id: '',
-  date:     today,
-  time:     nowTime,
+  date: today,
+  time: nowTime,
   operator: '',
   ...tableInit,
 };
@@ -64,13 +64,20 @@ const H2Ageing = () => (
 
           return (
             <Form className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
-
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
+                <div className="flex gap-1.5">
+                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+                </div>
+              </div>
               {/* ── Header fields ── */}
               <ModuleCard compact title="H2 Ageing Entry" icon={<FlaskConical size={13} className="text-blue-600" />}>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   <FormikSelect
                     compact label="Select Tank No" name="tank_no"
-                    options={['Select','Tank 01','Tank 02','Tank 03','Tank 04','Tank 05']}
+                    options={['Select', 'Tank 01', 'Tank 02', 'Tank 03', 'Tank 04', 'Tank 05']}
                     onChange={(e) => {
                       setFieldValue('tank_no', e.target.value);
                       syncBatch(e.target.value, values.date);
@@ -88,10 +95,8 @@ const H2Ageing = () => (
                     }}
                   />
                   <FormikInput compact label="Time" name="time" type="time" />
-                  <div className="col-span-2">
-                    <FormikSelect compact label="Operator" name="operator"
-                      options={['Select','Operator A','Operator B','Operator C','Senior Op']} />
-                  </div>
+                   <FormikSelect compact label="Operator" name="operator"
+                      options={['Select', 'Operator A', 'Operator B', 'Operator C', 'Senior Op']} />
                 </div>
               </ModuleCard>
 
@@ -135,12 +140,6 @@ const H2Ageing = () => (
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-              {/* ── Actions ── */}
-              <div className="flex justify-between gap-3 flex-shrink-0 pt-1 border-t border-slate-100">
-                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                <SubmitButton compact type="submit">Submit</SubmitButton>
               </div>
 
             </Form>
