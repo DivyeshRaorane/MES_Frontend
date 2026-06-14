@@ -43,6 +43,8 @@ const ROUTE_TITLES = {
   '/customer/complaint':           'Complaint Entry',
   '/customer/complaintstatus':     'Complaints',
   '/customer/complaintclosure':    'Complaint Closure',
+  '/admin/users':                  'User Management',
+  '/admin/usercreation':           'Create User',
   '/underdev':                     'Under Development',
 };
 

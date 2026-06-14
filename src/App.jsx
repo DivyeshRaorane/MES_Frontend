@@ -12,6 +12,8 @@ import QCEntryScreen from './pages/qualityEntry/ui/qcEntry'
 import PVEntry from './pages/pvEntry/ui/pvEntry'
 import UnderDevelopment from './components/underDevelopmentPage'
 import PageNotFound from './components/404notfound'
+import UserHomeScreen from './pages/Admin_Folder/user_management/user/ui/user_home_screen'
+import UserCreationForm from './pages/Admin_Folder/user_management/user/ui/user_creation_screen'
 import D2Egeing from './pages/d2Egeing/ui/d2egeing'
 import H2Ageing from './pages/h2egeing/ui/h2egeing'
 import DrawBrakAnalysis from './pages/drawbraekAnalysis/ui/drawBAanalysis'
@@ -103,6 +105,8 @@ function App() {
         <Route path='customer/complaintstatus' element={<ComplaintStatusMonitor/>}/>
         <Route path='customer/complaintclosure' element={<ComplaintClosure/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>
+        <Route path='admin/users' element={<UserHomeScreen/>}/>
+        <Route path='admin/usercreation' element={<UserCreationForm onSubmit={(v) => console.log('Create:', v)} title="Create New User" />}/>
         <Route path='/*' element={<PageNotFound/>}/>
         </Route>
         </Routes>   

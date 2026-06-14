@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Activity, Box, ShieldCheck, CheckCircle2,
   Truck, MessageSquareWarning, Settings, LogOut,
-  LayoutDashboard, ChevronRight
+  LayoutDashboard, ChevronRight, Shield,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -93,6 +93,16 @@ const MENU = [
     ],
   },
  
+  {
+    key: 'admin',
+    label: 'Admin',
+    icon: Shield,
+    color: 'text-slate-400',
+    children: [
+      { label: 'User Management', path: '/admin/users'       },
+      { label: 'Create User',     path: '/admin/usercreation'},
+    ],
+  },
   {
     key: 'settings',
     label: 'Settings',
