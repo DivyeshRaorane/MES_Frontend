@@ -105,7 +105,7 @@ const LoginPage = () => {
       <div className="flex-1 bg-white p-8 lg:p-24 flex items-center justify-center">
         <div className="w-full max-w-md space-y-10">
           <div className="space-y-2">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">System Login Main Branch</h2>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">System Login Work Branch </h2>
             <p className="text-slate-500 font-medium">Enter your credentials to access the production floor.</p>
           </div>
 
