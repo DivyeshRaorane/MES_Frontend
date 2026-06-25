@@ -49,7 +49,7 @@ export const FormikInput = ({ label, name, type = "text", compact = false, readO
    FormikSelect
    compact={true}  → py-1.5, text-xs, text-[9px] label
    ───────────────────────────────────────────────────────────── */
-export const FormikSelect = ({ label, name, options, compact = false, className = "", labelClassName = "" }) => (
+/*export const FormikSelect = ({ label, name, options, compact = false, className = "", labelClassName = "" }) => (
   <div className={`flex flex-col gap-0.5 ${className}`}>
     {label && (
       <label className={`font-bold text-slate-800 uppercase ml-0.5 ${labelClassName} ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
@@ -64,9 +64,11 @@ export const FormikSelect = ({ label, name, options, compact = false, className 
           focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
           ${compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
       >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
+        {options.map((opt, index) => (
+  <option key={opt.value ?? opt ?? index} value={opt.value ?? opt}>
+    {opt.label ?? opt}
+  </option>
+))}
       </Field>
       <ChevronDown
         size={compact ? 12 : 14}
@@ -74,7 +76,72 @@ export const FormikSelect = ({ label, name, options, compact = false, className 
       />
     </div>
   </div>
-);
+);*/
+
+import { useField } from "formik";
+
+export const FormikSelect = ({
+  label,
+  name,
+  options,
+  compact = false,
+  className = "",
+  labelClassName = "",
+  onChange,
+}) => {
+  const [field, meta, helpers] = useField(name);
+
+  return (
+    <div className={`flex flex-col gap-0.5 ${className}`}>
+      {label && (
+        <label className={`font-bold text-slate-800 uppercase ml-0.5 ${labelClassName} ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+          {label}
+        </label>
+      )}
+
+      <div className="relative">
+        <select
+          {...field}
+          value={field.value ?? ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            const parsed =
+    val === ""
+      ? null
+      : isNaN(val)
+        ? val
+        : Number(val);
+
+  helpers.setValue(parsed);
+
+
+            if (onChange) {
+      onChange(e); // <-- call parent handler
+    }
+          }}
+          className={`w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg outline-none transition-all cursor-pointer
+            focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+            ${compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}
+        >
+          <option value="">Select</option>
+
+          {options.map((opt, index) => (
+            <option
+              key={opt.value ?? opt ?? index}
+              value={opt.value ?? opt}
+            >
+              {opt.label ?? opt}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {meta.touched && meta.error && (
+        <div className="text-red-500 text-[10px]">{meta.error}</div>
+      )}
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────
    FormikTextarea

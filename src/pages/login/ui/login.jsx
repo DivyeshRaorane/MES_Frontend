@@ -12,6 +12,7 @@ import {
   Cpu,
   Globe
 } from 'lucide-react';
+import { showError, showSuccess } from '../../../utils/toastService';
 
 /**
  * LoginPage Component
@@ -27,30 +28,31 @@ const LoginPage = () => {
   const { token, loading, error } = useSelector((state) => state.auth);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ emp_id: '', password: '' });
 
-  const handleSubmit = () => {
-    if (formData.email === "admin" && formData.password === "admin") {
-      navigate("/dashboard");
-    } else {
-      alert("Email or Password Is Incorrect");
-    }
-  };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   
-  //   try {
-  //     const resultAction = await dispatch(userLogin(formData)); // dispatch returns a promise
-  //     if (userLogin.fulfilled.match(resultAction)) { // check if login was successful
-  //       navigate("/dashboard"); // ✅ navigate immediately after login
-  //     } else {
-  //       console.error("Login failed:", resultAction.payload);
-  //     }
-  //   } catch (err) {
-  //     console.error("Unexpected error:", err);
-  //   }
+  // const handleSubmit = () => {
+    // if (formData.email === "admin" && formData.password === "admin") {
+      // navigate("/dashboard");
+    // } else {
+      // alert("Email or Password Is Incorrect");
+    // }
   // };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const resultAction = await dispatch(userLogin(formData));
+
+  // ❌ ERROR HANDLING ONLY
+  if (userLogin.rejected.match(resultAction)) {
+    showError(resultAction.payload || "Login failed");
+    return;
+  }
+
+  // ✅ SUCCESS ONLY
+  showSuccess("Login successful");
+  navigate("/dashboard");
+};
 
   return (
     <div className="h-screen w-full flex flex-col lg:flex-row">
@@ -112,7 +114,7 @@ const LoginPage = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Operator ID Field */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Operator ID / Email</label>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Employee ID</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
                   <User size={18} />
@@ -122,8 +124,8 @@ const LoginPage = () => {
                   required
                   placeholder="e.g. OP-4012"
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-300"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.emp_id}
+                  onChange={(e) => setFormData({ ...formData, emp_id: e.target.value })}
                 />
               </div>
             </div>

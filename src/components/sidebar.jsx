@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import logOut from '../pages/login/controller/user.slice';
+import { logOut } from '../pages/login/controller/user.slice';
 
 /* ── Menu definition ─────────────────────────────────────── */
 const MENU = [
@@ -23,6 +23,7 @@ const MENU = [
     icon: Box,
     color: 'text-blue-400',
     children: [
+      { label: 'SAP Entry Temp', path: '/drawmange/prefromentrysap' },
       { label: 'Preform Acceptance', path: '/drawmange/acceptance' },
       { label: 'Handle Joining',     path: '/drawmange/handlejoining' },
       { label: 'Preform Allocation', path: '/drawmange/allocation' },
@@ -148,8 +149,8 @@ const Sidebar = () => {
   };
 
   const handleLogout = () => {
-    navigate('/');
     dispatch(logOut());
+    navigate('/')
   };
 
   const activeDrawer = MENU.find(m => m.key === openDrawer);

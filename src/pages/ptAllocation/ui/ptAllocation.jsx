@@ -1,38 +1,85 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Formik, Form } from 'formik';
 import { Barcode, Table as TableIcon } from 'lucide-react';
 import { ModuleCard, FormikSelect, FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { showSuccess, showError } from '../../../utils/toastService';
+import { useDispatch, useSelector } from 'react-redux';
+import { ptAllocationEntry } from '../services/pt_allocation.api';
+import { getPTMachines } from '../../Admin_Folder/proof_testing/pt_machine/service/pt_machine.api';
+import { getPTUsers } from '../../Admin_Folder/proof_testing/pt_users/service/pt_users.api';
+
 
 const dummyData = [
-  { preform_id: 'PF-9901', drawn_spool_id: 'SP-101', DT_No: 'DT-A1', Drawn_Length: '5000m', PT_Done: 'No',  Balance: '5000m' },
-  { preform_id: 'PF-9902', drawn_spool_id: 'SP-102', DT_No: 'DT-B2', Drawn_Length: '4500m', PT_Done: 'Yes', Balance: '0m'    },
-  { preform_id: 'PF-9903', drawn_spool_id: 'SP-103', DT_No: 'DT-C3', Drawn_Length: '6000m', PT_Done: 'No',  Balance: '6000m' },
+  { preform_id: 'PF-9901', drawn_spool_id: 'SP-101', DT_No: 'DT-A1', Drawn_Length: '5000m', PT_Done: 'No', Balance: '5000m' },
+  { preform_id: 'PF-9902', drawn_spool_id: 'SP-102', DT_No: 'DT-B2', Drawn_Length: '4500m', PT_Done: 'Yes', Balance: '0m' },
+  { preform_id: 'PF-9903', drawn_spool_id: 'SP-103', DT_No: 'DT-C3', Drawn_Length: '6000m', PT_Done: 'No', Balance: '6000m' },
 ];
 
 const initialValues = {
-  drawn_spool_id: '',
-  date: new Date().toISOString().split('T')[0],
+  spool_id: '',
+  allocation_date: new Date().toISOString().split('T')[0],
   preform_id: '',
-  DT_No: '',
-  Drawn_Length: '',
+  tower_id: '',
+  drawn_length: '',
+  product_type: "",
   pt_strain: '',
-  pt_machine: '',
-  allocated_by: '',
-  shift_incharge: '',
-  pt_Allo_remark: '',
+  pt_machine_id: '',
+  allocated_by_id: '',
+  is_reject: false,
+  shift_incharge_id: '',
+  allocation_remark: '',
 };
 
 const PTAllocation = () => {
+  const dispatch = useDispatch();
   const formikRef = useRef(null);
+
+  const [ptMachines, setPTMachines] = useState([]);
+  const [ptUsers, setPTUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchPTMAchines = async () => {
+      try {
+        const data = await getPTMachines();
+        setPTMachines(data.data)
+      } catch (erro) {
+        console.error("Error Fetching PT Machines:", error)
+      }
+    }
+    fetchPTMAchines();
+  }, [])
+
+  useEffect(() => {
+    const fetchPTUsers = async () => {
+      try {
+        const data = await getPTUsers();
+        setPTUsers(data.data)
+      } catch (error) {
+        console.error("Error Fetching PT Users:", error)
+      }
+    }
+    fetchPTUsers();
+  }, [])
+
+  const ptMachineOptions = ptMachines.map((ptm) => ({
+    label: `PT Machine ${ptm.pt_machine_no}`,
+    value: ptm.pt_machine_id,
+  }))
+
+  const ptUsersOptions = ptUsers.map((user)=>({
+    label:`${user.pt_user_name}`,
+    value: user.pt_user_id,
+  }))
+
 
   const handleRowClick = (row) => {
     formikRef.current?.setValues({
       ...formikRef.current.values,
       drawn_spool_id: row.drawn_spool_id,
-      preform_id:     row.preform_id,
-      DT_No:          row.DT_No,
-      Drawn_Length:   row.Drawn_Length,
+      preform_id: row.preform_id,
+      DT_No: row.DT_No,
+      Drawn_Length: row.Drawn_Length,
     });
   };
 
@@ -45,31 +92,62 @@ const PTAllocation = () => {
         <Formik
           innerRef={formikRef}
           initialValues={initialValues}
-          onSubmit={(values) => {
+          onSubmit={async (values, { resetForm }) => {
             console.log('Form Submitted:', values);
-            alert('Allocation Saved Successfully!');
+            try {
+              const response = await dispatch(ptAllocationEntry(values))
+              if (response.payload?.success) {
+                showSuccess(response.payload || "Allocation Svaed Successfully")
+              } else {
+                console.log("Error:", response)
+                showError(response.payload || "Allocation Failed")
+              }
+            } catch (error) {
+              console.error("Submit Error:", error);
+              showError("Something went wrong");
+            }
           }}
         >
-          {({ handleReset }) => (
+          {({ handleReset, values, setFieldValue }) => (
             <Form>
-              
+
               <div className="grid grid-cols-5 gap-2">
-                <FormikInput  compact label="Scan Drawn Spool Barcode" name="drawn_spool_id" placeholder="Scan Spool..." />
-                <FormikInput  compact label="Date"                     name="date"           type="date" readOnly />
-                <FormikInput  compact label="Preform ID"               name="preform_id"     placeholder="Automatic" readOnly />
-                <FormikInput  compact label="DT No"                    name="DT_No"          placeholder="Automatic" readOnly />
-                <FormikInput  compact label="Drawn Length"             name="Drawn_Length"   placeholder="Automatic" readOnly />
-                <FormikInput  compact label="Product Type"             name="product_Type"   placeholder="Automatic" readOnly />
-                <FormikSelect compact label="Select PT Strain"         name="pt_strain"      options={['Select Strain','Strain-A','Strain-B','Strain-C']} />
-                <FormikSelect compact label="Select PT Machine"        name="pt_machine"     options={['Select Machine','PT-MAC-01','PT-MAC-02','PT-MAC-03']} />
-                <FormikSelect compact label="Allocated By"             name="allocated_by"   options={['Select User','Divyesh','Senior Op','Manager']} />
-                <FormikSelect compact label="Shift Incharge"           name="shift_incharge" options={['Select User','Divyesh','Senior Op','Manager']} />
-                <FormikInput  compact label="Remark"                   name="pt_Allo_remark" placeholder="Remark" />
+                <FormikInput compact label="Scan Drawn Spool Barcode" name="spool_id" placeholder="Scan Spool..." onBlur={(e) => {
+    console.log("Final value:", e.target.value);
+  }} />
+                <FormikInput compact label="Date" name="allocation_date" type="date" readOnly />
+                <FormikInput compact label="Preform ID" name="preform_id" placeholder="Automatic" readOnly />
+                <FormikInput compact label="DT No" name="tower_id" placeholder="Automatic" readOnly />
+                <FormikInput compact label="Drawn Length" name="drawn_length" placeholder="Automatic" readOnly />
+                <FormikInput compact label="Product Type" name="product_type" placeholder="Automatic" readOnly />
+                <FormikSelect compact label="Select PT Strain" name="pt_strain" options={[
+                  { label: "1%", value: 1 },
+                  { label: "2%", value: 2 },
+                ]} />
+                <FormikSelect compact label="Select PT Machine" name="pt_machine_id" options={ptMachineOptions} />
+                <FormikSelect compact label="Allocated By" name="allocated_by_id" options={ptUsersOptions} />
+                <FormikSelect compact label="Shift Incharge" name="shift_incharge_id" options={ptUsersOptions} />
+                <FormikInput compact label="Remark" name="allocation_remark" placeholder="Remark" />
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-800 uppercase text-[9px]">
+                    Rejected
+                  </label>
+
+                  <div
+                    onClick={() => setFieldValue("is_reject", !values.is_reject)}
+                    className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors ${values.is_reject ? "bg-red-500" : "bg-green-500"
+                      }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${values.is_reject ? "translate-x-6" : "translate-x-0.5"
+                        }`}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-100">
                 <ResetButton compact onClick={handleReset}>Clear</ResetButton>
                 <div className="flex gap-2">
-                  <SubmitButton compact>Reject</SubmitButton>
                   <SubmitButton compact>Allocate</SubmitButton>
                 </div>
               </div>
@@ -89,7 +167,7 @@ const PTAllocation = () => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 z-10">
               <tr className="border-b border-slate-200">
-                {['Preform ID','Draw Spool ID','DT No','Draw Length','PT Done','Balance Length'].map(h => (
+                {['Preform ID', 'Draw Spool ID', 'DT No', 'Draw Length', 'PT Done', 'Balance Length'].map(h => (
                   <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -106,9 +184,8 @@ const PTAllocation = () => {
                   <td className="px-3 py-2 text-xs text-slate-600">{row.DT_No}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">{row.Drawn_Length}</td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      row.PT_Done === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${row.PT_Done === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
                       {row.PT_Done}
                     </span>
                   </td>

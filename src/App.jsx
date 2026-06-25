@@ -53,6 +53,8 @@ import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entr
 import Splicing from './pages/splicing/ui/splicing'
 import ShortTermContainer from './components/short_term_container'
 import CustomerComplaintContainer from './components/customer_complaint_container'
+import { ToastContainer } from 'react-toastify'
+import PreformEntryForm from './pages/preform_enrty_SAP/ui/Preform_entry_SAP'
 
 function App() {
 
@@ -63,6 +65,7 @@ function App() {
         <Route element={<Layout/>}>
         <Route path='dashboard' element={<Dashboard/>}/>
         <Route path='drawmange' element={<DrawManagementPage/>}/>
+        <Route path='drawmange/prefromentrysap' element= {<PreformEntryForm/>}/>
         <Route path='drawmange/acceptance' element={<PerformAcceptance/>}/>
         <Route path='drawmange/handlejoining' element={<HandleJoining/>}/>
         <Route path='drawmange/allocation' element={<PrerformAllocation/>}/>
@@ -109,7 +112,12 @@ function App() {
         <Route path='admin/usercreation' element={<UserCreationForm onSubmit={(v) => console.log('Create:', v)} title="Create New User" />}/>
         <Route path='/*' element={<PageNotFound/>}/>
         </Route>
-        </Routes>   
+        </Routes>  
+         <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        theme="colored"
+      /> 
     </>
   )
 }

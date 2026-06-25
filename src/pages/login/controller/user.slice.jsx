@@ -15,6 +15,7 @@ const authSlice = createSlice({
                 state.token = null,
                 localStorage.removeItem("token");
         },
+    },
         extraReducers: (builder) => {
             builder
                 .addCase(userLogin.pending, (state) => {
@@ -22,17 +23,17 @@ const authSlice = createSlice({
                     state.error = null;
                 })
                 .addCase(userLogin.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user; // adjust based on API response
-        state.token = action.payload.token;
-      })
-      .addCase(userLogin.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+                    state.loading = false;
+                    state.user = action.payload.user; // adjust based on API response
+                    state.token = action.payload.token;
+                })
+                .addCase(userLogin.rejected, (state, action) => {
+                    state.loading = false;
+                    state.error = action.payload;
+                });
         }
-    }
+    
 })
 
-export const {logOut} = authSlice.actions;
+export const { logOut } = authSlice.actions;
 export default authSlice.reducer

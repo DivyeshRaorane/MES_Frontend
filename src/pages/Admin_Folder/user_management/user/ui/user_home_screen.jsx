@@ -1,23 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Users, Plus, Search, Edit2, Trash2, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UserCreationForm from './user_creation_screen';
-
+import { getUsers } from '../service/user.api';
+import { useDispatch,useSelector } from 'react-redux';
 /* ── Dummy users ── */
-const INITIAL_USERS = [
-  { employee_id: 'EMP-001', name: 'Divyesh Patel',    email: 'divyesh@mes.com',   phone: '+91 98765 43210', department: 'Draw',          role: 'Operator',        shift: 'A', status: 'Active',   username: 'divyesh',    password: 'pass123' },
-  { employee_id: 'EMP-002', name: 'Rahul Sharma',     email: 'rahul@mes.com',     phone: '+91 87654 32109', department: 'Quality',        role: 'QC Inspector',    shift: 'B', status: 'Active',   username: 'rahul',      password: 'pass123' },
-  { employee_id: 'EMP-003', name: 'Priya Mehta',      email: 'priya@mes.com',     phone: '+91 76543 21098', department: 'Dispatch',       role: 'Supervisor',      shift: 'C', status: 'Active',   username: 'priya',      password: 'pass123' },
-  { employee_id: 'EMP-004', name: 'Amit Verma',       email: 'amit@mes.com',      phone: '+91 65432 10987', department: 'Proof Testing',  role: 'Senior Operator', shift: 'A', status: 'Inactive', username: 'amit',       password: 'pass123' },
-  { employee_id: 'EMP-005', name: 'Sunita Rao',       email: 'sunita@mes.com',    phone: '+91 54321 09876', department: 'Admin',          role: 'Admin',           shift: 'General', status: 'Active', username: 'sunita', password: 'pass123' },
-  { employee_id: 'EMP-006', name: 'Vikram Singh',     email: 'vikram@mes.com',    phone: '+91 43210 98765', department: 'QA',             role: 'QA Engineer',     shift: 'B', status: 'Active',   username: 'vikram',     password: 'pass123' },
-];
 
 /* ── Status badge ── */
 const StatusBadge = ({ status }) => (
   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-    status === 'Active'   ? 'bg-emerald-100 text-emerald-700' :
-    status === 'Inactive' ? 'bg-rose-100 text-rose-700'       :
+    status === true   ? 'bg-emerald-100 text-emerald-1000' :
+    status === false ? 'bg-rose-100 text-rose-700'       :
                             'bg-amber-100 text-amber-700'
   }`}>{status}</span>
 );
@@ -32,30 +25,41 @@ const RoleBadge = ({ role }) => (
 /* ══════════════════════════════════════════════════════════ */
 const UserHomeScreen = () => {
   const navigate = useNavigate();
-  const [users,       setUsers]       = useState(INITIAL_USERS);
   const [search,      setSearch]      = useState('');
   const [editUser,    setEditUser]    = useState(null);   // user to edit (null = no popup)
   const [deleteId,    setDeleteId]    = useState(null);   // confirm delete
+  const dispatch = useDispatch()
+
+  const {getUsersData,uLoading,uError} = useSelector((state)=> state.getUsers)
+
+  useEffect(()=>{
+    dispatch(getUsers())
+  },[dispatch])
+
+  console.log("What is the user:", getUsersData)
 
   /* ── Filtered list ── */
-  const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.employee_id.toLowerCase().includes(search.toLowerCase()) ||
-    u.department.toLowerCase().includes(search.toLowerCase()) ||
-    u.role.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (getUsersData || []).filter(u =>
+  u.emp_name?.toLowerCase().includes(search.toLowerCase()) ||
+  u.emp_id?.toLowerCase().includes(search.toLowerCase()) ||
+  u.role?.toLowerCase().includes(search.toLowerCase()) ||
+  u.departments?.some(d =>
+    d.name.toLowerCase().includes(search.toLowerCase())
+  )
+);
 
   /* ── Update user ── */
   const handleUpdate = (values) => {
+    console.log("values:", values)
     setUsers(prev => prev.map(u =>
-      u.employee_id === values.employee_id ? { ...u, ...values } : u
+      u.emp_id === values.emp_id ? { ...u, ...values } : u
     ));
     setEditUser(null);
   };
 
   /* ── Delete user ── */
   const handleDelete = (id) => {
-    setUsers(prev => prev.filter(u => u.employee_id !== id));
+    setUsers(prev => prev.filter(u => u.emp_id !== id));
     setDeleteId(null);
   };
 
@@ -68,7 +72,7 @@ const UserHomeScreen = () => {
           <div className="flex items-center gap-2">
             <Users size={15} className="text-blue-600" />
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">User Management</span>
-            <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{users.length} users</span>
+            <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{getUsersData.length} users</span>
           </div>
           <div className="flex items-center gap-2">
             {/* Search */}
@@ -92,7 +96,7 @@ const UserHomeScreen = () => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 z-10">
               <tr>
-                {['Employee ID','Name','Email','Department','Role','Shift','Status','Actions'].map(h => (
+                {['Employee ID','Name','Email','Department','Role','Status','Actions'].map(h => (
                   <th key={h} className="px-3 py-2.5 text-[9px] font-bold text-slate-300 uppercase whitespace-nowrap border-r border-slate-700 last:border-0">{h}</th>
                 ))}
               </tr>
@@ -101,31 +105,30 @@ const UserHomeScreen = () => {
               {filtered.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-10 text-center text-xs text-slate-400">No users found</td></tr>
               ) : filtered.map((user) => (
-                <tr key={user.employee_id} className="hover:bg-blue-50/30 transition-colors group">
+                <tr key={user.emp_id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-3 py-2.5 border-r border-slate-100">
-                    <span className="text-xs font-mono font-bold text-blue-700">{user.employee_id}</span>
+                    <span className="text-xs font-mono font-bold text-blue-700">{user.emp_id}</span>
                   </td>
                   <td className="px-3 py-2.5 border-r border-slate-100">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                        {user.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+                        {user.emp_name.split(' ').map(n => n[0]).join('').slice(0,2)}
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-slate-700 leading-tight">{user.name}</p>
-                        <p className="text-[8px] text-slate-400">{user.username}</p>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight">{user.emp_name}</p>
+                        <p className="text-[8px] text-slate-400">{user.emp_name}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500 border-r border-slate-100">{user.email}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-500 border-r border-slate-100">{user.emp_mail_id}</td>
                   <td className="px-3 py-2.5 border-r border-slate-100">
                     <span className="text-xs text-slate-600">{user.department}</span>
                   </td>
                   <td className="px-3 py-2.5 border-r border-slate-100">
                     <RoleBadge role={user.role} />
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500 border-r border-slate-100">{user.shift}</td>
                   <td className="px-3 py-2.5 border-r border-slate-100">
-                    <StatusBadge status={user.status} />
+                    <StatusBadge status={user.is_active} />
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
@@ -137,7 +140,7 @@ const UserHomeScreen = () => {
                       </button>
                       {/* Delete */}
                       <button type="button"
-                        onClick={() => setDeleteId(user.employee_id)}
+                        onClick={() => setDeleteId(user.emp_id)}
                         className="flex items-center gap-1 px-2 py-1 bg-rose-50 text-rose-700 border border-rose-200 text-[8px] font-bold rounded hover:bg-rose-100 transition-all">
                         <Trash2 size={10} /> Delete
                       </button>
@@ -161,7 +164,7 @@ const UserHomeScreen = () => {
       {editUser && (
         <UserCreationForm
           isPopup
-          title={`Update User — ${editUser.employee_id}`}
+          title={`Update User — ${editUser.emp_id}`}
           initialValues={editUser}
           onSubmit={handleUpdate}
           onCancel={() => setEditUser(null)}

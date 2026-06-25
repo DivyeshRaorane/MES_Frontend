@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import { Plus, ClipboardList, History, X, Keyboard, Settings, Building2, ListOrdered } from 'lucide-react';
+import { Plus, ClipboardList, History, X, Keyboard, Settings, Building2, ListOrdered,Trash2 } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { useDispatch, useSelector } from 'react-redux';
+import { getPreformForAllocation, preformAllocationEntry , getRecentAllocatedPreforms  } from '../services/preform_allocation.api';
+import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
+import { resume } from 'react-dom/server';
+import { showSuccess,showError } from '../../../utils/toastService';
+import { array } from 'yup';
+
 
 /* ── Mock data ── */
 const INITIAL_WIP = [
@@ -16,26 +23,93 @@ const INITIAL_ALLOCS = [
 ];
 
 const FORM_INIT = {
-  entryDate: '2024-05-31',
-  dtNo: 'DT01',
-  shift: 'A',
-  seq: '',
-  loadedBy: 'Operator A',
-  remarks: '',
+  preform_id: "",
+  allocation_date: '',
+  tower_id: null,
+  shift_id: null,
+  seq: null,
+  loaded_by: null,
+  process_remark: '',
+  draw_instruction: '',
   dia1: '', dia2: '', dia3: '', dia4: '', dia5: '',
-  coneL: '',
-  avgDia: '',
+  cone_length: null,
+  average_diameter: null,
 };
 
 /* ══════════════════════════════════════════════════════════ */
 const PrerformAllocation = () => {
+  const dispatch = useDispatch();
   const [selectedPreform, setSelectedPreform] = useState(null);
-  const [wipData] = useState(INITIAL_WIP);
+
   const [allocations] = useState(INITIAL_ALLOCS);
 
-  const handleSubmit = (values, { resetForm }) => {
-    console.log('Payload:', { ...values, preformId: selectedPreform.id });
-    alert(`Success! Allocated ${selectedPreform.id}`);
+  const { preformForAllocationData, paLoading, paError } = useSelector((state) => state.preformForAllocation);
+  
+
+  useEffect(() => {
+    dispatch(getPreformForAllocation())
+  }, [dispatch])
+
+  useEffect(()=>{
+    dispatch(getTowerForAllocation(true))
+  },[dispatch])
+
+  useEffect(()=>{
+    dispatch(getRecentAllocatedPreforms())
+  },[dispatch])
+  const {towerForAllocationData,taLoading,taError}= useSelector((state)=> state.towersForAllocation)
+  const {recentAllocatedPreformData, rapLoading, rapError}= useSelector((state)=> state.recentAllocatedPreform)
+
+
+  console.log("WHat is the recent preform:", recentAllocatedPreformData)
+   const towerOptions = Array.isArray(towerForAllocationData)
+  ? towerForAllocationData.map(t => ({
+      label: `Tower ${t.tower_no}`,
+      value: t.tower_id
+    }))
+  : [];
+
+
+  const [wipData] = useState(INITIAL_WIP);
+
+  const avgDia =
+    [1, 2, 3, 4, 5].reduce(
+      (sum, i) => sum + Number(selectedPreform?.[`dia${i}`] || 0),
+      0
+    ) / 5;
+
+
+  const handleSubmit = async(values, { resetForm }) => {
+    if (!selectedPreform)  return;
+
+     const payload = {
+      ...values,
+      preform_id: selectedPreform.preform_id,
+      average_diameter: avgDia,
+      shift_id:1,
+      operator_id:1111,
+      loaded_by:1111,
+      preform_type_id:1,
+      product_type_id:1,
+      process_type_id:1,
+      logged_in_user:1111
+
+    };
+
+    try{
+      const result = await dispatch(preformAllocationEntry(payload))
+
+      console.log("Saved", result)
+      showSuccess(result)
+      setSelectedPreform(null);
+    resetForm();
+    }catch(error){
+ console.error("Allocation failed:", error);
+ showError(error.message)
+    }
+
+
+    
     setSelectedPreform(null);
     resetForm();
   };
@@ -67,16 +141,16 @@ const PrerformAllocation = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {wipData.map((item) => (
+                    {Array.isArray(preformForAllocationData) && preformForAllocationData.map((item) => (
                       <tr
-                        key={item.id}
-                        className={`transition-colors ${selectedPreform?.id === item.id ? 'bg-blue-50' : 'hover:bg-blue-50/40'}`}
+                        key={item.preform_id}
+                        className={`transition-colors ${selectedPreform?.preform_id === item.preform_id ? 'bg-blue-50' : 'hover:bg-blue-50/40'}`}
                       >
                         <td className="px-3 py-2">
                           <button
                             type="button"
                             onClick={() => setSelectedPreform(item)}
-                            className={`p-1 rounded-lg transition-all ${selectedPreform?.id === item.id
+                            className={`p-1 rounded-lg transition-all ${selectedPreform?.preform_id === item.preform_id
                               ? 'bg-blue-600 text-white'
                               : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white'
                               }`}
@@ -84,8 +158,8 @@ const PrerformAllocation = () => {
                             <Plus size={13} />
                           </button>
                         </td>
-                        <td className="px-3 py-2 font-semibold text-slate-700">{item.id}</td>
-                        <td className="px-3 py-2 text-right font-mono text-slate-600">{item.weight.toFixed(3)}</td>
+                        <td className="px-3 py-2 font-semibold text-slate-700">{item.preform_id}</td>
+                        <td className="px-3 py-2 text-right font-mono text-slate-600">{item.preform_weight}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -106,14 +180,26 @@ const PrerformAllocation = () => {
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Line</th>
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Preform</th>
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase text-right">Consumed</th>
+                      <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {allocations.map((row, idx) => (
+                    {Array.isArray(recentAllocatedPreformData) && 
+                    recentAllocatedPreformData.map((row, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="px-3 py-2 font-medium text-slate-700">{row.dtNo}</td>
-                        <td className="px-3 py-2 font-bold text-blue-700">{row.preformId}</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600">{row.consumed.toFixed(3)} KG</td>
+                        <td className="px-3 py-2 font-medium text-slate-700">{row.tower_no}</td>
+                        <td className="px-3 py-2 font-bold text-blue-700">{row.preform_id}</td>
+                        <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600">{row.preform_weight} KG</td>
+                        <td className="px-3 py-2">
+          <button
+            type="button"
+            onClick={() => handleComplete(row)}
+            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-green-700"
+          >
+            <Trash2 size={14} />
+
+          </button>
+        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -135,11 +221,11 @@ const PrerformAllocation = () => {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-white">
-                    {selectedPreform ? `Entry Form: ${selectedPreform.id}` : 'Entry Form — Select a Preform above'}
+                    {selectedPreform ? `Entry Form: ${selectedPreform.preform_id}` : 'Entry Form — Select a Preform above'}
                   </h2>
                   {selectedPreform && (
                     <p className="text-blue-200 text-[10px] font-medium">
-                      Stock Weight: {selectedPreform.weight} KG || Drawing Length : {selectedPreform.drawing_length}
+                      Stock Weight: {selectedPreform.preform_weight} KG || Drawing Length : {selectedPreform.drawing_length}
                     </p>
 
                   )}
@@ -173,8 +259,8 @@ const PrerformAllocation = () => {
                         <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Logistics &amp; Tracking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <FormikInput compact label="Allocation Date" name="entryDate" type="date" />
-                        <FormikSelect compact label="Tower Line (DT)" name="dtNo" options={['DT01', 'DT02', 'DT03', 'DT10']} />
+                        <FormikInput compact label="Allocation Date" name="allocation_date" type="date" />
+                        <FormikSelect compact label="Tower Line (DT)" name="tower_id" options={towerOptions} />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <FormikSelect compact label="Working Shift" name="shift" options={['A', 'B', 'C']} />
@@ -182,11 +268,11 @@ const PrerformAllocation = () => {
                         <FormikSelect compact label="Loading Operator" name="loadedBy" options={['Operator A', 'Operator B', 'Supervisor X']} />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <FormikInput compact label="Preform Type" name="preform_type" placeholder="e.g. 1" />
+                        <FormikInput compact label="Preform Type" name="preform_type" value={selectedPreform?.preform_type_id} disabled placeholder="e.g. 1" />
                         <FormikSelect compact label="Product Type" name="product_type" options={['A', 'B', 'X']} />
                         <FormikSelect compact label="Process Type" name="process_type" options={['A', 'B', 'X']} />
                       </div>
-                      <FormikTextarea compact label="Draw Instruction" name="remarks" placeholder="Auto fetched..." rows={2} />
+                      <FormikTextarea compact label="Draw Instruction" name="draw_instruction" placeholder="Auto fetched..." rows={2} />
                     </div>
 
                     {/* Right: Measurements */}
@@ -197,16 +283,16 @@ const PrerformAllocation = () => {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {[1, 2, 3, 4, 5].map(i => (
-                          <FormikInput key={i} compact label={`Dia ${i}`} name={`dia${i}`} type="number" placeholder="0.00" />
+                          <FormikInput key={i} compact label={`Dia ${i}`} name={`dia${i}`} value={selectedPreform?.[`dia${i}`]} disabled type="number" placeholder="0.00" />
                         ))}
-                        <FormikInput compact label="Cone L" name="coneL" type="number" placeholder="0.00" />
+                        <FormikInput compact label="Cone L" name="coneL" value={selectedPreform?.cone_length} type="number" placeholder="0.00" />
                       </div>
-                      <FormikInput compact label="Average Diameter" name="avgDia" type="number" placeholder="Calculated average" />
+                      <FormikInput compact label="Average Diameter" name="average_diameter" type="number" value={avgDia} placeholder="Calculated average" />
                       <div>
-                      <FormikTextarea compact label="Process Remarks" name="remarks" placeholder="Enter observations..." rows={2} />
+                        <FormikTextarea compact label="Process Remarks" name="process_remark" placeholder="Enter observations..." rows={2} />
+                      </div>
                     </div>
-                    </div>
-                    
+
                   </div>
 
                   {/* Footer actions */}
