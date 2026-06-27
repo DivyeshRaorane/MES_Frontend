@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+
 export const drawFlawAutomation = (rows) => {
     const results = [];
 
@@ -78,4 +80,15 @@ export const drawFlawAutomation = (rows) => {
         }
     }
     return results;
+};
+
+export const exportFlawReport = (rows) => {
+    const data = drawFlawAutomation(rows);
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Flaw Report");
+
+    XLSX.writeFile(workbook, "Flaw_Report.xlsx");
 };

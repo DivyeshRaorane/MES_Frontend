@@ -13,6 +13,9 @@ import drawEntryReducer from '../pages/drawSpoolEntry/controller/draw_spool_entr
 import preformByTowerReducer from '../pages/drawSpoolEntry/controller/preform_by_tower.slice'
 import getUsersReducer from '../pages/Admin_Folder/user_management/user/controller/getUser.slice'
 import ptAllocationReducer from '../pages/ptAllocation/controller/pt_allocation.slice'
+import ptAllocatedSpoolReducer from '../pages/ptRunnigTable/controller/pt_allocated_spool.controller'
+import ptEntryReducer from '../pages/proofTestEntry/controller/pt_entry.slice'
+
 
 
 
@@ -32,5 +35,7 @@ export const store = configureStore({
         preformByTower: preformByTowerReducer,
         getUsers: getUsersReducer,
         ptAllocation: ptAllocationReducer,
+        ptAllocatedSpool: ptAllocatedSpoolReducer,
+        ptEntry: ptEntryReducer,
     }
 })

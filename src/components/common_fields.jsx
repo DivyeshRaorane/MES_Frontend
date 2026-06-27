@@ -22,28 +22,94 @@ export const ModuleCard = ({ title, icon, children, compact = false }) => (
    FormikInput
    compact={true}  → py-1.5, text-xs, text-[9px] label
    readOnly        → grey background, no focus ring
+
+   
    ───────────────────────────────────────────────────────────── */
-export const FormikInput = ({ label, name, type = "text", compact = false, readOnly = false, className = "", ...props }) => (
-  <div className="flex flex-col gap-0.5">
-    {label && (
-      <label className={`font-bold text-slate-800 uppercase ml-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
-        {label}
-      </label>
-    )}
-    <Field
-      name={name}
-      type={type}
-      readOnly={readOnly}
-      className={`w-full border border-slate-200 outline-none transition-all
-        ${compact ? 'rounded px-2 py-1.5 text-xs' : 'rounded-sm px-3 py-2 text-sm'}
-        ${readOnly
-          ? 'bg-slate-200 text-slate-500 cursor-default'
-          : 'bg-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}
-        ${className}`}
-      {...props}
-    />
-  </div>
-);
+// export const FormikInput = ({ label, name, type = "text", compact = false, readOnly = false, className = "",error, touched, ...props }) => (
+//   <div className="flex flex-col gap-0.5">
+//     {label && (
+//       <label className={`font-bold text-slate-800 uppercase ml-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+//         {label}
+//       </label>
+//     )}
+//     <Field
+//       name={name}
+//       type={type}
+//       readOnly={readOnly}
+//       className={`w-full border border-slate-200 outline-none transition-all
+//         ${compact ? 'rounded px-2 py-1.5 text-xs' : 'rounded-sm px-3 py-2 text-sm'}
+//         ${readOnly
+//           ? 'bg-slate-200 text-slate-500 cursor-default'
+//           : error && touched
+//       ? 'bg-slate-100 border-red-500 focus:ring-2 focus:ring-red-200 focus:border-red-500'
+//       : 'bg-slate-100 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+//     }
+//         ${className}`}
+//       {...props}
+//     />
+//     {error && touched && (
+//       <p className="text-red-500 text-[10px] mt-1">
+//         {error}
+//       </p>
+//     )}
+//   </div>
+// );
+
+
+
+export const FormikInput = ({
+  label,
+  name,
+  type = "text",
+  compact = false,
+  readOnly = false,
+  className = "",
+  error,
+  touched,
+  ...props
+}) => {
+  const showError = Boolean(error && touched);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {label && (
+        <label
+          className={`font-bold text-slate-800 uppercase ml-0.5 ${
+            compact ? "text-[9px]" : "text-[10px]"
+          }`}
+        >
+          {label}
+        </label>
+      )}
+
+      <Field
+        name={name}
+        type={type}
+        readOnly={readOnly}
+        className={`w-full border outline-none transition-all
+          ${compact ? "rounded px-2 py-1.5 text-xs" : "rounded-sm px-3 py-2 text-sm"}
+
+          ${
+            readOnly
+              ? "bg-slate-200 text-slate-500 cursor-default"
+              : showError
+              ? "bg-slate-100 border-red-500 focus:ring-2 focus:ring-red-200 focus:border-red-500"
+              : "bg-slate-100 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          }
+
+          ${className}
+        `}
+        {...props}
+      />
+
+      {showError && (
+        <p className="text-red-500 text-[10px] mt-1">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────────────────────────
    FormikSelect

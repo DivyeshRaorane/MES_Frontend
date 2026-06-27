@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createDrawEntry, getTowerEvent } from '../services/draw_spool_entry.api';
 import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
 import { getPreformByTower } from '../services/draw_spool_entry.api';
-import { drawFlawAutomation } from './draw_flaw_automate';
+import { drawFlawAutomation, exportFlawReport } from './draw_flaw_automate';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { getAllDrawWindingObservations } from '../../Admin_Folder/draw_management/winding_observation/service/winding_observation.api';
@@ -122,7 +122,7 @@ const DrawSpoolEntry = () => {
   }))
 
   const shiftOptions = shifts.map((shift) => ({
-    label: `${shift.shift_name} (${shift.shift_start_time} - ${shift.shift_end_time})`,
+    label: `${shift.shift_name}`,
     value: shift.shift_id,
   }));
 
@@ -196,6 +196,7 @@ const DrawSpoolEntry = () => {
 
   const handleGetDrawFlaws = async (values, setFieldValue) => {
     try {
+      console.log("What is the date:", values.start_date, values.start_time, values.end_date, values.end_time)
       const res = await dispatch(
         getTowerEvent({
           tower_id: values.tower_id,
@@ -211,8 +212,10 @@ const DrawSpoolEntry = () => {
 
 
       const mappedFlaws = drawFlawAutomation(events);
+      await exportFlawReport(events);
 
       setFieldValue("draw_flaws", mappedFlaws);
+      console.log("What is the mapped flaws:", mappedFlaws)
 
     } catch (err) {
       console.log("Error fetching flaws:", err);

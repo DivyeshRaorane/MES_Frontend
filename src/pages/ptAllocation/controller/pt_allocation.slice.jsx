@@ -6,7 +6,7 @@ const ptAllocationSlice = createSlice({
     initialState: {
         ptAllocationData: {},
         ptALoading: false,
-        ptError: null
+        ptAError: null
     },
 
     reducers: {},
@@ -15,7 +15,7 @@ const ptAllocationSlice = createSlice({
         builder
             .addCase(ptAllocationEntry.pending, (state) => {
                 state.ptALoading = true,
-                    state.ptError = null
+                    state.ptAError = null
             })
 
             .addCase(ptAllocationEntry.fulfilled, (state, action) => {
@@ -25,7 +25,7 @@ const ptAllocationSlice = createSlice({
 
             .addCase(ptAllocationEntry.rejected, (state, action) => {
                 state.ptALoading = false,
-                    state.ptError = action.payload
+                    state.ptAError = action.payload
             });
     }
 })

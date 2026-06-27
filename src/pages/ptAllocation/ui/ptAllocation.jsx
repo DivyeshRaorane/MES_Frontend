@@ -5,7 +5,7 @@ import { ModuleCard, FormikSelect, FormikInput } from '../../../components/commo
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { useDispatch, useSelector } from 'react-redux';
-import { ptAllocationEntry } from '../services/pt_allocation.api';
+import { ptAllocationEntry, getDrawEntryDetails } from '../services/pt_allocation.api';
 import { getPTMachines } from '../../Admin_Folder/proof_testing/pt_machine/service/pt_machine.api';
 import { getPTUsers } from '../../Admin_Folder/proof_testing/pt_users/service/pt_users.api';
 
@@ -72,13 +72,34 @@ const PTAllocation = () => {
     value: user.pt_user_id,
   }))
 
+  const handleSpoolScan = async (spool_id) => {
+  if (!spool_id) return;
+
+  try {
+    const res = await getDrawEntryDetails(spool_id);
+
+    if (res?.data) {
+      formikRef.current.setValues((prev) => ({
+        ...prev,
+        spool_id,
+        preform_id: res.data.preform_id,
+        tower_id: res.data.tower_no,
+        drawn_length: res.data.drawn_length,
+        product_type: res.data.product_type,
+      }));
+    }
+  } catch (error) {
+    console.error("Error fetching spool data:", error);
+  }
+};
+
 
   const handleRowClick = (row) => {
     formikRef.current?.setValues({
       ...formikRef.current.values,
       drawn_spool_id: row.drawn_spool_id,
       preform_id: row.preform_id,
-      DT_No: row.DT_No,
+      tower_id: row.tower_no,
       Drawn_Length: row.Drawn_Length,
     });
   };
@@ -112,9 +133,8 @@ const PTAllocation = () => {
             <Form>
 
               <div className="grid grid-cols-5 gap-2">
-                <FormikInput compact label="Scan Drawn Spool Barcode" name="spool_id" placeholder="Scan Spool..." onBlur={(e) => {
-    console.log("Final value:", e.target.value);
-  }} />
+                <FormikInput compact label="Scan Drawn Spool Barcode" name="spool_id" placeholder="Scan Spool..." onBlur={(e) => handleSpoolScan(e.target.value)}
+   />
                 <FormikInput compact label="Date" name="allocation_date" type="date" readOnly />
                 <FormikInput compact label="Preform ID" name="preform_id" placeholder="Automatic" readOnly />
                 <FormikInput compact label="DT No" name="tower_id" placeholder="Automatic" readOnly />

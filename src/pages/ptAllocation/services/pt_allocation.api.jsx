@@ -22,3 +22,22 @@ export const ptAllocationEntry = createAsyncThunk(
         }
     }
 )
+
+
+export const getDrawEntryDetails = async(spool_id)=>{
+try{
+    const response = await axios({
+            method : import.meta.env.VITE_METHOD_GET,
+            url: `${import.meta.env.VITE_API_URL}/api/getdrawentryforpta?spool_id=${spool_id}`,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+
+        return response.data;
+    }catch(error){
+        console.error("API Error:", error);
+    throw error;
+    }
+
+}

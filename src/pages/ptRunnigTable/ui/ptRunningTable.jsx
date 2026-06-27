@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, RotateCw, FileText, ClipboardCheck } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getPTAllocatedSpool } from '../services/pt_running.api';
 
 const dummyRecords = [
-  { id: 1, preform_id: 'PF-2026-001', operator: 'Rahul S.',  shift_incharge: 'Amit V.', pt_no: 'PT-45', drawn_spool_id: 'SP-990', drawn_length: '5200m', total_pt: '4800m', balance: '400m',  remark: 'Normal'    },
-  { id: 2, preform_id: 'PF-2026-005', operator: 'Suresh K.', shift_incharge: 'Amit V.', pt_no: 'PT-12', drawn_spool_id: 'SP-882', drawn_length: '3000m', total_pt: '3000m', balance: '0m',    remark: 'Completed' },
+  { id: 1, preform_id: 'PF-2026-001', operator: 'Rahul S.', shift_incharge: 'Amit V.', pt_no: 'PT-45', drawn_spool_id: 'SP-990', drawn_length: '5200m', total_pt: '4800m', balance: '400m', remark: 'Normal' },
+  { id: 2, preform_id: 'PF-2026-005', operator: 'Suresh K.', shift_incharge: 'Amit V.', pt_no: 'PT-12', drawn_spool_id: 'SP-882', drawn_length: '3000m', total_pt: '3000m', balance: '0m', remark: 'Completed' },
 ];
 
 const PTRunningTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { ptAllocatedSpoolData, ptASLoading, ptASError } = useSelector((state) => state.ptAllocatedSpool)
 
-  const filteredData = dummyRecords.filter(r =>
-    r.preform_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getPTAllocatedSpool(false))
+  }, [])
+
+  console.log("What is the pt allocated spool:", ptAllocatedSpoolData)
+
+  const filteredData = Array.isArray(ptAllocatedSpoolData)
+  ? ptAllocatedSpoolData.filter(r =>
+      r.preform_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  : [];
 
   return (
     <div className="h-full flex flex-col gap-3 overflow-hidden">
@@ -47,7 +60,7 @@ const PTRunningTable = () => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 z-10">
               <tr className="border-b border-slate-200">
-                {['Operator','Shift Incharge','PT No','Drawn Spool ID','Drawn Length','Total PT','Balance','Remark','Action'].map(h => (
+                {['Operator', 'Shift Incharge', 'PT No', 'Drawn Spool ID', 'Drawn Length', 'Total PT', 'Balance', 'Remark', 'Action'].map(h => (
                   <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -58,14 +71,17 @@ const PTRunningTable = () => {
                   <td className="px-3 py-2 text-xs font-medium text-slate-700">
                     <div className="flex items-center gap-1.5">
                       <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center text-[9px] text-indigo-600 font-bold flex-shrink-0">
-                        {row.operator.charAt(0)}
+                        {row.
+                          allocated_by_name}
                       </div>
                       {row.operator}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.shift_incharge}</td>
-                  <td className="px-3 py-2 text-xs font-mono text-indigo-600">{row.pt_no}</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_spool_id}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.shift_incharge_name
+                  }</td>
+                  <td className="px-3 py-2 text-xs font-mono text-indigo-600">{row.pt_machine_no}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.spool_id
+                  }</td>
                   <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_length}</td>
                   <td className="px-3 py-2 text-xs font-bold text-slate-700">{row.total_pt}</td>
                   <td className="px-3 py-2 text-xs">
