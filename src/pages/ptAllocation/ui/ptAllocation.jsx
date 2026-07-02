@@ -18,6 +18,7 @@ const dummyData = [
 
 const initialValues = {
   spool_id: '',
+  spool_fid: '',
   allocation_date: new Date().toISOString().split('T')[0],
   preform_id: '',
   tower_no: '',
@@ -59,7 +60,6 @@ const PTAllocation = () => {
 useEffect(() => {
     fetchPtWip();
 }, []);
-  console.log("wip data:", ptWipData)
 
   useEffect(() => {
     const fetchPTMAchines = async () => {
@@ -100,31 +100,34 @@ useEffect(() => {
 
   try {
     const res = await getDrawEntryDetails(spool_id);
-
+    console.log("what is the response:", res)
     if (res?.data) {
       formikRef.current.setValues((prev) => ({
         ...prev,
         spool_id,
+        spool_fid: res.data.spool_fid || '',
         preform_id: res.data.preform_id,
         tower_no: res.data.tower_no,
         drawn_length: res.data.drawn_length,
         product_type: res.data.product_type,
       }));
+    } else {
+      showError("This spool is already allocated or does not exist");
     }
   } catch (error) {
     console.error("Error fetching spool data:", error);
+    showError("This spool is already allocated or does not exist");
   }
 };
 
 
   const handleRowClick = (row) => {
-    formikRef.current?.setValues({
-      ...formikRef.current.values,
-      drawn_spool_id: row.spool_id,
-      preform_id: row.preform_id,
-      tower_no: row.tower_no,
-      Drawn_Length: row.drawn_length,
-    });
+    // Set spool_id first, then call scan handler to fetch all details
+    const spoolId = row.spool_id || row.drawn_spool_id || '';
+    if (spoolId) {
+      formikRef.current?.setFieldValue("spool_id", spoolId);
+      handleSpoolScan(spoolId);
+    }
   };
 
   return (
@@ -141,8 +144,9 @@ useEffect(() => {
               const response = await dispatch(ptAllocationEntry(values))
               if (response.payload?.success) {
                 console.log("show success", response)
-                showSuccess(response.payload?.message || "Allocation Svaed Successfully")
+                showSuccess(response.payload?.message || "Allocation Saved Successfully")
                 await fetchPtWip();
+                resetForm();
               } else {
                 console.log("Error:", response)
                 showError(response.payload?.message || "Allocation Failed")

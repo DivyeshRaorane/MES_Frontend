@@ -4,7 +4,7 @@ import { getPTAllocatedSpool } from "../services/pt_running.api";
 const ptAllocatedSpoolSlice = createSlice({
     name:"ptAllocatedSpool",
     initialState:{
-        ptAllocatedSpoolData:{},
+        ptAllocatedSpoolData:[],
         ptASLoading:false,
         ptASError:null
     },

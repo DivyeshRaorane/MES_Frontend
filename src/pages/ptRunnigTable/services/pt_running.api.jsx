@@ -22,3 +22,18 @@ export const getPTAllocatedSpool = createAsyncThunk(
         }
     }
 )
+
+
+export const deallocatePT = async (payload) => {
+    const token = localStorage.getItem("token");
+    const response = await axios({
+        method: "POST",
+        url: `${import.meta.env.VITE_API_URL}/api/deallocatept`,
+        data: payload,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    return response.data;
+};
