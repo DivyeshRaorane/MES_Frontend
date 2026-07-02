@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Formik, Form, Field, FieldArray } from 'formik';
+import * as Yup from 'yup';
 import { Plus, Trash2 } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { FormikSelect, FormikInput, FormikTextarea } from '../../../components/common_fields';
@@ -20,6 +21,31 @@ const SL = ({ title, color = 'text-blue-700' }) => (
   <p className={`text-[9px] font-bold uppercase tracking-wider ${color} border-b border-slate-100 pb-0.5 mb-1`}>{title}</p>
 );
 
+/* ── Error display — only shows after form submit attempt ── */
+const FieldError = ({ name, errors, submitCount }) => {
+  if (submitCount === 0 || !errors[name]) return null;
+  return <span className="text-[8px] text-rose-500 ml-0.5 block mt-0.5">{errors[name]}</span>;
+};
+
+/* ── Submit error toast — call once in onSubmit when validation fails ── */
+const showFirstValidationError = (errors) => {
+  const firstErr = Object.values(errors).find(e => typeof e === 'string');
+  if (firstErr) showError(firstErr);
+};
+
+/* ── Fires toast only once per submit attempt with errors ── */
+const ValidationToast = ({ errors, submitCount }) => {
+  const [lastCount, setLastCount] = useState(0);
+  useEffect(() => {
+    if (submitCount > lastCount && Object.keys(errors).length > 0) {
+      const firstErr = Object.values(errors).find(e => typeof e === 'string');
+      if (firstErr) showError(firstErr);
+      setLastCount(submitCount);
+    }
+  }, [submitCount, errors, lastCount]);
+  return null;
+};
+
 /* ── Compact table cell ── */
 const TCell = ({ name }) => (
   <Field name={name}
@@ -37,7 +63,7 @@ const today = new Date().toISOString().split('T')[0];
 
 const initialValues = {
   tower_no: '', preform_id: '',
-  spool_id: '', start_date: '', end_date: '', start_time: '',
+  spool_id: '', spool_fid: '', start_date: '', end_date: '', start_time: '',
   end_time: '', drawn_weight: '', drawn_length: '', balance_weight: '',
   shift: '', drawn_line_speed: '', draw_tension: '', furnace_power: '',
   furnace_argon: '', furnace_he: '', tube_he: '', co2_flow: '', n2_flow: '',
@@ -51,6 +77,49 @@ const initialValues = {
 };
 
 const CONSUMPTION_TABS = ['Coating'];
+
+/* ── Yup Validation Schema ── */
+const validationSchema = Yup.object({
+  tower_no:              Yup.string().required('Tower No is required'),
+  preform_id:            Yup.string().required('Preform ID is required'),
+  spool_id:              Yup.string().required('Spool ID is required'),
+  start_date:            Yup.string().required('Start Date is required'),
+  start_time:            Yup.string().required('Start Time is required'),
+  end_date:              Yup.string().required('End Date is required'),
+  end_time:              Yup.string().required('End Time is required'),
+  drawn_weight:          Yup.number().typeError('Drawn Weight must be a number').required('Drawn Weight is required').min(0, 'Cannot be negative'),
+  drawn_length:          Yup.number().typeError('Drawn Length must be a number').required('Drawn Length is required').min(0, 'Cannot be negative'),
+  shift:                 Yup.string().required('Shift is required'),
+  drawn_line_speed:      Yup.string().required('Draw Line Speed is required'),
+  draw_tension:          Yup.string().required('Draw Tension is required'),
+  furnace_power:         Yup.string().required('Furnace Power is required'),
+  furnace_argon:         Yup.string().required('Furnace Argon is required'),
+  furnace_he:            Yup.string().required('Furnace HE is required'),
+  tube_he:               Yup.string().required('Tube HE is required'),
+  co2_flow:              Yup.string().required('CO2 Flow is required'),
+  n2_flow:               Yup.string().required('N2 Flow is required'),
+  uv_air:                Yup.string().required('UV Air is required'),
+  winding_observation:   Yup.string().required('Winding Observation is required'),
+  scr_observation:       Yup.string().required('Scr Observation is required'),
+  top_end_scrap:         Yup.string().required('Top End Scrap is required'),
+  bottom_end_scrap:      Yup.string().required('Bottom End Scrap is required'),
+  die_clean:             Yup.string().required('Die Clean is required'),
+  spool_status:          Yup.string().required('Spool Status is required'),
+  indication_fiber_cut:  Yup.string().required('Indication Fiber Cut is required'),
+  indication_reason:     Yup.string().required('Fiber Cut Reason is required'),
+  remark:                Yup.string().required('Remarks is required'),
+  primary_coating:       Yup.string().required('Primary Coating is required'),
+  secondary_coating:     Yup.string().required('Secondary Coating is required'),
+  coating_type:          Yup.string().required('Coating Type is required'),
+  primary_pressure:      Yup.string().required('Primary Pressure is required'),
+  secondary_pressure:    Yup.string().required('Secondary Pressure is required'),
+  primary_batch:         Yup.string().required('Primary Batch is required'),
+  secondary_batch:       Yup.string().required('Secondary Batch is required'),
+  shift_incharge:        Yup.string().required('Shift Incharge is required'),
+  furnace_operator:      Yup.string().required('Furnace Operator is required'),
+  die_operator:          Yup.string().required('Die Operator is required'),
+  ground_operator:       Yup.string().required('Ground Operator is required'),
+});
 {/*['Coating', 'Furnace Gas', 'Nitrogen Gas', 'Helium Gas', 'CO2 Gas'];*/ }
 
 /* ══════════════════════════════════════════════════════════ */
@@ -61,6 +130,9 @@ const DrawSpoolEntry = () => {
   const [drawUsers, setDrawUsers] = useState([]);
   const [drawWindingObs, setDrawWindingObs] = useState([]);
   const [drawFiberCutReasons, setDrawFiberCutReasons] = useState([]);
+  const [showPreformEndPopup, setShowPreformEndPopup] = useState(false);
+  const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
+  const [pendingResetForm, setPendingResetForm] = useState(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
   const { preformByTowerData, pbtLoading, pbtError } = useSelector((state) => state.preformByTower)
 
@@ -210,7 +282,6 @@ const DrawSpoolEntry = () => {
 
       const mappedFlaws = drawFlawAutomation(rows);
 
-      setFieldValue("pt_flaws", reverseFlawPositions(mappedFlaws?.totalKm, mappedFlaws?.results))
       setFieldValue("draw_flaws", mappedFlaws?.results);
       setFieldValue("drawn_length", mappedFlaws?.totalKm)
       setFieldValue("drawn_weight", mappedFlaws?.totalKm / 37)
@@ -243,11 +314,27 @@ const DrawWeightWatcher = () => {
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
-        <Formik initialValues={initialValues} onSubmit={async (values, { resetForm }) => {
+        <Formik initialValues={initialValues}
+          validateOnChange={false} validateOnBlur={true}
+          validationSchema={validationSchema}
+          onSubmit={async (values, { resetForm }) => {
 
           console.log('Submit:', values)
+
+          // Calculate pt_flaws from current draw_flaws at submit time (not from initial fetch)
+          const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
+          const submitValues = { ...values, pt_flaws: ptFlaws };
+
+          // If balance_weight is negative, show preform end confirmation popup
+          if (Number(submitValues.balance_weight) < 0) {
+            setPendingSubmitValues(submitValues);
+            setPendingResetForm(() => resetForm);
+            setShowPreformEndPopup(true);
+            return;
+          }
+
           try {
-            const response = await dispatch(createDrawEntry(values));
+            const response = await dispatch(createDrawEntry(submitValues));
 
             if (response.payload?.success) {
               showSuccess("Saved Successfully")
@@ -260,15 +347,38 @@ const DrawWeightWatcher = () => {
             showError(error?.message || "Something went wrong")
           }
         }}>
-          {({ values, resetForm, setFieldValue }) => (
-            <Form className="flex flex-col flex-1 overflow-hidden">
+          {({ values, resetForm, setFieldValue, errors, submitCount, validateForm, setTouched, handleSubmit }) => (
+            <Form className="flex flex-col flex-1 overflow-hidden" noValidate>
 <DrawWeightWatcher/>
               {/* ── Top action bar ── */}
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
                 <div className="flex gap-1.5">
                   <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                  <SubmitButton compact type="submit">Submit</SubmitButton>
+                  {/* Show Preform End button when balance_weight < 4 */}
+                  {Number(values.balance_weight) < 4 && values.balance_weight !== '' && (
+                    <button type="button"
+                      onClick={() => {
+                        setPendingSubmitValues(values);
+                        setPendingResetForm(() => resetForm);
+                        setShowPreformEndPopup(true);
+                      }}
+                      className="px-3 py-1 bg-amber-600 text-white text-[9px] font-bold rounded hover:bg-amber-700 transition-all">
+                      Confirm Preform End
+                    </button>
+                  )}
+                  <SubmitButton compact type="button" onClick={async () => {
+                    const errs = await validateForm();
+                    if (Object.keys(errs).length > 0) {
+                      const touched = Object.keys(initialValues).reduce((acc, k) => ({ ...acc, [k]: true }), {});
+                      setTouched(touched);
+                      const firstErr = Object.values(errs).find(e => typeof e === 'string');
+                      if (firstErr) showError(firstErr);
+                      console.log("Validation errors:", errs);
+                      return;
+                    }
+                    handleSubmit();
+                  }}>Submit</SubmitButton>
                   <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
                 </div>
               </div>
@@ -296,18 +406,57 @@ const DrawWeightWatcher = () => {
                         onChange={async (e) => {
                           const towerId = e.target.value;
 
+                          // If tower deselected or no value, clear all auto-filled fields
+                          if (!towerId || towerId === 'Select') {
+                            setFieldValue("preform_id", '');
+                            setFieldValue("preform_weight", '');
+                            setFieldValue("preform_type", '');
+                            setFieldValue("process_type", '');
+                            setFieldValue("product_type", '');
+                            setFieldValue("spool_fid", '');
+                            setFieldValue("draw_flaws", []);
+                            setFieldValue("pt_flaws", []);
+                            setFieldValue("drawn_length", '');
+                            setFieldValue("drawn_weight", '');
+                            setFieldValue("balance_weight", '');
+                            return;
+                          }
+
                           // fetch allocated preform for this tower
                           const res = await dispatch(getPreformByTower(towerId));
                           const data = res.payload?.data[0];
                           console.log("allocated preform:", data)
 
                           if (data) {
-                            setFieldValue("preform_id", data.preform_id);
-                            setFieldValue("preform_weight", data.balance_qty);
-                            setFieldValue("preform_type", data.preform_type);
-                            setFieldValue("process_type", data.process_type);
-                            setFieldValue("product_type", data.product_type)
+                            setFieldValue("preform_id", data.preform_id || '');
+                            setFieldValue("preform_weight", data.balance_qty || '');
+                            setFieldValue("preform_type", data.preform_type || '');
+                            setFieldValue("process_type", data.process_type || '');
+                            setFieldValue("product_type", data.product_type || '');
 
+                            // Generate spool_fid: strip any existing trailing letter from last_fid, then append new suffix
+                            // p_count 0=A, 1=B, 2=C...
+                            const pCount = Number(data.p_count) || 0;
+                            const lastFid = data.last_fid || '';
+                            const suffix = String.fromCharCode(65 + pCount);
+                            // Remove trailing uppercase letter if present (e.g. ...043A -> ...043)
+                            const baseFid = lastFid.replace(/[A-Z]$/, '');
+                            const generatedFid = baseFid ? `${baseFid}${suffix}` : '';
+                            setFieldValue("spool_fid", generatedFid);
+                          } else {
+                            // No data for this tower — clear all and alert
+                            showError("This tower has no preform allocated");
+                            setFieldValue("preform_id", '');
+                            setFieldValue("preform_weight", '');
+                            setFieldValue("preform_type", '');
+                            setFieldValue("process_type", '');
+                            setFieldValue("product_type", '');
+                            setFieldValue("spool_fid", '');
+                            setFieldValue("draw_flaws", []);
+                            setFieldValue("pt_flaws", []);
+                            setFieldValue("drawn_length", '');
+                            setFieldValue("drawn_weight", '');
+                            setFieldValue("balance_weight", '');
                           }
                         }} />
                       <FormikInput compact label="Preform ID" name="preform_id" readOnly />
@@ -317,14 +466,45 @@ const DrawWeightWatcher = () => {
                       <FormikInput compact label="Start Date" name="start_date" type="date" />
                       <FormikInput compact label="Start Time" name="start_time" type="time" />
 
-                      <FormikInput compact label="End Date" name="end_date" type="date" />
-                      <FormikInput compact label="End Time" name="end_time" type="time" />
-                      <FormikInput compact label="Drawn Wt(KG)" name="drawn_weight" type="number" />
-                      <FormikInput compact label="Drawn Len(KM)" name="drawn_length" type="number" />
+                      <FormikInput compact label="End Date" name="end_date" type="date"
+                        onChange={(e) => {
+                          const endDate = e.target.value;
+                          if (values.start_date && endDate && endDate < values.start_date) {
+                            showError("End Date cannot be before Start Date");
+                            setFieldValue("end_date", '');
+                          } else {
+                            setFieldValue("end_date", endDate);
+                          }
+                        }} />
+                      <FormikInput compact label="End Time" name="end_time" type="time"
+                        onChange={(e) => {
+                          const endTime = e.target.value;
+                          // If same date and end time is before start time, show error
+                          if (values.start_date && values.end_date && values.start_date === values.end_date
+                              && values.start_time && endTime && endTime < values.start_time) {
+                            showError("End Time cannot be before Start Time on the same date");
+                            setFieldValue("end_time", '');
+                          } else {
+                            setFieldValue("end_time", endTime);
+                          }
+                        }} />
+                      <FormikInput compact label="Drawn Wt(KG)" name="drawn_weight" type="number"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (Number(val) < 0) { showError("Drawn Weight cannot be negative"); setFieldValue("drawn_weight", ''); }
+                          else { setFieldValue("drawn_weight", val); }
+                        }} />
+                      <FormikInput compact label="Drawn Len(KM)" name="drawn_length" type="number"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (Number(val) < 0) { showError("Drawn Length cannot be negative"); setFieldValue("drawn_length", ''); }
+                          else { setFieldValue("drawn_length", val); }
+                        }} />
                       <FormikInput compact label="Balance Weight" name="balance_weight" type="number" />
                       <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
 
                       <FormikInput compact label="Spool ID" name="spool_id" type='text' />
+                      <FormikInput compact label="Spool FID" name="spool_fid" readOnly />
 
                     </div>
                   </div>
@@ -371,7 +551,7 @@ const DrawWeightWatcher = () => {
                       <FormikSelect
                         compact
                         label="Fiber Cut Reason"
-                        name="indication_reason_id"
+                        name="indication_reason"
                         options={drawFiberCutReasonOptions}
                       />
 
@@ -434,10 +614,10 @@ const DrawWeightWatcher = () => {
                   <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-shrink-0">
                     <SL title="Operator Details" />
                     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                      <FormikSelect compact label="Shift Incharge." name="shift_incharge" options={drawUsersOption} />
-                      <FormikSelect compact label="Furnace Oprerator." name="furnace_oprerator" options={drawUsersOption} />
-                      <FormikSelect compact label="Die Oprerator" name="die_oprerator" options={drawUsersOption} />
-                      <FormikSelect compact label="Ground Oprerator" name="ground_oprerator" options={drawUsersOption} />
+                      <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={drawUsersOption} />
+                      <FormikSelect compact label="Furnace Operator" name="furnace_operator" options={drawUsersOption} />
+                      <FormikSelect compact label="Die Operator" name="die_operator" options={drawUsersOption} />
+                      <FormikSelect compact label="Ground Operator" name="ground_operator" options={drawUsersOption} />
                     </div>
                   </div>
 
@@ -505,6 +685,60 @@ const DrawWeightWatcher = () => {
             </Form>
           )}
         </Formik>
+
+        {/* ── Preform End Confirmation Popup ── */}
+        {showPreformEndPopup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
+              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 mb-2">Preform End — Please Confirm</h3>
+              <p className="text-xs text-slate-500 mb-1">
+                Balance weight is <strong className="text-rose-600">{Number(pendingSubmitValues?.balance_weight).toFixed(3)} KG</strong> (negative).
+              </p>
+              <p className="text-xs text-slate-500 mb-4">
+                This indicates the preform is exhausted. Confirming will <strong>save this entry</strong> and <strong>free the tower</strong> (mark as active/available).
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowPreformEndPopup(false); setPendingSubmitValues(null); setPendingResetForm(null); }}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShowPreformEndPopup(false);
+                    try {
+                      // Submit with handle_active: true to free the tower
+                      const payload = { ...pendingSubmitValues, handle_active: true, preform_end: true };
+                      const response = await dispatch(createDrawEntry(payload));
+
+                      if (response.payload?.success) {
+                        showSuccess("Saved & Tower Freed Successfully");
+                        if (pendingResetForm) pendingResetForm();
+                      } else {
+                        showError(response?.payload?.message || "Save Failed");
+                      }
+                    } catch (error) {
+                      console.error("Submit Error", error);
+                      showError(error?.message || "Something went wrong");
+                    }
+                    setPendingSubmitValues(null);
+                    setPendingResetForm(null);
+                  }}
+                  className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all"
+                >
+                  Confirm Preform End
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

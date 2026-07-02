@@ -296,7 +296,7 @@ const confirmDeallocation = async () => {
               onSubmit={handleSubmit}
               enableReinitialize
             >
-              {({ resetForm }) => (
+              {({ resetForm, setFieldValue, values }) => (
                 <Form className="flex flex-col flex-1 overflow-hidden">
                   <div className="flex-1 overflow-hidden grid grid-cols-2 divide-x divide-slate-200">
 
@@ -307,7 +307,17 @@ const confirmDeallocation = async () => {
                         <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Logistics &amp; Tracking</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <FormikInput compact label="Allocation Date" name="allocation_date" type="date" />
+                        <FormikInput compact label="Allocation Date" name="allocation_date" type="date"
+                          onChange={(e) => {
+                            const selected = e.target.value;
+                            const today = new Date().toISOString().split('T')[0];
+                            if (selected > today) {
+                              showError("Allocation Date cannot be a future date");
+                              setFieldValue("allocation_date", '');
+                            } else {
+                              setFieldValue("allocation_date", selected);
+                            }
+                          }} />
                         <FormikSelect compact label="Tower Line (DT)" name="tower_no" options={towerOptions} />
                       </div>
                       <div className="grid grid-cols-3 gap-2">

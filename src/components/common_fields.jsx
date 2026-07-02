@@ -64,12 +64,9 @@ export const FormikInput = ({
   compact = false,
   readOnly = false,
   className = "",
-  error,
-  touched,
+  onChange: customOnChange,
   ...props
 }) => {
-  const showError = Boolean(error && touched);
-
   return (
     <div className="flex flex-col gap-0.5">
       {label && (
@@ -82,31 +79,39 @@ export const FormikInput = ({
         </label>
       )}
 
-      <Field
-        name={name}
-        type={type}
-        readOnly={readOnly}
-        className={`w-full border outline-none transition-all
-          ${compact ? "rounded px-2 py-1.5 text-xs" : "rounded-sm px-3 py-2 text-sm"}
-
-          ${
-            readOnly
-              ? "bg-slate-200 text-slate-500 cursor-default"
-              : showError
-              ? "bg-slate-100 border-red-500 focus:ring-2 focus:ring-red-200 focus:border-red-500"
-              : "bg-slate-100 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          }
-
-          ${className}
-        `}
-        {...props}
-      />
-
-      {showError && (
-        <p className="text-red-500 text-[10px] mt-1">
-          {error}
-        </p>
-      )}
+      <Field name={name}>
+        {({ field, meta }) => {
+          const showError = meta.touched && meta.error;
+          return (
+            <>
+              <input
+                {...field}
+                type={type}
+                readOnly={readOnly}
+                onChange={(e) => {
+                  if (customOnChange) {
+                    customOnChange(e);
+                  } else {
+                    field.onChange(e);
+                  }
+                }}
+                className={`w-full border outline-none transition-all
+                  ${compact ? "rounded px-2 py-1.5 text-xs" : "rounded-sm px-3 py-2 text-sm"}
+                  ${readOnly
+                    ? "bg-slate-200 text-slate-500 cursor-default"
+                    : showError
+                    ? "bg-slate-100 border-red-500 focus:ring-2 focus:ring-red-200 focus:border-red-500"
+                    : "bg-slate-100 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"}
+                  ${className}`}
+                {...props}
+              />
+              {showError && (
+                <p className="text-red-500 text-[9px] mt-0.5">{meta.error}</p>
+              )}
+            </>
+          );
+        }}
+      </Field>
     </div>
   );
 };
@@ -220,16 +225,25 @@ export const FormikTextarea = ({ label, name, rows = 3, placeholder = "", compac
         {label}
       </label>
     )}
-    <Field
-      as="textarea"
-      name={name}
-      rows={rows}
-      disabled={readOnly}
-      placeholder={placeholder}
-      className={`w-full bg-slate-50 border border-slate-200 outline-none transition-all resize-none
-        focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-        ${compact ? 'rounded px-2 py-1.5 text-xs' : 'rounded-sm px-3 py-2 text-sm'}
-        ${className}`}
-    />
+    <Field name={name}>
+      {({ field, meta }) => (
+        <>
+          <textarea
+            {...field}
+            rows={rows}
+            disabled={readOnly}
+            placeholder={placeholder}
+            className={`w-full bg-slate-50 border outline-none transition-all resize-none
+              focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+              ${compact ? 'rounded px-2 py-1.5 text-xs' : 'rounded-sm px-3 py-2 text-sm'}
+              ${meta.touched && meta.error ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-slate-200'}
+              ${className}`}
+          />
+          {meta.touched && meta.error && (
+            <p className="text-red-500 text-[9px] mt-0.5">{meta.error}</p>
+          )}
+        </>
+      )}
+    </Field>
   </div>
 );
