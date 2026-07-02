@@ -9,7 +9,7 @@ import { getPTUsers } from '../../Admin_Folder/proof_testing/pt_users/service/pt
 import { useDispatch, useSelector } from 'react-redux';
 import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
 import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/service/bobbin_type.api';
-import { getSpoolDetailsForPT, ptEntryApi, getPTFlaws, getPTLogs } from '../services/pt_entry.api';
+import { getSpoolDetailsForPT, ptEntryApi, getPTFlaws, getPTLogs, getFidBySpool } from '../services/pt_entry.api';
 import { checkPTLength } from './pt_helper';
 
 /* ── Password Modal ─────────────────────────────────────── */
@@ -94,6 +94,7 @@ const PTEntry = () => {
   const [bobbinTypes, setBobbinTypes] = useState([]);
   const [balanceLength, setBalanceLength] = useState(0);
   const [activeFlaw, setActiveFlaw] = useState(null);
+  const [lastFidInfo, setLastFidInfo] = useState({ last_fid: '', p_count: 0 });
   const [ptAlert, setPtAlert] = useState({
     message: "",
     nextFlawMessage: ""
@@ -108,8 +109,6 @@ const PTEntry = () => {
     if (!spool_id) return;
     try {
       const response = await getSpoolDetailsForPT(spool_id);
-      await dispatch(getPTFlaws(spool_id));
-      await dispatch(getPTLogs(spool_id))
 
       const data = response.data;
       setFieldValue("preform_id", data.preform_id);
@@ -123,6 +122,10 @@ const PTEntry = () => {
       const calcPtDone = data.qty - data.balance_qty || 0;
       setFieldValue("pt_done_so_far", calcPtDone.toFixed(3));
       setBalanceLength(data.balance_qty);
+
+      // Dispatch flaws AFTER balanceLength is set
+      await dispatch(getPTFlaws(spool_id));
+      await dispatch(getPTLogs(spool_id));
 
       setActiveFlaw(null);
     } catch (error) {
@@ -149,7 +152,8 @@ const PTEntry = () => {
 
   useEffect(() => {
     const formik = formikRef.current;
-    if (!formik || !ptFlawsData || ptFlawsData.length === 0) return;
+    if (!formik || !formik.values.spool_id) return; // Only run when spool is loaded
+    if (!ptFlawsData || ptFlawsData.length === 0) return;
 
     const result = checkPTLength({
       ptDoneLength: formik.values.pt_done_so_far,
@@ -236,6 +240,7 @@ const PTEntry = () => {
                 setActiveFlaw(null);            // Unlocks the readOnly constraint
               } else {
                 setFieldValue('active_rejection_type', typeKey);
+                setFieldValue('fid', ''); // Clear FID when any rejection is checked
 
                 // ── CASE 1: Rejection Checked (Flaw Delta Calculation) ──
                 if (typeKey === 'rejection') {
@@ -311,19 +316,42 @@ const PTEntry = () => {
                           />
                           <button
                             type="button"
-                            // Disabled if ANY rejection type is active, unless there's an intercepted active flaw override
-                            disabled={!!values.active_rejection_type && !activeFlaw}
-                            onClick={() => {
-                              const id = genPTID(lastPTID);
-                              setFieldValue('fid', id);
-                              setLastPTID(id);
+                            disabled={!!values.active_rejection_type}
+                            onClick={async () => {
+                              if (!values.spool_id) {
+                                showError("Please scan a spool first");
+                                return;
+                              }
+                              try {
+                                const res = await getFidBySpool(values.spool_id);
+                                const lastFid = res?.data?.last_fid || '';
+                                const pCount = Number(res?.data?.p_count) || 0;
+                                if (!lastFid) {
+                                  showError("No FID data found for this spool");
+                                  return;
+                                }
+                                let generatedFid = '';
+                                if (pCount === 0) {
+                                  // First time — append A
+                                  generatedFid = `${lastFid}A`;
+                                } else {
+                                  // Replace the last character with next letter
+                                  const suffix = String.fromCharCode(65 + pCount); // 1=B, 2=C, 3=D...
+                                  generatedFid = `${lastFid.slice(0, -1)}${suffix}`;
+                                }
+                                setFieldValue('fid', generatedFid);
+                              } catch (error) {
+                                console.error("Gen FID error:", error);
+                                showError(error?.response?.data?.message || "Failed to generate FID");
+                              }
                             }}
-                            className={`px-2 py-1 rounded text-[8px] font-bold uppercase whitespace-nowrap transition-all ${(values.active_rejection_type && !activeFlaw)
-                              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                              : 'bg-amber-500 text-white hover:bg-amber-600'
-                              }`}
+                            className={`px-2 py-1 rounded text-[8px] font-bold uppercase whitespace-nowrap transition-all ${
+                              !!values.active_rejection_type
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                : 'bg-amber-500 text-white hover:bg-amber-600'
+                            }`}
                           >
-                            <Zap size={9} className="inline mr-0.5" />Gen ID
+                            <Zap size={9} className="inline mr-0.5" />Gen FID
                           </button>
                         </div>
                       </div>

@@ -84,3 +84,13 @@ export const getPTLogs = createAsyncThunk(
     }
 )
 
+
+
+export const getFidBySpool = async (spool_id) => {
+  const response = await axios({
+    method: "GET",
+    url: `${import.meta.env.VITE_API_URL}/api/getfidbyspool/${spool_id}`,
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return response.data;
+};
