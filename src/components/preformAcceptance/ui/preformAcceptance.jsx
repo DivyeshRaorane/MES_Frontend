@@ -20,17 +20,13 @@ const modalColumns = [
   { key: 'preform_id', label: 'Preform ID' },
   { key: 'material_description', label: 'Material Description' },
   { key: 'preform_weight', label: 'Weight (kg)' },
-  { key: 'material_code', label: 'Material Code' },
+  { key: 'material_code', label: 'Material Code'},
 ];
 
 const initialValues = {
   preform_id: '', preform_weight: '', charge_weight: '', preform_length: '', charge_length: '', drawing_length: '', material_code: '',
-  diaVariation: '', cut_off: '', mfd: '', accepted_by: '', preform_type_id: '', material_description: '',
-  remarks: '', drawInstruction: '', acceptance_status: '', rejection_note: '', logged_in_user: "",
-
-
-
-
+  dia_variation: '', cut_off: '', mfd: '', accepted_by: '', preform_type: '', product_type: '', material_description: '',
+  remarks: '', draw_instruction: '', acceptance_status: '', rejection_note: '', logged_in_user: "",
 };
 
 const validationSchema = Yup.object({
@@ -38,7 +34,24 @@ const validationSchema = Yup.object({
   charge_weight: Yup.number()
     .typeError("Charge Weight must be a number")
     .required("Charge Weight Required"),
-
+  preform_length: Yup.number()
+    .typeError("preform length must be a number")
+    .required("preofrm length Required"),
+    charge_length: Yup.number()
+    .typeError("Charge Length must be a number")
+    .required("Charge Length Required"),
+    drawing_length: Yup.number()
+    .typeError("drawing Length must be a number")
+    .required("drawing Length Required"),
+    dia_variation: Yup.number()
+    .typeError("dia variation must be a number")
+    .required("dia variation Required"),
+    cut_off: Yup.number()
+    .typeError("cut off must be a number")
+    .required("cut off Required"),
+    mfd: Yup.number()
+    .typeError("mfd must be a number")
+    .required("mfd Required"),
   preform_weight: Yup.number().required('Required'),
 });
 
@@ -51,7 +64,6 @@ const PreformAcceptance = () => {
 
   const { preformData, loading, error } = useSelector((state) => state.preformData);
   const { preformAcceptanceData, preformALoading, preformAError } = useSelector((state) => state.preformAcceptance)
-
 useEffect(() => {
     const fetchDrawUsers = async () => {
       try {
@@ -66,7 +78,7 @@ useEffect(() => {
 
   const drawUsersOption = drawUsers.map((users) => ({
     label: `${users.draw_user_name}`,
-    value: users.draw_user_id
+    value: users.draw_user_name
   }))
 
   useEffect(() => {
@@ -91,7 +103,7 @@ useEffect(() => {
 
                 if (preformAccept.fulfilled.match(result)) {
                   showSuccess("Preform Accepted Successfully")
-
+                  dispatch(getPreforms())
                   resetForm();
                 }
 
@@ -146,18 +158,30 @@ useEffect(() => {
                         <FormikInput compact label="Charge Weight (kg)" name="charge_weight" type="number"
                           error={errors.charge_weight}
                           touched={touched.charge_weight} />
-                        <FormikInput compact label="Preform Length (mm)" name="preform_length" type="number" />
-                        <FormikInput compact label="Charge Length (mm)" name="charge_length" type="number" />
-                        <FormikInput compact label="Drawing Length(km)" name="drawing_length" type="number" />
-                        <FormikInput compact label="Material Code" name="material_code" disabled={true} />
-                        <FormikInput compact label="Dia Variation" name="dia_variation" type="number" />
-                        <FormikInput compact label="Cut Off" name="cut_off" type="number" />
+                        <FormikInput compact label="Preform Length (mm)" name="preform_length" type="number"
+                        error={errors.preform_length}
+                          touched={touched.preform_length} />
+                        <FormikInput compact label="Charge Length (mm)" name="charge_length" type="number"
+                        error={errors.charge_length}
+                          touched={touched.charge_length} />
+                        <FormikInput compact label="Drawing Length(km)" name="drawing_length" type="number"
+                         error={errors.drawing_length}
+                          touched={touched.drawing_length}/>
+                        <FormikInput compact label="Material Code" name="material_code" disabled={true} 
+                        error={errors.material_code}
+                          touched={touched.material_code}/>
+                        <FormikInput compact label="Dia Variation" name="dia_variation" type="number"
+                        error={errors.dia_variation}
+                          touched={touched.dia_variation} />
+                        <FormikInput compact label="Cut Off" name="cut_off" type="number"
+                        error={errors.cut_off}
+                          touched={touched.cut_off} />
                         <FormikInput compact label="MFD" name="mfd" type="number" />
                         <FormikSelect compact label="Accepted By" name="accepted_by" options={drawUsersOption} />
                         <div className="col-span-2">
                           <FormikInput compact label="Material Description" name="material_description" disabled={true} />
                         </div>
-                        <FormikInput compact label="Preform Type" name="preform_type_id" type="number" />
+                        <FormikInput compact label="Preform Type" name="preform_type" type="text" readOnly />
                         {/*<FormikSelect compact label="Preform Type" name="preform_type_id" options={['G652D', 'G667A1', 'G657A2']} />*/}
                       </div>
 
@@ -237,6 +261,9 @@ useEffect(() => {
                   columns={modalColumns}
                   onSelect={(selectedRow) => {
                     Object.keys(selectedRow).forEach(key => setFieldValue(key, selectedRow[key]));
+                    setFieldValue("preform_type", selectedRow.preform_type);
+                    setFieldValue("product_type", selectedRow.product_type);
+                    setFieldValue("drawing_length", selectedRow.preform_weight * 37)
                   }}
                 />
               </>

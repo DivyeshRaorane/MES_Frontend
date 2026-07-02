@@ -5,7 +5,7 @@ import { ModuleCard, FormikSelect, FormikInput } from '../../../components/commo
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { useDispatch, useSelector } from 'react-redux';
-import { ptAllocationEntry, getDrawEntryDetails } from '../services/pt_allocation.api';
+import { ptAllocationEntry, getDrawEntryDetails, ptWip } from '../services/pt_allocation.api';
 import { getPTMachines } from '../../Admin_Folder/proof_testing/pt_machine/service/pt_machine.api';
 import { getPTUsers } from '../../Admin_Folder/proof_testing/pt_users/service/pt_users.api';
 
@@ -20,14 +20,14 @@ const initialValues = {
   spool_id: '',
   allocation_date: new Date().toISOString().split('T')[0],
   preform_id: '',
-  tower_id: '',
+  tower_no: '',
   drawn_length: '',
   product_type: "",
   pt_strain: '',
-  pt_machine_id: '',
-  allocated_by_id: '',
+  pt_machine_no: '',
+  allocated_by: '',
   is_reject: false,
-  shift_incharge_id: '',
+  shift_incharge: '',
   allocation_remark: '',
 };
 
@@ -37,6 +37,29 @@ const PTAllocation = () => {
 
   const [ptMachines, setPTMachines] = useState([]);
   const [ptUsers, setPTUsers] = useState([]);
+  const [ptWipData, setPtWipData] = useState([]);
+  const [loading, setLoading] = useState(true)
+
+ const fetchPtWip = async () => {
+    try {
+        setLoading(true);
+
+        const response = await ptWip(false);
+
+        if (response.success) {
+            setPtWipData(response.data);
+        }
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setLoading(false);
+    }
+};
+
+useEffect(() => {
+    fetchPtWip();
+}, []);
+  console.log("wip data:", ptWipData)
 
   useEffect(() => {
     const fetchPTMAchines = async () => {
@@ -64,12 +87,12 @@ const PTAllocation = () => {
 
   const ptMachineOptions = ptMachines.map((ptm) => ({
     label: `PT Machine ${ptm.pt_machine_no}`,
-    value: ptm.pt_machine_id,
+    value: ptm.pt_machine_no,
   }))
 
   const ptUsersOptions = ptUsers.map((user)=>({
     label:`${user.pt_user_name}`,
-    value: user.pt_user_id,
+    value: user.pt_user_name,
   }))
 
   const handleSpoolScan = async (spool_id) => {
@@ -83,7 +106,7 @@ const PTAllocation = () => {
         ...prev,
         spool_id,
         preform_id: res.data.preform_id,
-        tower_id: res.data.tower_no,
+        tower_no: res.data.tower_no,
         drawn_length: res.data.drawn_length,
         product_type: res.data.product_type,
       }));
@@ -97,10 +120,10 @@ const PTAllocation = () => {
   const handleRowClick = (row) => {
     formikRef.current?.setValues({
       ...formikRef.current.values,
-      drawn_spool_id: row.drawn_spool_id,
+      drawn_spool_id: row.spool_id,
       preform_id: row.preform_id,
-      tower_id: row.tower_no,
-      Drawn_Length: row.Drawn_Length,
+      tower_no: row.tower_no,
+      Drawn_Length: row.drawn_length,
     });
   };
 
@@ -114,14 +137,15 @@ const PTAllocation = () => {
           innerRef={formikRef}
           initialValues={initialValues}
           onSubmit={async (values, { resetForm }) => {
-            console.log('Form Submitted:', values);
             try {
               const response = await dispatch(ptAllocationEntry(values))
               if (response.payload?.success) {
-                showSuccess(response.payload || "Allocation Svaed Successfully")
+                console.log("show success", response)
+                showSuccess(response.payload?.message || "Allocation Svaed Successfully")
+                await fetchPtWip();
               } else {
                 console.log("Error:", response)
-                showError(response.payload || "Allocation Failed")
+                showError(response.payload?.message || "Allocation Failed")
               }
             } catch (error) {
               console.error("Submit Error:", error);
@@ -137,16 +161,16 @@ const PTAllocation = () => {
    />
                 <FormikInput compact label="Date" name="allocation_date" type="date" readOnly />
                 <FormikInput compact label="Preform ID" name="preform_id" placeholder="Automatic" readOnly />
-                <FormikInput compact label="DT No" name="tower_id" placeholder="Automatic" readOnly />
+                <FormikInput compact label="DT No" name="tower_no" placeholder="Automatic" readOnly />
                 <FormikInput compact label="Drawn Length" name="drawn_length" placeholder="Automatic" readOnly />
                 <FormikInput compact label="Product Type" name="product_type" placeholder="Automatic" readOnly />
                 <FormikSelect compact label="Select PT Strain" name="pt_strain" options={[
                   { label: "1%", value: 1 },
                   { label: "2%", value: 2 },
                 ]} />
-                <FormikSelect compact label="Select PT Machine" name="pt_machine_id" options={ptMachineOptions} />
-                <FormikSelect compact label="Allocated By" name="allocated_by_id" options={ptUsersOptions} />
-                <FormikSelect compact label="Shift Incharge" name="shift_incharge_id" options={ptUsersOptions} />
+                <FormikSelect compact label="Select PT Machine" name="pt_machine_no" options={ptMachineOptions} />
+                <FormikSelect compact label="Allocated By" name="allocated_by" options={ptUsersOptions} />
+                <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={ptUsersOptions} />
                 <FormikInput compact label="Remark" name="allocation_remark" placeholder="Remark" />
                 <div className="flex flex-col gap-1">
                   <label className="font-bold text-slate-800 uppercase text-[9px]">
@@ -193,16 +217,16 @@ const PTAllocation = () => {
               </tr>
             </thead>
             <tbody>
-              {dummyData.map((row, idx) => (
+              {ptWipData.map((row, idx) => (
                 <tr
                   key={idx}
                   onClick={() => handleRowClick(row)}
                   className="border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
                 >
                   <td className="px-3 py-2 text-xs font-semibold text-indigo-600">{row.preform_id}</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_spool_id}</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.DT_No}</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.Drawn_Length}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.spool_id}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.tower_no}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_length}</td>
                   <td className="px-3 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${row.PT_Done === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                       }`}>

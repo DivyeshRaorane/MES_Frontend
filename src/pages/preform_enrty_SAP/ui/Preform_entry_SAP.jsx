@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { preformEntrySap } from '../service/preform_entry_SAP.api';
 import { showSuccess,showError } from '../../../utils/toastService';
 import Loader from '../../../components/loader';
+import { getmaterialmasterMC } from '../../Admin_Folder/material_master/service/material_master.api';
 
 const PreformEntryForm = () => {
     const dispatch = useDispatch();
@@ -14,7 +15,8 @@ const PreformEntryForm = () => {
   const initialValues = {
     preform_id: '',
     preform_weight: '',
-    preform_type_id: '',
+    preform_type: '',
+    product_type: '',
     material_code: '',
     material_description: '',
     plant: '',
@@ -26,13 +28,38 @@ const PreformEntryForm = () => {
   const validationSchema = Yup.object({
     preform_id: Yup.string().required('Preform ID is required'),
     preform_weight: Yup.number().positive('Must be positive').required('Weight is required'),
-    preform_type_id: Yup.string().required('Preform Type ID is required'),
+    preform_type: Yup.string().required('Preform Type is required'),
     material_code: Yup.string().required('Material Code is required'),
     material_description: Yup.string().required('Description is required'),
     plant: Yup.string().required('Plant is required'),
     storage_location: Yup.string().required('Storage Location is required'),
     uom: Yup.string().required('UOM is required'),
   });
+
+  const handleMaterialCodeBlur = async (materialCode, setFieldValue) => {
+    if (!materialCode.trim()) return;
+
+    try {
+        const response = await getmaterialmasterMC(materialCode);
+
+        console.log("material:", response)
+
+        const material = response.data[0]; // adjust according to your API response
+
+        if (!material) {
+            showError("Material code not found");
+            return;
+        }
+
+        setFieldValue("preform_type", material.preform_type);
+        setFieldValue("product_type", material.product_type);
+        setFieldValue("material_description", material.material_description);
+        setFieldValue("uom", material.uom);
+
+    } catch (error) {
+        showError(error.response?.data?.message || "Failed to fetch material");
+    }
+};
 
   const handleSubmit = async(values, { resetForm }) => {
     try{
@@ -47,7 +74,7 @@ const PreformEntryForm = () => {
     }catch(error){
 console.error('Failed to submit preform data:', error);
 
-const errorMsg = error?.message || error?.data?.message || "Something went wrong";
+const errorMsg = error || error?.data?.message || "Something went wrong";
     showError("Error: " + errorMsg);
     }
   };
@@ -67,7 +94,7 @@ const errorMsg = error?.message || error?.data?.message || "Something went wrong
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ isSubmitting }) => (
+        {({ isSubmitting, setFieldValue }) => (
           <Form className="grid grid-cols-1 md:grid-cols-2 gap-5">
             
             {/* Preform ID */}
@@ -94,29 +121,39 @@ const errorMsg = error?.message || error?.data?.message || "Something went wrong
               <ErrorMessage name="preform_weight" component="div" className="text-red-500 text-xs mt-1" />
             </div>
 
-            {/* Preform Type ID */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Preform Type ID</label>
-              <Field
-                type="text"
-                name="preform_type_id"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="Enter Preform Type ID"
-              />
-              <ErrorMessage name="preform_type_id" component="div" className="text-red-500 text-xs mt-1" />
-            </div>
-
             {/* Material Code */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Material Code</label>
-              <Field
-                type="text"
-                name="material_code"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="Enter Material Code"
-              />
+              <Field name="material_code">
+    {({ field }) => (
+        <input
+            {...field}
+            type="text"
+            placeholder="Enter Material Code"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            onBlur={(e) => {
+                field.onBlur(e); // important for Formik
+                handleMaterialCodeBlur(e.target.value, setFieldValue);
+            }}
+        />
+    )}
+</Field>
               <ErrorMessage name="material_code" component="div" className="text-red-500 text-xs mt-1" />
             </div>
+
+            {/* Preform Type ID */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Preform Type</label>
+              <Field
+                type="text"
+                name="preform_type"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Enter Preform Type ID"
+              />
+              <ErrorMessage name="preform_type" component="div" className="text-red-500 text-xs mt-1" />
+            </div>
+
+            
 
             {/* Material Description - Full width on desktop */}
             <div className="md:col-span-2">

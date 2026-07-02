@@ -9,26 +9,19 @@ import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
 import { resume } from 'react-dom/server';
 import { showSuccess,showError } from '../../../utils/toastService';
 import { array } from 'yup';
+import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
+import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
+import { preformDiallocation } from '../services/preform_allocation.api';
 
 
-/* ── Mock data ── */
-const INITIAL_WIP = [
-  { id: 'TEF524220', weight: 54.041, batch: 'B-9921', drawing_length: '578' },
-  { id: 'TEF524195', weight: 55.952, batch: 'B-8832', drawing_length: '578' },
-  { id: 'TEF524194', weight: 60.997, batch: 'B-7710', drawing_length: '578' },
-];
-
-const INITIAL_ALLOCS = [
-  { dtNo: 'DT10', preformId: 'TEF524220', consumed: 8.470 },
-];
 
 const FORM_INIT = {
   preform_id: "",
   allocation_date: '',
-  tower_id: null,
-  shift_id: null,
+  tower_no: null,
+  shift: null,
   seq: null,
-  loaded_by: null,
+  operator: null,
   process_remark: '',
   draw_instruction: '',
   dia1: '', dia2: '', dia3: '', dia4: '', dia5: '',
@@ -40,11 +33,34 @@ const FORM_INIT = {
 const PrerformAllocation = () => {
   const dispatch = useDispatch();
   const [selectedPreform, setSelectedPreform] = useState(null);
+  const [shifts, setShifts] = useState([]);
+  const [drawUsers, setDrawUsers] = useState([]);
+  const [showPopup, setShowPopup] = useState(false);
+const [selectedAllocation, setSelectedAllocation] = useState(null);
 
-  const [allocations] = useState(INITIAL_ALLOCS);
 
   const { preformForAllocationData, paLoading, paError } = useSelector((state) => state.preformForAllocation);
-  
+  console.log("preform allocations:", preformForAllocationData)
+  //For diallocation preform
+const confirmDeallocation = async () => {
+    try {
+        const res = await preformDiallocation(selectedAllocation.allocation_id);
+
+        showSuccess(res.message);
+
+        setShowPopup(false);
+        setSelectedAllocation(null);
+
+        // Refresh table
+        dispatch(getRecentAllocatedPreforms());
+        dispatch(getPreformForAllocation());
+        dispatch(getTowerForAllocation(true))
+
+    } catch (error) {
+        showError(error.response?.data?.message || error.message);
+    }
+};
+
 
   useEffect(() => {
     dispatch(getPreformForAllocation())
@@ -57,11 +73,45 @@ const PrerformAllocation = () => {
   useEffect(()=>{
     dispatch(getRecentAllocatedPreforms())
   },[dispatch])
+
   const {towerForAllocationData,taLoading,taError}= useSelector((state)=> state.towersForAllocation)
   const {recentAllocatedPreformData, rapLoading, rapError}= useSelector((state)=> state.recentAllocatedPreform)
 
+  useEffect(() => {
+    const fetchShifts = async () => {
+      try {
+        const data = await getAllShifts();
+        setShifts(data.data);
+      } catch (error) {
+        console.error("Error fetching shifts:", error);
+      }
+    };
+    fetchShifts();
+  }, [])
 
-  console.log("WHat is the recent preform:", recentAllocatedPreformData)
+   useEffect(() => {
+      const fetchDrawUsers = async () => {
+        try {
+          const data = await getAllDrawUsers();
+          setDrawUsers(data.data);
+        } catch (error) {
+          console.error("Error Fetching Draw Users:", error)
+        }
+      }
+      fetchDrawUsers();
+    }, [])
+
+
+  const shiftOptions = shifts.map((shift) => ({
+    label: `${shift.shift_name}`,
+    value: shift.shift_name,
+  }));
+
+   const drawUsersOption = drawUsers.map((users) => ({
+    label: `${users.draw_user_name}`,
+    value: users.draw_user_id
+  }))
+
    const towerOptions = Array.isArray(towerForAllocationData)
   ? towerForAllocationData.map(t => ({
       label: `Tower ${t.tower_no}`,
@@ -70,7 +120,6 @@ const PrerformAllocation = () => {
   : [];
 
 
-  const [wipData] = useState(INITIAL_WIP);
 
   const avgDia =
     [1, 2, 3, 4, 5].reduce(
@@ -86,26 +135,23 @@ const PrerformAllocation = () => {
       ...values,
       preform_id: selectedPreform.preform_id,
       average_diameter: avgDia,
-      shift_id:1,
-      operator_id:1111,
-      loaded_by:1111,
-      preform_type_id:1,
-      product_type_id:1,
-      process_type_id:1,
-      logged_in_user:1111
+      preform_type:selectedPreform.preform_type,
+      product_type:selectedPreform.product_type,
 
     };
 
     try{
       const result = await dispatch(preformAllocationEntry(payload))
-
-      console.log("Saved", result)
-      showSuccess(result)
+      dispatch(getPreformForAllocation());
+        dispatch(getTowerForAllocation(true))
+        dispatch(getRecentAllocatedPreforms())
+      console.log("result preform allocation:", result)
+      showSuccess(result?.payload?.message)
       setSelectedPreform(null);
-    resetForm();
+      resetForm();
     }catch(error){
  console.error("Allocation failed:", error);
- showError(error.message)
+ showError(error?.message)
     }
 
 
@@ -159,7 +205,7 @@ const PrerformAllocation = () => {
                           </button>
                         </td>
                         <td className="px-3 py-2 font-semibold text-slate-700">{item.preform_id}</td>
-                        <td className="px-3 py-2 text-right font-mono text-slate-600">{item.preform_weight}</td>
+                        <td className="px-3 py-2 text-right font-mono text-slate-600">{item.balance_qty}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -179,7 +225,7 @@ const PrerformAllocation = () => {
                     <tr>
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Line</th>
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Preform</th>
-                      <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase text-right">Consumed</th>
+                      <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase text-right">Balance</th>
                       <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Action</th>
                     </tr>
                   </thead>
@@ -189,16 +235,18 @@ const PrerformAllocation = () => {
                       <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
                         <td className="px-3 py-2 font-medium text-slate-700">{row.tower_no}</td>
                         <td className="px-3 py-2 font-bold text-blue-700">{row.preform_id}</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600">{row.preform_weight} KG</td>
+                        <td className="px-3 py-2 text-right font-mono font-bold text-emerald-600">{row.balance_qty} KG</td>
                         <td className="px-3 py-2">
           <button
-            type="button"
-            onClick={() => handleComplete(row)}
-            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-green-700"
-          >
-            <Trash2 size={14} />
-
-          </button>
+    type="button"
+    onClick={() => {
+        setSelectedAllocation(row);
+        setShowPopup(true);
+    }}
+    className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+>
+    <Trash2 size={14} />
+</button>
         </td>
                       </tr>
                     ))}
@@ -260,19 +308,19 @@ const PrerformAllocation = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <FormikInput compact label="Allocation Date" name="allocation_date" type="date" />
-                        <FormikSelect compact label="Tower Line (DT)" name="tower_id" options={towerOptions} />
+                        <FormikSelect compact label="Tower Line (DT)" name="tower_no" options={towerOptions} />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <FormikSelect compact label="Working Shift" name="shift" options={['A', 'B', 'C']} />
+                        <FormikSelect compact label="Working Shift" name="shift" options={shiftOptions} />
                         <FormikInput compact label="Sequence No" name="seq" placeholder="e.g. 1" />
-                        <FormikSelect compact label="Loading Operator" name="loadedBy" options={['Operator A', 'Operator B', 'Supervisor X']} />
+                        <FormikSelect compact label="Loading Operator" name="operator" options={drawUsersOption} />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <FormikInput compact label="Preform Type" name="preform_type" value={selectedPreform?.preform_type_id} disabled placeholder="e.g. 1" />
-                        <FormikSelect compact label="Product Type" name="product_type" options={['A', 'B', 'X']} />
-                        <FormikSelect compact label="Process Type" name="process_type" options={['A', 'B', 'X']} />
+                        <FormikInput compact label="Preform Type" name="preform_type" value={selectedPreform?.preform_type} disabled placeholder="e.g. 1" />
+                        <FormikInput compact label="Product Type" name="product_type" value= { selectedPreform?.product_type} disabled />
+                        <FormikSelect compact label="Process Type" name="process_type" options={['250', '200', '180','160']} />
                       </div>
-                      <FormikTextarea compact label="Draw Instruction" name="draw_instruction" placeholder="Auto fetched..." rows={2} />
+                      <FormikTextarea compact label="Draw Instruction" name="draw_instruction" placeholder="Draw Instruction..." rows={2} />
                     </div>
 
                     {/* Right: Measurements */}
@@ -289,7 +337,7 @@ const PrerformAllocation = () => {
                       </div>
                       <FormikInput compact label="Average Diameter" name="average_diameter" type="number" value={avgDia} placeholder="Calculated average" />
                       <div>
-                        <FormikTextarea compact label="Process Remarks" name="process_remark" placeholder="Enter observations..." rows={2} />
+                        <FormikTextarea compact label="Process Remark" name="process_remarks" placeholder="Enter observations..." rows={2} />
                       </div>
                     </div>
 
@@ -320,6 +368,70 @@ const PrerformAllocation = () => {
 
         </div>
       </div>
+      {showPopup && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+        <div className="bg-white rounded-xl shadow-xl w-[400px]">
+
+            <div className="border-b px-5 py-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                    Confirm Deallocation
+                </h2>
+            </div>
+
+            <div className="p-5">
+
+                <p className="text-gray-600">
+                    Are you sure you want to deallocate this preform?
+                </p>
+
+                {selectedAllocation && (
+                    <div className="mt-4 bg-gray-100 rounded-lg p-3">
+
+                        <p>
+                            <span className="font-semibold">
+                                Preform :
+                            </span>{" "}
+                            {selectedAllocation.preform_id}
+                        </p>
+
+                        <p>
+                            <span className="font-semibold">
+                                Tower :
+                            </span>{" "}
+                            {selectedAllocation.tower_no}
+                        </p>
+
+                    </div>
+                )}
+
+                <div className="flex justify-end gap-3 mt-6">
+
+                    <button
+                        onClick={() => {
+                            setShowPopup(false);
+                            setSelectedAllocation(null);
+                        }}
+                        className="px-4 py-2 rounded border"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        onClick={confirmDeallocation}
+                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                        Deallocate
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+)}
     </div>
   );
 };

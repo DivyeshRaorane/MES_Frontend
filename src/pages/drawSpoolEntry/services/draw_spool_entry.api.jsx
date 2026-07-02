@@ -5,12 +5,14 @@ export const createDrawEntry = createAsyncThunk(
     "drawEntry/createDrawEntry",
     async(payload,{rejectWithValue})=>{
         try{
+            const token = await localStorage.getItem('token')
         const response = await axios({
                             method: import.meta.env.VITE_METHOD_POST,
                             url: `${import.meta.env.VITE_API_URL}/api/drawentry`,
                             data:payload,
                             headers: {
                                 'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
                             }
             
                         })

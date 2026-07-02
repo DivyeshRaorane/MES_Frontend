@@ -54,7 +54,9 @@ const ColouringEntry = () => (
                   <FormikInput compact label="Colour Batc Code" name="colour_barcode" readOnly />
                   <FormikSelect compact label="Rew Reason" name="rew_reason" options={['Select', 'Attn High', 'MFD Fail', 'Customer Req', 'Other']} />
                   <FormikInput compact label="Length" name="length" type="number" placeholder="0.000" />
-                  <FormikSelect compact label="Rew Type" name="rew_type" options={['Select', 'Standard', 'Premium', 'Custom']} />
+                  <FormikSelect compact label="Process Type" name="rew_type" options={[ 'Normal', 'Single RM', 'Double RM']} />
+                  <FormikSelect compact label="Die Change" name="die_change" options={[ 'Yes', 'No']} />
+                  {/* if value.die_change= yes then enter color dia Number*/}
                   <FormikSelect compact label="Machine No" name="machine_no" options={['Select', 'MC-01', 'MC-02', 'MC-03', 'MC-04']} />
                 </div>
               </ModuleCard>

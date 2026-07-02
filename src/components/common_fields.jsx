@@ -213,7 +213,7 @@ export const FormikSelect = ({
    FormikTextarea
    compact={true}  → text-xs, text-[9px] label, smaller padding
    ───────────────────────────────────────────────────────────── */
-export const FormikTextarea = ({ label, name, rows = 3, placeholder = "", compact = false, className = "" }) => (
+export const FormikTextarea = ({ label, name, rows = 3, placeholder = "", compact = false, className = "", readOnly }) => (
   <div className="flex flex-col gap-0.5 h-full">
     {label && (
       <label className={`font-bold text-slate-500 uppercase ml-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
@@ -224,6 +224,7 @@ export const FormikTextarea = ({ label, name, rows = 3, placeholder = "", compac
       as="textarea"
       name={name}
       rows={rows}
+      disabled={readOnly}
       placeholder={placeholder}
       className={`w-full bg-slate-50 border border-slate-200 outline-none transition-all resize-none
         focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500

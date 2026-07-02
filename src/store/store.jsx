@@ -15,7 +15,8 @@ import getUsersReducer from '../pages/Admin_Folder/user_management/user/controll
 import ptAllocationReducer from '../pages/ptAllocation/controller/pt_allocation.slice'
 import ptAllocatedSpoolReducer from '../pages/ptRunnigTable/controller/pt_allocated_spool.controller'
 import ptEntryReducer from '../pages/proofTestEntry/controller/pt_entry.slice'
-
+import ptFlawsReducer from '../pages/proofTestEntry/controller/get_pt_flaws.slice' 
+import ptLogsReducer from '../pages/proofTestEntry/controller/get_pt_logs.slice'
 
 
 
@@ -37,5 +38,7 @@ export const store = configureStore({
         ptAllocation: ptAllocationReducer,
         ptAllocatedSpool: ptAllocatedSpoolReducer,
         ptEntry: ptEntryReducer,
+        ptFlaws: ptFlawsReducer,
+        ptLogs: ptLogsReducer,
     }
 })

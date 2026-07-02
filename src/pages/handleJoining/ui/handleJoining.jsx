@@ -8,7 +8,7 @@ import SelectionModal from '../../../components/selectionModal';
 import { getPreformForHandleJoin, handleJoin } from '../services/handle_join.api';
 import { showSuccess, showError } from '../../../utils/toastService';
 import Loader from '../../../components/loader';
-
+import * as Yup from 'yup';
 
 
 
@@ -46,6 +46,7 @@ const AUTO_FIELDS = [
   { key: 'mfd',            label: 'MFD'          },
   { key: 'preform_type',   label: 'Preform Type' },
 ];
+
 
 /* ══════════════════════════════════════════════════════════ */
 const HandleJoining = () => {
@@ -95,6 +96,25 @@ const HandleJoining = () => {
     o2Line1Flow3: { flow: 0, time: 0 },
     
   };
+
+  const validationSchema = Yup.object({
+    preform_id: Yup.string().required('Required'),
+    dia1: Yup.number()
+      .typeError("Dia1 must be a number")
+      .required("Dia1  Required"),
+      dia2: Yup.number()
+      .typeError("dia2 must be a number")
+      .required("dia2  Required"),
+      dia3: Yup.number()
+      .typeError("dia3 must be a number")
+      .required("dia3  Required"),
+      dia4: Yup.number()
+      .typeError("dia4 must be a number")
+      .required("dia4  Required"),
+      dia5: Yup.number()
+      .typeError("dia5 must be a number")
+      .required("dia5  Required"),
+  })
 
   /* ── Submit handler ── */
   const onSubmit = async (values, { resetForm }) => {
@@ -151,8 +171,6 @@ const HandleJoining = () => {
       joined_by:1111,
     logged_in_user:1111,
     };
-
-    console.log("Submitting:", payload);
 
     const result = await dispatch(handleJoin(payload));
 
@@ -292,7 +310,7 @@ const HandleJoining = () => {
                   setFieldValue('preform_weight', row.preform_weight  ?? '');
                   setFieldValue('cut_off',        row.cut_off         ?? '');
                   setFieldValue('mfd',            row.mfd             ?? '');
-                  setFieldValue('preform_type',   row.preform_type_id ?? '');
+                  setFieldValue('preform_type',   row.preform_type ?? '');
                   setIsModalOpen(false);
                 }}
               />

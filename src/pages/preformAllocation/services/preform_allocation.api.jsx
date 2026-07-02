@@ -26,12 +26,14 @@ export const preformAllocationEntry = createAsyncThunk(
     'prformAllocation/preformAllocationEntry',
     async (payload, { rejectWithValue }) => {
         try {
+            const token = localStorage.getItem("token")
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
                 url: `${import.meta.env.VITE_API_URL}/api/preformallocationentry`,
                 data: payload,
                 headers: {
                     'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
                 }
 
             })
@@ -64,3 +66,19 @@ export const getRecentAllocatedPreforms = createAsyncThunk(
         }
     }
 )
+
+export const preformDiallocation = async(allocation_id)=>{
+    try{
+        const response = await axios({
+            method : import.meta.env.VITE_METHOD_PUT,
+            url: `${import.meta.env.VITE_API_URL}/api/preformdeallocation/${allocation_id}`,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+
+        return response.data;
+    }catch(error){
+        throw error
+    }
+} 

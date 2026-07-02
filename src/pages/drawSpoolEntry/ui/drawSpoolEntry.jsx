@@ -7,14 +7,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createDrawEntry, getTowerEvent } from '../services/draw_spool_entry.api';
 import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
 import { getPreformByTower } from '../services/draw_spool_entry.api';
-import { drawFlawAutomation, exportFlawReport } from './draw_flaw_automate';
+import { drawFlawAutomation, exportFlawReport, reverseFlawPositions } from './draw_flaw_automate';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { getAllDrawWindingObservations } from '../../Admin_Folder/draw_management/winding_observation/service/winding_observation.api';
 import { getAllDrawFiberCutReason } from '../../Admin_Folder/draw_management/fiber_cut_reason/service/draw_fiber_cut_reason.api';
 import { showSuccess, showError } from '../../../utils/toastService';
-
-
+import { useFormikContext } from 'formik';
 
 /* ── Compact section label ── */
 const SL = ({ title, color = 'text-blue-700' }) => (
@@ -37,18 +36,18 @@ const getCurrentShift = () => {
 const today = new Date().toISOString().split('T')[0];
 
 const initialValues = {
-  tower_id: '', preform_id: '',
+  tower_no: '', preform_id: '',
   spool_id: '', start_date: '', end_date: '', start_time: '',
   end_time: '', drawn_weight: '', drawn_length: '', balance_weight: '',
-  shift_id: '', drawn_line_speed: '', draw_tension: '', furnace_power: '',
+  shift: '', drawn_line_speed: '', draw_tension: '', furnace_power: '',
   furnace_argon: '', furnace_he: '', tube_he: '', co2_flow: '', n2_flow: '',
-  uv_air: '', winding_observation_id: '', scr_observation: '', top_end_scrap: '',
+  uv_air: '', winding_observation: '', scr_observation: '', top_end_scrap: '',
   bottom_end_scrap: '', die_clean: '', spool_status: '', indication_fiber_cut: '',
-  indication_reason_id: "", remark: '', primary_coating: '', secondary_coating: '', coating_type: '',
+  indication_reason: "", remark: '', primary_coating: '', secondary_coating: '', coating_type: '',
   primary_pressure: '', secondary_pressure: '', primary_batch: '', secondary_batch: '',
-  process_type: '', logged_in_user: '', shift_incharge: '', furnace_operator: '',
+  process_type: '', preform_type: '', product_type: '', logged_in_user: '', shift_incharge: '', furnace_operator: '',
   die_operator: '', ground_operator: '',
-  draw_flaws: [],
+  draw_flaws: [], pt_flaws: []
 };
 
 const CONSUMPTION_TABS = ['Coating'];
@@ -118,22 +117,22 @@ const DrawSpoolEntry = () => {
 
   const drawUsersOption = drawUsers.map((users) => ({
     label: `${users.draw_user_name}`,
-    value: users.draw_user_id
+    value: users.draw_user_name
   }))
 
   const shiftOptions = shifts.map((shift) => ({
     label: `${shift.shift_name}`,
-    value: shift.shift_id,
+    value: shift.shift_name,
   }));
 
   const drawWindingObsOptions = drawWindingObs.map((obs) => ({
     label: `${obs.w_o_name}`,
-    value: obs.wind_obs_id,
+    value: obs.w_o_name,
   }));
 
   const drawFiberCutReasonOptions = drawFiberCutReasons.map((reasons) => ({
     label: `${reasons.dfcr_name}`,
-    value: reasons.dfcr_id,
+    value: reasons.dfcr_name,
   }))
 
   const rows = [
@@ -182,7 +181,7 @@ const DrawSpoolEntry = () => {
     { Message: "Fast Layer Stop @ 693.144" },
 
     // Fibre Breaks
-    { Message: "TowerFibre Break @ 834.831" },
+    { Message: "TowerFibre Break @ 850.831" },
     { Message: "TowerFibre Break @ 0.116" },
 
     // More Noise
@@ -209,12 +208,13 @@ const DrawSpoolEntry = () => {
 
       const events = res.payload?.data || [];
 
+      const mappedFlaws = drawFlawAutomation(rows);
 
-
-      const mappedFlaws = drawFlawAutomation(events);
-      await exportFlawReport(events);
-
-      setFieldValue("draw_flaws", mappedFlaws);
+      setFieldValue("pt_flaws", reverseFlawPositions(mappedFlaws?.totalKm, mappedFlaws?.results))
+      setFieldValue("draw_flaws", mappedFlaws?.results);
+      setFieldValue("drawn_length", mappedFlaws?.totalKm)
+      setFieldValue("drawn_weight", mappedFlaws?.totalKm / 37)
+      setFieldValue("balance_weight", values.preform_weight - (mappedFlaws?.totalKm / 37) )
       console.log("What is the mapped flaws:", mappedFlaws)
 
     } catch (err) {
@@ -222,7 +222,23 @@ const DrawSpoolEntry = () => {
     }
   };
 
+ 
 
+const DrawWeightWatcher = () => {
+  const { values, setFieldValue } = useFormikContext();
+
+  useEffect(() => {
+    const drawnWeight = Number(values.drawn_length || 0) / 37;
+
+    setFieldValue("drawn_weight", drawnWeight);
+    setFieldValue(
+      "balance_weight",
+      Number(values.preform_weight || 0) - drawnWeight
+    );
+  }, [values.drawn_length, values.preform_weight]);
+
+  return null;
+};
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -246,7 +262,7 @@ const DrawSpoolEntry = () => {
         }}>
           {({ values, resetForm, setFieldValue }) => (
             <Form className="flex flex-col flex-1 overflow-hidden">
-
+<DrawWeightWatcher/>
               {/* ── Top action bar ── */}
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
@@ -267,12 +283,12 @@ const DrawSpoolEntry = () => {
                   <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-shrink-0">
                     <SL title="Initial Parameters" />
                     <div className="grid grid-cols-8 gap-x-2 gap-y-1">
-                      <FormikSelect compact label="Tower No" name="tower_id"
+                      <FormikSelect compact label="Tower No" name="tower_no"
                         options={[
                           ...(Array.isArray(towerForAllocationData)
                             ? towerForAllocationData.map((t) => ({
                               label: `Tower ${t.tower_no}`,
-                              value: t.tower_id,
+                              value: t.tower_no,
                             }))
                             : [])
                         ]}
@@ -283,10 +299,14 @@ const DrawSpoolEntry = () => {
                           // fetch allocated preform for this tower
                           const res = await dispatch(getPreformByTower(towerId));
                           const data = res.payload?.data[0];
+                          console.log("allocated preform:", data)
 
                           if (data) {
                             setFieldValue("preform_id", data.preform_id);
-                            setFieldValue("preform_weight", data.preform_weight);
+                            setFieldValue("preform_weight", data.balance_qty);
+                            setFieldValue("preform_type", data.preform_type);
+                            setFieldValue("process_type", data.process_type);
+                            setFieldValue("product_type", data.product_type)
 
                           }
                         }} />
@@ -302,7 +322,7 @@ const DrawSpoolEntry = () => {
                       <FormikInput compact label="Drawn Wt(KG)" name="drawn_weight" type="number" />
                       <FormikInput compact label="Drawn Len(KM)" name="drawn_length" type="number" />
                       <FormikInput compact label="Balance Weight" name="balance_weight" type="number" />
-                      <FormikSelect compact label="Shift" name="shift_id" options={shiftOptions} />
+                      <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
 
                       <FormikInput compact label="Spool ID" name="spool_id" type='text' />
 
@@ -323,27 +343,27 @@ const DrawSpoolEntry = () => {
                       <FormikInput compact label="CO2 Flow" name="co2_flow" type="number" />
                       <FormikInput compact label="N2 Flow" name="n2_flow" type="number" />
                       <FormikInput compact label="UV Air" name="uv_air" type="number" />
-                      <FormikSelect compact label="Winding Observation" name="winding_observation_id" options={drawWindingObsOptions} />
-                      <FormikSelect compact label="Scr Observation" name="scr_observation" options={['Select', 'Yes', 'No']} />
+                      <FormikSelect compact label="Winding Observation" name="winding_observation" options={drawWindingObsOptions} />
+                      <FormikSelect compact label="Scr Observation" name="scr_observation" options={['Yes', 'No']} />
 
                       <FormikInput compact label="Top End Scrap" name="top_end_scrap" type="number"/>
                       <FormikInput compact label="Bottom End Scrap" name="bottom_end_scrap" type='number' />
 
-                      <FormikSelect compact label="Die Clean" name="die_clean" options={['Select', 'Yes', 'No']} />
-                      <FormikSelect compact label="Spool Status" name="spool_status" options={['Select', 'Ok', 'Not Ok']} />
+                      <FormikSelect compact label="Die Clean" name="die_clean" options={['Yes', 'No']} />
+                      <FormikSelect compact label="Spool Status" name="spool_status" options={['Ok', 'Not Ok']} />
                       {values.spool_status == "Not Ok" && (
                         <FormikSelect
                           compact
                           label="Reason"
                           name="spool_not_ok_reason"
-                          options={["Select", "Scrap", "Hold", "Rework"]}
+                          options={["Scrap", "Hold", "Rework"]}
                         />
                       )}
                       <FormikSelect
                         compact
                         label="Indication Fiber Cut"
                         name="indication_fiber_cut"
-                        options={['Select', 'cut', 'sample', 'break', 'trial']}
+                        options={['cut', 'sample', 'break', 'trial']}
                       />
 
                       {/* Conditional Reason Dropdown */}
@@ -396,7 +416,7 @@ const DrawSpoolEntry = () => {
                           { label: "P-BATCH-V1", value: "P-BATCH-V1" },
                           { label: "P-BATCH-V2", value: "P-BATCH-V2" }
                         ]} />
-                        <FormikInput compact label="Process Type" name="process_type" type="text" />
+                        
                       </div>
                     )}
                     {activeConsTab !== 'Coating' && (
@@ -434,7 +454,7 @@ const DrawSpoolEntry = () => {
                               Get Draw Flaws
                             </button>
                             <button type="button"
-                              onClick={() => push({ flaw_desc: '', start_length: '', end_length: '', defect_length: '', actual_cutting: '' })}
+                              onClick={() => push({ reason: '', pos1: '', pos2: '', defect_length: '', actual_cutting: '' })}
                               className="flex items-center gap-0.5 px-2 py-0.5 bg-emerald-600 text-white text-[8px] font-bold rounded hover:bg-emerald-700 transition-all">
                               <Plus size={9} />Add Rows
                             </button>
@@ -455,9 +475,9 @@ const DrawSpoolEntry = () => {
                               <tbody className="divide-y divide-slate-100">
                                 {form.values.draw_flaws.map((_, idx) => (
                                   <tr key={idx}>
-                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.flaw_desc`} /></td>
-                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.start_length`} /></td>
-                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.end_length`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.reason`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.pos1`} /></td>
+                                    <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.pos2`} /></td>
                                     <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.defect_length`} /></td>
                                     <td className="px-0.5 py-0.5"><TCell name={`draw_flaws.${idx}.actual_cutting`} /></td>
                                     <td className="px-0.5 py-0.5 text-center">

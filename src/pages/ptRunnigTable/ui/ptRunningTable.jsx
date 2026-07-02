@@ -3,11 +3,6 @@ import { Search, RotateCw, FileText, ClipboardCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPTAllocatedSpool } from '../services/pt_running.api';
 
-const dummyRecords = [
-  { id: 1, preform_id: 'PF-2026-001', operator: 'Rahul S.', shift_incharge: 'Amit V.', pt_no: 'PT-45', drawn_spool_id: 'SP-990', drawn_length: '5200m', total_pt: '4800m', balance: '400m', remark: 'Normal' },
-  { id: 2, preform_id: 'PF-2026-005', operator: 'Suresh K.', shift_incharge: 'Amit V.', pt_no: 'PT-12', drawn_spool_id: 'SP-882', drawn_length: '3000m', total_pt: '3000m', balance: '0m', remark: 'Completed' },
-];
-
 const PTRunningTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { ptAllocatedSpoolData, ptASLoading, ptASError } = useSelector((state) => state.ptAllocatedSpool)
@@ -18,7 +13,7 @@ const PTRunningTable = () => {
     dispatch(getPTAllocatedSpool(false))
   }, [])
 
-  console.log("What is the pt allocated spool:", ptAllocatedSpoolData)
+  
 
   const filteredData = Array.isArray(ptAllocatedSpoolData)
   ? ptAllocatedSpoolData.filter(r =>
@@ -72,26 +67,26 @@ const PTRunningTable = () => {
                     <div className="flex items-center gap-1.5">
                       <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center text-[9px] text-indigo-600 font-bold flex-shrink-0">
                         {row.
-                          allocated_by_name}
+                          allocated_by}
                       </div>
-                      {row.operator}
+                      
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.shift_incharge_name
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.shift_incharge
                   }</td>
                   <td className="px-3 py-2 text-xs font-mono text-indigo-600">{row.pt_machine_no}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">{row.spool_id
                   }</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_length}</td>
-                  <td className="px-3 py-2 text-xs font-bold text-slate-700">{row.total_pt}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{Number(row.drawn_length).toFixed(3)}</td>
+                  <td className="px-3 py-2 text-xs font-bold text-slate-700">{Number(row.qty - row.balance_qty).toFixed(3)}</td>
                   <td className="px-3 py-2 text-xs">
                     <span className={`font-bold ${row.balance === '0m' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {row.balance}
+                      {row.balance_qty}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-xs text-slate-500 italic">
                     <div className="flex items-center gap-1">
-                      <FileText size={11} /> {row.remark}
+                      <FileText size={11} /> {row.allocation_remark}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-center">

@@ -17,8 +17,9 @@ export const preformEntrySap = createAsyncThunk(
                     console.log("what is the response:",response)
                     return response.data
                 } catch (error) {
+                    console.log(error.response.data.message)
                     return rejectWithValue(
-                        error.data?.message || error.message
+                        error.response?.data?.message || error.message
                     )
                 }
     }
