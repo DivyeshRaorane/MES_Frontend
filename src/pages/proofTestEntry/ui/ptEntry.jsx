@@ -70,9 +70,13 @@ const RejRowLayout = ({ label, checked, onChange, children }) => (
 const genPTID = (last) => `PT-${String((parseInt(last.replace(/\D/g, '')) || 0) + 1).padStart(5, '0')}`;
 
 const validationSchema = Yup.object({
-  spool_id: Yup.string().required('Required'),
-  preform_id: Yup.string().required('Required'),
-  status: Yup.string().required('Required'),
+  spool_id: Yup.string().required('Spool ID is required'),
+  preform_id: Yup.string().required('Preform ID is required'),
+  drawn_date: Yup.string().required('Drawn Date is required'),
+  pt_entry: Yup.string().required('PT Entry Date is required'),
+  operator_name: Yup.string().required('Operator is required'),
+  shift_incharge: Yup.string().required('Shift Incharge is required'),
+  pt_length: Yup.string().required('PT Length is required'),
 });
 
 const initialValues = {
@@ -163,7 +167,6 @@ const PTEntry = () => {
     });
     if (result?.hit) {
       showError(result.message);
-      formik.setFieldValue("pt_length", result.suggestedLength.toFixed(3));
     }
 
     setPtAlert({
@@ -194,9 +197,18 @@ const PTEntry = () => {
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
+          validateOnChange={false}
+          validateOnBlur={true}
           innerRef={formikRef}
           onSubmit={async (values, { setFieldValue }) => {
             console.log("payload:", values)
+
+            // Validation: if rejection is checked, reason must be selected
+            if (values.active_rejection_type === 'rejection' && (!values.rejection_reason || values.rejection_reason === 'Select')) {
+              showError("Please select a Rejection Reason");
+              return;
+            }
+
             try {
               const response = await dispatch(ptEntryApi(values));
 

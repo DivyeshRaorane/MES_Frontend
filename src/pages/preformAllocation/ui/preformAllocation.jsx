@@ -17,7 +17,7 @@ import { preformDiallocation } from '../services/preform_allocation.api';
 
 const FORM_INIT = {
   preform_id: "",
-  allocation_date: '',
+  allocation_date: new Date().toISOString().split('T')[0],
   tower_no: null,
   shift: null,
   seq: null,
@@ -318,7 +318,21 @@ const confirmDeallocation = async () => {
                               setFieldValue("allocation_date", selected);
                             }
                           }} />
-                        <FormikSelect compact label="Tower Line (DT)" name="tower_no" options={towerOptions} />
+                        <FormikSelect compact label="Tower Line (DT)" name="tower_no" options={towerOptions}
+                          onChange={(e) => {
+                            const towerId = e.target.value;
+                            if (!towerId) {
+                              setFieldValue("seq", '');
+                              return;
+                            }
+                            // Find furnace_count from existing tower data
+                            const tower = Array.isArray(towerForAllocationData)
+                              ? towerForAllocationData.find(t => String(t.tower_id) === String(towerId))
+                              : null;
+                            const count = Number(tower?.furnace_count) || 0;
+                            setFieldValue("seq", count + 1);
+                          }}
+                        />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <FormikSelect compact label="Working Shift" name="shift" options={shiftOptions} />

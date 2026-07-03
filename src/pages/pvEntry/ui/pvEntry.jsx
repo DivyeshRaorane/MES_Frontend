@@ -1,77 +1,145 @@
-import React, { useState, useRef } from 'react';
-import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Scan, ClipboardCheck, User, Plus, Save, Trash2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Formik, Form } from 'formik';
+import { ShieldCheck, Scan, ClipboardCheck, User, Plus, Trash2 } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { showSuccess, showError } from '../../../utils/toastService';
+import axios from 'axios';
 
-/* ── helpers ── */
+/* ── API: search bobbin from bobbin_entries ── */
+const searchBobbin = async (bobbin_id) => {
+  const response = await axios.get(
+    `${import.meta.env.VITE_API_URL}/api/getbobbinforpv/${bobbin_id}`
+  );
+  return response.data;
+};
+
+/* ── API: submit PV entries ── */
+const submitPVEntries = async (payload) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.post(
+    `${import.meta.env.VITE_API_URL}/api/pventry`,
+    payload,
+    { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
+  );
+  return response.data;
+};
+
 const today   = new Date().toISOString().split('T')[0];
 const nowTime = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-/* Simulate auto-fetch from barcode */
-const fetchBarcodeData = (barcode) => ({
-  fiber_type:     'Single Mode',
-  colour_applied: barcode.startsWith('C') ? 'Blue' : '',
-  qty_kms:        (Math.random() * 10 + 1).toFixed(3),
-  dt_id:          `DT-${Math.floor(Math.random() * 900 + 100)}`,
-  preform_id:     `PRF-${Math.floor(Math.random() * 9000 + 1000)}`,
-});
 
 let testCounter = 1;
 
 const initialFormValues = {
-  /* verification type */
-  pv_type:        '',          // 'online' | 're_pv'
-  fiber_category: '',          // 'colour' | 'natural' | 'fr'
-  colour_select:  '',
-  k_value:        '',
-  /* personnel */
-  pv_operator:    '',
-  date:           today,
-  time:           nowTime(),
-  shift:          '',
-  /* instructions */
-  pv_instruction: '',
-  pv_remark:      '',
-  /* scan */
-  barcode:        '',
+  pv_type:     '',       // 'online' | 're_pv'
+  pv_operator: '',
+  date:        today,
+  time:        nowTime(),
+  shift:       '',
+  pv_remark:   '',
+  barcode:     '',
 };
 
 /* ══════════════════════════════════════════════════════════ */
 const PVEntry = () => {
-  const [tableRows, setTableRows]   = useState([]);
-  const barcodeRef                  = useRef(null);
+  const [tableRows, setTableRows] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const barcodeRef = useRef(null);
 
-  /* Add a row from scan or test button */
-  const addRow = (barcode, formValues) => {
-    if (!barcode.trim()) return;
-    const fetched = fetchBarcodeData(barcode);
+  /* ── Scan bobbin — call API ── */
+  const handleScanBobbin = async (bobbin_id, setFieldValue) => {
+    if (!bobbin_id.trim()) return;
+
+    try {
+      const res = await searchBobbin(bobbin_id.trim());
+
+      if (!res?.data) {
+        showError('Bobbin not found or already verified');
+        return;
+      }
+
+      const data = res.data;
+      setTableRows(prev => [...prev, {
+        id:         Date.now(),
+        bobbin_id:  bobbin_id.trim(),
+        bobbin_fid: data.bobbin_fid || '',
+        spool_fid:  data.spool_fid || '',
+        spool_id:   data.spool_id || '',
+        preform_id: data.preform_id || '',
+        fiber_type: data.fiber_type || '',
+        colour:     data.colour || '',
+        qty_kms:    data.qty_kms || '',
+      }]);
+
+      setFieldValue('barcode', '');
+      setTimeout(() => barcodeRef.current?.focus(), 50);
+    } catch (error) {
+      console.error('Bobbin scan error:', error);
+      showError(error?.response?.data?.message || 'Bobbin not found or already verified');
+    }
+  };
+
+  /* ── Test scan — dummy ── */
+  const addTestRow = () => {
     setTableRows(prev => [...prev, {
-      id:             Date.now(),
-      barcode,
-      fiber_type:     fetched.fiber_type,
-      colour_applied: fetched.colour_applied || (formValues.fiber_category === 'colour' ? formValues.colour_select : '—'),
-      qty_kms:        fetched.qty_kms,
-      dt_id:          fetched.dt_id,
-      preform_id:     fetched.preform_id,
-      /* fixed form data snapshot */
-      pv_type:        formValues.pv_type,
-      fiber_category: formValues.fiber_category,
-      operator:       formValues.pv_operator,
-      date:           formValues.date,
-      shift:          formValues.shift,
-      instruction:    formValues.pv_instruction,
-      remark:         formValues.pv_remark,
+      id:         Date.now(),
+      bobbin_id:  `BOB-${String(testCounter++).padStart(5, '0')}`,
+      bobbin_fid: `FID-${Math.floor(Math.random() * 9000 + 1000)}`,
+      spool_fid:  `KWCOBF5000039C${String.fromCharCode(65 + (testCounter % 5))}`,
+      spool_id:   `SP-${Math.floor(Math.random() * 9000 + 1000)}`,
+      preform_id: `PRF-${Math.floor(Math.random() * 9000 + 1000)}`,
+      fiber_type: 'Single Mode',
+      colour:     testCounter % 2 === 0 ? 'Blue' : '',
+      qty_kms:    (Math.random() * 50 + 10).toFixed(3),
     }]);
   };
 
+  /* ── Remove row ── */
   const removeRow = (id) => setTableRows(prev => prev.filter(r => r.id !== id));
 
-  const handleSave = (formValues) => {
-    if (tableRows.length === 0) { alert('No scanned rows to save.'); return; }
-    console.log('Saving to DB:', { fixed: formValues, rows: tableRows });
-    alert(`Saved ${tableRows.length} row(s) successfully!`);
-    setTableRows([]);   // clear table only — form stays
+  /* ── Submit ── */
+  const handleSubmit = async (formValues) => {
+    if (tableRows.length === 0) { showError('No bobbins scanned.'); return; }
+    if (!formValues.pv_type) { showError('Please select verification type'); return; }
+    if (!formValues.pv_operator) { showError('Please select operator'); return; }
+    if (!formValues.shift) { showError('Please select shift'); return; }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        header: {
+          pv_type:     formValues.pv_type,
+          pv_operator: formValues.pv_operator,
+          shift:       formValues.shift,
+          pv_date:     formValues.date,
+          pv_time:     formValues.time,
+          pv_remark:   formValues.pv_remark,
+        },
+        bobbins: tableRows.map(r => ({
+          bobbin_id:  r.bobbin_id,
+          bobbin_fid: r.bobbin_fid,
+          spool_fid:  r.spool_fid,
+          spool_id:   r.spool_id,
+          preform_id: r.preform_id,
+          fiber_type: r.fiber_type,
+          colour:     r.colour,
+          qty_kms:    r.qty_kms,
+        })),
+      };
+
+      const res = await submitPVEntries(payload);
+
+      if (res?.success) {
+        showSuccess(`${tableRows.length} bobbin(s) verified successfully!`);
+        setTableRows([]);
+      } else {
+        showError(res?.message || 'Submission failed');
+      }
+    } catch (error) {
+      console.error('PV Submit error:', error);
+      showError(error?.response?.data?.message || 'Something went wrong');
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -81,160 +149,93 @@ const PVEntry = () => {
         <Formik initialValues={initialFormValues} onSubmit={() => {}}>
           {({ values, setFieldValue, resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
- <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Pysical Verification</span>
-              <div className="flex gap-1.5">
-                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                <SubmitButton compact type="submit">Submit</SubmitButton>
-                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
+
+              {/* ── Action bar ── */}
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Physical Verification</span>
+                <div className="flex gap-1.5">
+                  <ResetButton compact type="button" onClick={() => { resetForm(); setTableRows([]); }}>Reset</ResetButton>
+                  <SubmitButton compact type="button" disabled={submitting || tableRows.length === 0}
+                    onClick={() => handleSubmit(values)}>
+                    {submitting ? 'Saving...' : `Submit (${tableRows.length})`}
+                  </SubmitButton>
+                </div>
               </div>
-            </div>
-              {/* ── Top section: form fields ── */}
-              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 flex-shrink-0">
 
-                {/* ── Verification Type ── */}
+              {/* ── Top: form fields ── */}
+              <div className="grid grid-cols-3 gap-2 flex-shrink-0">
+
+                {/* Verification Type */}
                 <ModuleCard compact title="Verification Type" icon={<ShieldCheck size={13} className="text-blue-600" />}>
-                  <div className="flex flex-col gap-2">
-                    {/* Online PV / Re-PV — mutually exclusive */}
-                    <div className="flex gap-4">
-                      {[
-                        { val: 'online', label: 'Online Physical Verification', color: 'text-blue-600' },
-                        { val: 're_pv',  label: 'Re-Physical Verification',     color: 'text-indigo-600' },
-                      ].map(({ val, label, color }) => (
-                        <label key={val} className="flex items-center gap-2 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            checked={values.pv_type === val}
-                            onChange={() => {
-                              setFieldValue('pv_type', values.pv_type === val ? '' : val);
-                              setFieldValue('fiber_category', '');
-                              setFieldValue('colour_select', '');
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 accent-blue-600"
-                          />
-                          <span className={`text-[10px] font-bold uppercase tracking-wide ${values.pv_type === val ? color : 'text-slate-600'} group-hover:${color} transition-colors`}>
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-
-                    {/* Sub-checkboxes — only when a type is selected */}
-                    {values.pv_type && (
-                      <div className="flex gap-4 pt-1 border-t border-slate-100">
-                        {[
-                          { val: 'colour',  label: 'Colour'  },
-                          { val: 'natural', label: 'Natural' },
-                          { val: 'fr',      label: 'FR'      },
-                        ].map(({ val, label }) => (
-                          <label key={val} className="flex items-center gap-1.5 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={values.fiber_category === val}
-                              onChange={() => {
-                                setFieldValue('fiber_category', values.fiber_category === val ? '' : val);
-                                setFieldValue('colour_select', '');
-                              }}
-                              className="w-3.5 h-3.5 rounded border-slate-300 accent-emerald-600"
-                            />
-                            <span className={`text-[10px] font-bold uppercase ${values.fiber_category === val ? 'text-emerald-600' : 'text-slate-600'}`}>
-                              {label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Colour + K dropdowns — only when Colour is selected */}
-                    {values.fiber_category === 'colour' && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <FormikSelect compact label="Select Colour" name="colour_select"
-                          options={['Select','Blue','Red','Green','Yellow','White','Orange','Violet']} />
-                        <FormikSelect compact label="K Value" name="k_value"
-                          options={['Select','1K','2K','4K','8K','12K','24K']} />
-                      </div>
-                    )}
+                  <div className="flex gap-4">
+                    {[
+                      { val: 'online', label: 'Online PV',  color: 'text-blue-600'   },
+                      { val: 're_pv',  label: 'Re-PV',      color: 'text-indigo-600' },
+                    ].map(({ val, label, color }) => (
+                      <label key={val} className="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" checked={values.pv_type === val}
+                          onChange={() => setFieldValue('pv_type', values.pv_type === val ? '' : val)}
+                          className="w-4 h-4 rounded border-slate-300 accent-blue-600" />
+                        <span className={`text-[10px] font-bold uppercase ${values.pv_type === val ? color : 'text-slate-600'}`}>{label}</span>
+                      </label>
+                    ))}
                   </div>
                 </ModuleCard>
 
-                {/* ── Personnel & Timing ── */}
+                {/* Personnel & Timing */}
                 <ModuleCard compact title="Personnel & Timing" icon={<User size={13} className="text-orange-500" />}>
                   <div className="grid grid-cols-2 gap-2">
-                    <FormikSelect compact label="PV Operator" name="pv_operator"
-                      options={['Select','Operator A','Operator B','Operator C','Senior Op']} />
+                    <FormikSelect compact label="PV Operator" name="pv_operator" options={['Select','Operator A','Operator B','Operator C','Senior Op']} />
                     <FormikInput  compact label="Date"  name="date"  type="date" />
                     <FormikInput  compact label="Time"  name="time"  type="time" />
                     <FormikSelect compact label="Shift" name="shift" options={['Select','A','B','C']} />
                   </div>
                 </ModuleCard>
 
-                {/* ── Instructions & Remarks ── */}
-                <ModuleCard compact title="Instructions & Remarks" icon={<ClipboardCheck size={13} className="text-emerald-600" />}>
-                  <div className="flex flex-col gap-2">
-                    <FormikTextarea compact label="PV Instruction" name="pv_instruction" rows={2} placeholder="Enter PV instructions..." />
-                    <FormikTextarea compact label="PV Remark"      name="pv_remark"      rows={2} placeholder="Enter remarks..." />
-                  </div>
+                {/* Remark */}
+                <ModuleCard compact title="Remarks" icon={<ClipboardCheck size={13} className="text-emerald-600" />}>
+                  <FormikTextarea compact label="PV Remark" name="pv_remark" rows={3} placeholder="Enter remarks..." />
                 </ModuleCard>
               </div>
 
               {/* ── Barcode scan row ── */}
               <div className="flex items-end gap-2 flex-shrink-0">
                 <div className="flex-1 max-w-sm">
-                  <FormikInput
-                    compact
-                    label="Scan Barcode"
-                    name="barcode"
-                    placeholder="Scan or enter barcode..."
-                    innerRef={barcodeRef}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addRow(values.barcode, values);
-                        setFieldValue('barcode', '');
-                        setTimeout(() => barcodeRef.current?.focus(), 50);
-                      }
-                    }}
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5 block mb-0.5">Scan Bobbin Barcode</label>
+                  <input
+                    ref={barcodeRef}
+                    value={values.barcode}
+                    onChange={e => setFieldValue('barcode', e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleScanBobbin(values.barcode, setFieldValue); } }}
+                    placeholder="Scan bobbin barcode..."
+                    className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { addRow(values.barcode, values); setFieldValue('barcode', ''); }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded uppercase hover:bg-indigo-700 transition-all h-[28px]"
-                >
+                <button type="button" onClick={() => handleScanBobbin(values.barcode, setFieldValue)}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded uppercase hover:bg-indigo-700 transition-all h-[28px]">
                   <Scan size={10} /> Scan
                 </button>
-                {/* Test button — simulates a scan */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const testBarcode = `TEST-${String(testCounter++).padStart(4,'0')}`;
-                    addRow(testBarcode, values);
-                  }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded uppercase hover:bg-amber-600 transition-all h-[28px]"
-                >
-                  <Plus size={10} /> Test Scan
+                <button type="button" onClick={addTestRow}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded uppercase hover:bg-amber-600 transition-all h-[28px]">
+                  <Plus size={10} /> Test
                 </button>
-                <span className="text-[9px] text-slate-400 font-medium">
-                  {tableRows.length} row{tableRows.length !== 1 ? 's' : ''} scanned
-                </span>
+                <span className="text-[9px] text-slate-400 font-medium">{tableRows.length} bobbin{tableRows.length !== 1 ? 's' : ''}</span>
               </div>
 
-              {/* ── Scanned rows table ── */}
+              {/* ── Scanned bobbins table ── */}
               <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
                   <ClipboardCheck size={12} className="text-blue-600" />
-                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Scanned Entries</span>
+                  <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Scanned Bobbins</span>
                   {tableRows.length > 0 && (
-                    <span className="ml-1 text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">
-                      {tableRows.length}
-                    </span>
+                    <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold ml-1">{tableRows.length}</span>
                   )}
                 </div>
                 <div className="overflow-y-auto flex-1">
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr className="border-b border-slate-200">
-                        {['#','Barcode','DT ID','Preform ID','Fiber Type','Colour Applied','Qty (Kms)','PV Type','Category','Operator','Date','Shift',''].map(h => (
+                        {['#','Bobbin ID','Bobbin FID','Spool FID','Spool ID','Preform ID','Fiber Type','Colour','Qty (Kms)',''].map(h => (
                           <th key={h} className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
                         ))}
                       </tr>
@@ -242,30 +243,21 @@ const PVEntry = () => {
                     <tbody className="divide-y divide-slate-100">
                       {tableRows.length === 0 ? (
                         <tr>
-                          <td colSpan={11} className="px-4 py-8 text-center text-[10px] text-slate-400">
-                            No entries yet — scan a barcode or click Test Scan
+                          <td colSpan={10} className="px-4 py-8 text-center text-[10px] text-slate-400">
+                            No bobbins scanned yet — scan a barcode or click Test
                           </td>
                         </tr>
                       ) : tableRows.map((row, idx) => (
                         <tr key={row.id} className="hover:bg-blue-50/20 transition-colors">
                           <td className="px-2 py-1.5 text-[9px] font-bold text-slate-400 border-r border-slate-100">{idx + 1}</td>
-                          <td className="px-2 py-1.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{row.barcode}</td>
-                          <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.dt_id}</td>
+                          <td className="px-2 py-1.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{row.bobbin_id}</td>
+                          <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.bobbin_fid || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.spool_fid || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.spool_id}</td>
                           <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.preform_id}</td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_type}</td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.colour_applied || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_type || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.colour || '—'}</td>
                           <td className="px-2 py-1.5 text-xs font-mono text-emerald-700 font-bold border-r border-slate-100">{row.qty_kms}</td>
-                          <td className="px-2 py-1.5 border-r border-slate-100">
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
-                              row.pv_type === 'online' ? 'bg-blue-100 text-blue-700' : 'bg-indigo-100 text-indigo-700'
-                            }`}>
-                              {row.pv_type === 'online' ? 'Online PV' : row.pv_type === 're_pv' ? 'Re-PV' : '—'}
-                            </span>
-                          </td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100 capitalize">{row.fiber_category || '—'}</td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.operator || '—'}</td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.date}</td>
-                          <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.shift || '—'}</td>
                           <td className="px-2 py-1.5 text-center">
                             <button type="button" onClick={() => removeRow(row.id)}
                               className="text-slate-300 hover:text-rose-500 transition-colors">
@@ -278,9 +270,6 @@ const PVEntry = () => {
                   </table>
                 </div>
               </div>
-
-              {/* ── Save + Reset below table ── */}
-              
 
             </Form>
           )}
