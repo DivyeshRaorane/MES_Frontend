@@ -11,6 +11,7 @@ import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/s
 import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/service/bobbin_type.api';
 import { getSpoolDetailsForPT, ptEntryApi, getPTFlaws, getPTLogs, getFidBySpool } from '../services/pt_entry.api';
 import { checkPTLength } from './pt_helper';
+import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 
 /* ── Password Modal ─────────────────────────────────────── */
 const PasswordModal = ({ isOpen, onClose, onSuccess }) => {
@@ -82,7 +83,7 @@ const validationSchema = Yup.object({
 const initialValues = {
   spool_id: '', preform_id: '', drawn_length: '', tower_no: '', drawn_date: '',
   pt_entry: new Date().toISOString().split('T')[0], fid: '', bobbin_no: '', spool_status: '',
-  pt_machine_no: '', operator_name: '', shift_incharge: '', bobbin_color: '', bobbin_type: '',
+  pt_machine_no: '', operator_name: '', shift_incharge: '', shift: '', bobbin_color: '', bobbin_type: '',
   pt_length: '', status: 'PENDING', payoff_vibration: 'No', dancer_vibration: 'No',
   active_rejection_type: '', // radio token architecture: 'rejection', 'bal_draw_rejection', etc.
   rejection_reason: '', bal_draw_rejection_reason: '', ztmd_id: '', doc_id: '',
@@ -96,6 +97,7 @@ const PTEntry = () => {
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [balanceLength, setBalanceLength] = useState(0);
   const [activeFlaw, setActiveFlaw] = useState(null);
   const [lastFidInfo, setLastFidInfo] = useState({ last_fid: '', p_count: 0 });
@@ -141,12 +143,13 @@ const PTEntry = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, colorsRes, typesRes] = await Promise.all([
-          getPTUsers(), getBobbinColors(), getBobbinTypes()
+        const [usersRes, colorsRes, typesRes, shiftsRes] = await Promise.all([
+          getPTUsers(), getBobbinColors(), getBobbinTypes(), getAllShifts()
         ]);
         setPTUsers(usersRes.data);
         setBobbinColors(colorsRes.data);
         setBobbinTypes(typesRes.data);
+        setShifts(shiftsRes.data);
       } catch (error) {
         console.error("Error loading master configurations", error);
       }
@@ -190,6 +193,7 @@ const PTEntry = () => {
   const ptUsersOptions = ptUsers.map(user => ({ label: user.pt_user_name, value: user.pt_user_id }));
   const bobbinColorsOption = Array.isArray(bobbinColors) ? bobbinColors.map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_name })) : [];
   const bobbinTypesOption = Array.isArray(bobbinTypes) ? bobbinTypes.map(t => ({ label: t.bobbin_type_name, value: t.bobbin_type_name })) : [];
+  const shiftOptions = Array.isArray(shifts) ? shifts.map(s => ({ label: s.shift_name, value: s.shift_name })) : [];
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -377,6 +381,7 @@ const PTEntry = () => {
                         <FormikInput compact label="PT Machine No" name="pt_machine_no" readOnly />
                         <FormikSelect compact label="Operator Name" name="operator_name" options={ptUsersOptions} />
                         <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={ptUsersOptions} />
+                        <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
                         <FormikSelect compact label="Bobbin Color" name="bobbin_color" options={bobbinColorsOption} />
                         <FormikSelect compact label="Bobbin Type" name="bobbin_type" options={bobbinTypesOption} />
                         <FormikInput compact label="PT Length (km)" name="pt_length" type="number" step="0.001" placeholder="0.000" />

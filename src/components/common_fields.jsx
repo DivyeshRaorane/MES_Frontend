@@ -159,6 +159,7 @@ export const FormikSelect = ({
   className = "",
   labelClassName = "",
   onChange,
+  disabled = false,
 }) => {
   const [field, meta, helpers] = useField(name);
 
@@ -173,6 +174,7 @@ export const FormikSelect = ({
       <div className="relative">
         <select
           {...field}
+          disabled={disabled}
           value={field.value ?? ""}
           onChange={(e) => {
             const val = e.target.value;
