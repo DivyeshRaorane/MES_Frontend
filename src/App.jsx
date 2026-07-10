@@ -30,10 +30,11 @@ import MacrobendContainer from './components/macrobendContainer'
 import TRH_Cycle from './pages/trh_cycle/ui/trh_cycle'
 import TEMP_Cycle from './pages/temp_cycle/ui/temp_cycle'
 import TRHTempCycleContainer from './components/trhTempContainer'
-import ComplaintStatusMonitor from './pages/complaintTable/ui/complaintTable'
-import ComplaintClosure from './pages/complaintClosure/ui/complainClosure'
+import ComplaintStatusMonitor from './pages/customer_complaint/complaintTable/ui/complaintTable'
+import ComplaintClosure from './pages/customer_complaint/complaintClosure/ui/complainClosure'
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
 import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
+import D2Combined from './pages/d2Egeing/ui/d2_combined'
 import D2Issue from './pages/d2Egeing/ui/d2egeing'
 import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
 import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
@@ -52,9 +53,17 @@ import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
 import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entry'
 import Splicing from './pages/splicing/ui/splicing'
 import ShortTermContainer from './components/short_term_container'
-import CustomerComplaintContainer from './components/customer_complaint_container'
+import CustomerComplaint from './pages/customer_complaint/ui/customer_complaint'
 import { ToastContainer } from 'react-toastify'
 import PreformEntryForm from './pages/preform_enrty_SAP/ui/Preform_entry_SAP'
+import DrawManagementAdmin from './pages/Admin_Folder/draw_management/ui/draw_management_admin'
+import GeneralAdmin from './pages/Admin_Folder/general_admin/ui/general_admin'
+import QualityAdmin from './pages/Admin_Folder/quality_admin/ui/quality_admin'
+import TrayManagement from './pages/Admin_Folder/FG/tray_management/ui/tray_management'
+import OrderRegister from './pages/order_register/ui/order_register'
+import HighTempHumidityAgeing from './pages/High_temp_&_humadity_ageing_test/ui/htha_entry'
+import WaterImmersion from './pages/water_immersion/ui/water_immersion'
+import AcceleratedAgeing from './pages/accelerated_ageing_test/ui/accelerated_ageing'
 
 
 function App() {
@@ -82,9 +91,9 @@ function App() {
         <Route path='prooftesting/ptbreakanalysis' element={<PTBreakAnalysis/>}/>
         <Route path='quality/qcentry' element={<QCEntryScreen/>}/>
         <Route path='quality/pventry' element={<PVEntry/>}/>
-        <Route path='quality/d2issue' element={<D2Issue/>}/>
-        <Route path='quality/d2gasconeentry' element={<D2gas_ConeEntry/>}/>
-        <Route path='quality/d2recieving' element={<D2Recieving/>}/>
+        <Route path='quality/d2issue' element={<D2Combined/>}/>
+        <Route path='quality/d2gasconeentry' element={<D2Combined/>}/>
+        <Route path='quality/d2recieving' element={<D2Combined/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
         <Route path='fg/customerallocation' element={<CustomerAllocation/>}/>
@@ -93,6 +102,7 @@ function App() {
         <Route path='dispatch/boxscanningentry' element={<BoxScanningEntry/>}/>
         <Route path='fg/fgfiberallocation' element={<FGFiberAllocation/>}/>
         <Route path='fg/tcgeneration' element={<TCGenerationDashboard/>}/>
+        <Route path='fg/orderregister' element={<OrderRegister/>}/>
         <Route path='fg/fiberrejection' element={<FGFiberRejection/>}/>
         <Route path='fg/packinglist' element={<PackingListGeneration/>}/>
         <Route path='fg/modulainout' element={<ModulaInOut/>}/>
@@ -103,14 +113,19 @@ function App() {
         <Route path='qa/macrobendC' element={<MacrobendContainer/>}/>
         <Route path='qa/trhtempentry' element={<TRHTempCycleContainer/>}/>
         <Route path='qa/trhcycle' element={<TRH_Cycle/>}/>
+        <Route path='qa/hthatest' element={<HighTempHumidityAgeing/>}/>
+        <Route path='qa/waterimmersion' element={<WaterImmersion/>}/>
+        <Route path='qa/acceleratedageing' element={<AcceleratedAgeing/>}/>
         <Route path='qa/shorttermentry' element={<ShortTermContainer/>}/>
         <Route path='qa/splicing' element={<Splicing/>}/>
-        <Route path='qa/customer' element={<CustomerComplaintContainer/>}/>
-        <Route path='customer/complaintstatus' element={<ComplaintStatusMonitor/>}/>
-        <Route path='customer/complaintclosure' element={<ComplaintClosure/>}/>
+        <Route path='qa/customer' element={<CustomerComplaint/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>
         <Route path='admin/users' element={<UserHomeScreen/>}/>
+        <Route path='admin/general' element={<GeneralAdmin/>}/>
         <Route path='admin/usercreation' element={<UserCreationForm onSubmit={(v) => console.log('Create:', v)} title="Create New User" />}/>
+        <Route path='admin/drawmanagement' element={<DrawManagementAdmin/>}/>
+        <Route path='admin/quality' element={<QualityAdmin/>}/>
+        <Route path='admin/traymanagement' element={<TrayManagement/>}/>
         <Route path='/*' element={<PageNotFound/>}/>
         </Route>
         </Routes>  

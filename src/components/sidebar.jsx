@@ -28,7 +28,7 @@ const MENU = [
       { label: 'Handle Joining',     path: '/drawmange/handlejoining' },
       { label: 'Preform Allocation', path: '/drawmange/allocation' },
       { label: 'Draw Spool Entry',       path: '/drawmange/drawspoolentry' },
-      { label:  'Draw Break Ananlysis', path: '/drawmange/drawbrakanalysis'},
+      { label:  'Draw/PT Break Analysis', path: '/drawmange/drawbrakanalysis'},
       { label: 'Draw Shift Plan',       path: '/drawmange/drawshiftplan'},
       { label: 'Draw Shift Report',     path: '/drawmange/drawshiftreport'},
       { label: 'Draw Timeloss Entry',   path: '/drawmange/drawtimeloss'},
@@ -43,7 +43,6 @@ const MENU = [
     children: [
       { label: 'PT Allocation',   path: '/prooftesting/ptallocation' },
       { label: 'PT Entry',        path: '/prooftesting/ptentry' },
-      { label: 'PT Break Analysis', path: '/prooftesting/ptbreakanalysis' },
       { label: 'REW/COL Entry',   path: '/prooftesting/rewcolztentry' },
       { label: 'Reports',         path: '/prooftesting/ptreport' },
     ],
@@ -56,11 +55,9 @@ const MENU = [
     children: [
       { label: 'Quality Entry',       path: '/quality/qcentry' },
       { label: 'Physical Verification ',            path: '/quality/pventry' },
-      { label: 'D2 Issue',            path: '/quality/d2issue' },
-      { label: 'D2 Gas Entry',        path: '/quality/d2gasconeentry' },
-      { label: 'D2 Receiving',        path: '/quality/d2recieving' },
+      { label: 'D2 Management',     path: '/quality/d2issue' },
       { label: 'H2 Ageing',           path: '/quality/h2egeing' },
-      { label: 'QC In / Out',         path: '/quality/qcinout' },
+      { label: 'QC Out',             path: '/quality/qcinout' },
       { label: 'Report',      path: '/underdev' },
     ],
   },
@@ -72,6 +69,9 @@ const MENU = [
     children: [
       { label: 'Temperature', path: '/qa/trhtempentry'},
       { label: 'TRH Cycle',   path: '/qa/trhcycle'},
+      { label: 'HTHA Test',   path: '/qa/hthatest'},
+      { label: 'Water Immersion', path: '/qa/waterimmersion'},
+      { label: 'Accelerated Ageing', path: '/qa/acceleratedageing'},
       { label: 'Splicing', path: '/qa/splicing'},
       { label: 'Short Term Entry', path: '/qa/shorttermentry'},
       { label: 'Customer Complaint',  path: '/qa/customer' },
@@ -84,10 +84,11 @@ const MENU = [
     color: 'text-orange-400',
     children: [
       { label: 'Modula IN/OUT', path: '/fg/modulainout'},
-     {/* { label: 'Dispatch Checking',   path: '/dispatch/dispatchchecking' },
+      {/*{ label: 'Dispatch Checking',   path: '/dispatch/dispatchchecking' },
       { label: 'Fiber Make Checking', path: '/dispatch/fibermakingcheck' },
-      { label: 'Box Scanning Entry',  path: '/dispatch/boxscanningentry' }*/},
+      { label: 'Box Scanning Entry',  path: '/dispatch/boxscanningentry' },*/},
       { label: 'TC Generation',         path: '/fg/tcgeneration' },
+      { label: 'Order Register',        path: '/fg/orderregister' },
       { label: 'FG Fiber Rejection',    path: '/fg/fiberrejection' },
       { label: 'Packing List',          path: '/fg/packinglist' },
       { label: 'Customer Allocation', path: '/fg/customerallocation' },
@@ -100,8 +101,10 @@ const MENU = [
     icon: Shield,
     color: 'text-slate-400',
     children: [
-      { label: 'User Management', path: '/admin/users'       },
-      { label: 'Create User',     path: '/admin/usercreation'},
+      { label: 'General Admin',    path: '/admin/general' },
+      { label: 'Draw Management',  path: '/admin/drawmanagement' },
+      { label: 'Quality Admin',    path: '/admin/quality' },
+      { label: 'FG / Tray Mgmt',  path: '/admin/traymanagement' },
     ],
   },
   {
@@ -204,9 +207,6 @@ const Sidebar = () => {
         </Tooltip>
 
         {/* User avatar */}
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-1">
-          OP
-        </div>
       </aside>
 
       {/* ── Drawer panel (overlay, not pushing content) ── */}

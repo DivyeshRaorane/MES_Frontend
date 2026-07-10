@@ -160,15 +160,11 @@ const PVEntry = () => {
         if (!(await askConfirm('H2 Status', h2_status.message))) { refocus(); return; }
       }
     }
-    // Fiber color validation
+    // Fiber color validation — alert only, do not allow adding to grid
     const selectedColor = formValues.fiber_color;
     if (selectedColor && selectedColor !== 'Select' && data.fiber_color && data.fiber_color !== selectedColor) {
-      const change = await askConfirm('Color Mismatch',
-        `Scanned bobbin color is "${data.fiber_color}" but selected PV color is "${selectedColor}".\n\nChange bobbin color to "${selectedColor}"?`);
-      if (change) {
-        try { await updateBobbinColor(bobbin_no, selectedColor); data.fiber_color = selectedColor; }
-        catch (err) { showError(err?.response?.data?.message || 'Failed to update color'); refocus(); return; }
-      } else { refocus(); return; }
+      showError(`Color mismatch: Bobbin color is "${data.fiber_color}" but selected PV color is "${selectedColor}".`);
+      refocus(); return;
     }
 
     setTableRows(prev => [...prev, {

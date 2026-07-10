@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ClipboardList, Rotate3D, Dumbbell, TrendingUp } from 'lucide-react';
-import ComplaintRegister from '../pages/complaintReg/ui/cRegister';
-import ComplaintStatusMonitor from '../pages/complaintTable/ui/complaintTable';
-import ComplaintClosure from '../pages/complaintClosure/ui/complainClosure';
+import ComplaintRegister from '../pages/customer_complaint/complaintReg/ui/cRegister';
+import ComplaintStatusMonitor from '../pages/customer_complaint/complaintTable/ui/complaintTable';
+import ComplaintClosure from '../pages/customer_complaint/complaintClosure/ui/complainClosure';
 
 const TABS = [
   { id: 'register',       label: 'Complaint Register',  icon: ClipboardList },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Clock } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import Sidebar from './sidebar';
 
 /* ── Route → title map ───────────────────────────────────── */
@@ -52,6 +53,7 @@ const ROUTE_TITLES = {
 const TopBar = () => {
   const location = useLocation();
   const [time, setTime] = useState(new Date());
+  const user = useSelector(state => state.auth?.user);
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -59,6 +61,8 @@ const TopBar = () => {
   }, []);
 
   const title = ROUTE_TITLES[location.pathname] ?? 'MES Portal';
+  const userName = user?.emp_name || user?.name || 'User';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const fmt = (d) =>
     d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
@@ -75,8 +79,8 @@ const TopBar = () => {
           <span className="text-[10px] font-mono font-semibold tracking-wider">{fmt(time)}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">OP</div>
-          <span className="text-[10px] font-semibold text-slate-300">OP-4012</span>
+          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">{userInitials}</div>
+          <span className="text-[10px] font-semibold text-slate-300">{userName}</span>
         </div>
       </div>
     </div>

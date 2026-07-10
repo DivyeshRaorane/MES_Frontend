@@ -1,341 +1,401 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Scan, ClipboardList, FlaskConical, Plus, Trash2, FolderOpen, Save } from 'lucide-react';
-import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
-import { ResetButton,SubmitButton } from '../../../components/common_buttons';
-import SelectionModal from '../../../components/selectionModal';
+import { useState, useRef, useEffect } from 'react';
+import { Scan, ClipboardList, FlaskConical, Trash2, ShieldAlert, ShieldOff } from 'lucide-react';
+import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { showSuccess, showError } from '../../../utils/toastService';
+import { getD2Chambers, getQCUsers, validateBobbinForD2, submitD2Issue } from '../services/d2_issue.api';
 
-/* ── helpers ── */
 const today = new Date().toISOString().split('T')[0];
-let testCounter = 1;
+const nowTime = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-/* Auto-generate batch ID: date-chamberNo-sequence */
-const makeBatchId = (date, chamberNo, seq) => {
-  if (!date || !chamberNo || chamberNo === 'Select') return '';
-  const d = date.replace(/-/g, '');
-  const c = chamberNo.replace(/\D/g, '');
-  return `${d}-${c}-${seq}`;
+/* ── Batch ID helper: YYYYMMDDHHmmss-chamberNo ── */
+const makeBatchId = (chamberNo) => {
+  if (!chamberNo) return '';
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+  return `${ts}-${chamberNo}`;
 };
 
-/* Simulate barcode fetch */
-const fetchBarcode = (barcode) => ({
-  pt_len:     (Math.random() * 500 + 100).toFixed(1),
-  d2_chamber: `CH-${Math.floor(Math.random() * 5 + 1)}`,
-  date_time:  new Date().toLocaleString('en-IN'),
-  grade:      ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
-});
-
-/* Draft storage helpers */
-const DRAFT_KEY = 'd2_issue_drafts';
-const loadAllDrafts = () => {
-  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); }
-  catch { return {}; }
+/* ── Confirmation Dialog ── */
+const ConfirmDialog = ({ isOpen, title, message, onYes, onNo }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+      <div className="bg-white rounded-xl shadow-2xl p-5 w-96">
+        <h3 className="text-sm font-bold text-slate-800 mb-2">{title}</h3>
+        <p className="text-xs text-slate-600 mb-4 whitespace-pre-line">{message}</p>
+        <div className="flex gap-2">
+          <button onClick={onNo} className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">No</button>
+          <button onClick={onYes} className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all">Yes</button>
+        </div>
+      </div>
+    </div>
+  );
 };
-const saveDraft = (batchId, rows, header) => {
-  const all = loadAllDrafts();
-  all[batchId] = { batchId, rows, header, savedAt: new Date().toISOString() };
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(all));
-};
-const deleteDraft = (batchId) => {
-  const all = loadAllDrafts();
-  delete all[batchId];
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(all));
-};
-
-/* ── Max rows constant ── */
-const MAX_ROWS = 165;
-const WARN_AT  = 165;
 
 /* ══════════════════════════════════════════════════════════ */
 const D2Issue = () => {
-  /* header state */
-  const [chamberNo,  setChamberNo]  = useState('');
-  const [date,       setDate]       = useState(today);
-  const [batchSeq,   setBatchSeq]   = useState(1);
-  const [scanInput,  setScanInput]  = useState('');
-
-  /* derived batch id */
-  const batchId = makeBatchId(date, chamberNo, batchSeq);
-
-  /* table rows */
+  const [chambers, setChambers] = useState([]);
+  const [qcUsers, setQcUsers] = useState([]);
+  const [chamber, setChamber] = useState('');
+  const [startOperator, setStartOperator] = useState('');
+  const [d2StartDate, setD2StartDate] = useState(today);
+  const [d2StartTime, setD2StartTime] = useState(nowTime());
+  const [restricted, setRestricted] = useState(true);
+  const [batchId, setBatchId] = useState('');
+  const [scanInput, setScanInput] = useState('');
   const [rows, setRows] = useState([]);
-
-  /* modals */
-  const [showLimitPopup,  setShowLimitPopup]  = useState(false);
-  const [showDraftModal,  setShowDraftModal]  = useState(false);
-  const [draftList,       setDraftList]       = useState([]);
-
+  const [submitting, setSubmitting] = useState(false);
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onYes: null, onNo: null });
   const scanRef = useRef(null);
 
-  /* ── Add a scanned row ── */
-  const addRow = (barcode) => {
-    if (!barcode.trim()) return;
-    if (rows.length >= MAX_ROWS) { setShowLimitPopup(true); return; }
+  /* ── Fetch master data ── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cRes, uRes] = await Promise.all([getD2Chambers(), getQCUsers()]);
+        if (cRes?.success) setChambers((cRes.data || []).filter(c => c.is_active));
+        setQcUsers(uRes?.data || []);
+      } catch (e) { console.error('Master data error:', e); }
+    })();
+  }, []);
 
-    const fetched = fetchBarcode(barcode);
-    const newRow  = { id: Date.now(), barcode, ...fetched, batch_id: batchId, date };
+  const refocus = () => { setScanInput(''); setTimeout(() => scanRef.current?.focus(), 50); };
 
-    const next = [...rows, newRow];
-    setRows(next);
-    setScanInput('');
+  const askConfirm = (title, message) => new Promise((resolve) => {
+    setConfirm({
+      open: true, title, message,
+      onYes: () => { setConfirm(c => ({ ...c, open: false })); resolve(true); },
+      onNo: () => { setConfirm(c => ({ ...c, open: false })); resolve(false); },
+    });
+  });
 
-    if (next.length === WARN_AT) setShowLimitPopup(true);
-    setTimeout(() => scanRef.current?.focus(), 50);
+  /* ── Scan ── */
+  const handleScan = async () => {
+    const bobbin_no = scanInput.trim();
+    if (!bobbin_no) return;
+
+    // Validate header fields
+    if (!chamber) { showError('Select D2 Chamber first'); return; }
+    if (!startOperator) { showError('Select Start Operator first'); return; }
+
+    // Local duplicate check
+    if (rows.some(r => r.bobbin_no === bobbin_no)) {
+      showError('This bobbin has already been scanned.');
+      refocus(); return;
+    }
+
+    try {
+      const res = await validateBobbinForD2(bobbin_no, restricted);
+
+      if (!res?.success) {
+        showError(res?.message || 'Bobbin not found.');
+        refocus(); return;
+      }
+
+      const data = res.data;
+
+      // Backend returns validation flags
+      // d2_issue check
+      if (data.d2_issue === true) {
+        showError('This bobbin is already issued for D2.');
+        refocus(); return;
+      }
+
+      // Restricted mode validations
+      if (restricted) {
+        // Step 1: Check temp_grade exists
+        const tg = (data.temp_grade || '').toUpperCase();
+        if (!tg) {
+          showError('This bobbin does not have a temporary grade. Cannot issue for D2.');
+          refocus(); return;
+        }
+
+        // Step 2: If temp_grade is REW or FAIL, block
+        if (tg === 'REW' || tg === 'FAIL') {
+          showError(`This bobbin cannot be issued because its temporary grade is ${tg}.`);
+          refocus(); return;
+        }
+
+        // Step 3: temp_grade is valid (A+, A, B, C etc.) — now check PV
+        if (data.pv_completed === false) {
+          const proceed = await askConfirm(
+            'PV Not Completed',
+            'PV is not completed for this bobbin.\n\nDo you still want to issue this bobbin for D2?'
+          );
+          if (!proceed) { refocus(); return; }
+        }
+
+        // Add with d2_type = 'restricted'
+        setRows(prev => [...prev, {
+          id: Date.now(),
+          bobbin_no: data.bobbin_no,
+          bobbin_fid: data.bobbin_fid || '',
+          fiber_type: data.fiber_type || '',
+          fiber_color: data.fiber_color || '',
+          temp_grade: data.temp_grade || '',
+          final_grade: data.final_grade || '',
+          d2_type: 'restricted',
+        }]);
+      } else {
+        // Not-restricted mode: check temp_grade
+        const tg = (data.temp_grade || '').toUpperCase();
+        if (tg === 'REW' || tg === 'FAIL') {
+          showError(`This bobbin cannot be issued because its temporary grade is ${tg}.`);
+          refocus(); return;
+        }
+        // Add with d2_type = 'not-restricted'
+        setRows(prev => [...prev, {
+          id: Date.now(),
+          bobbin_no: data.bobbin_no,
+          bobbin_fid: data.bobbin_fid || '',
+          fiber_type: data.fiber_type || '',
+          fiber_color: data.fiber_color || '',
+          temp_grade: data.temp_grade || '',
+          final_grade: data.final_grade || '',
+          d2_type: 'not-restricted',
+        }]);
+      }
+      refocus();
+    } catch (err) {
+      showError(err?.response?.data?.message || 'Something went wrong');
+      refocus();
+    }
   };
 
-  /* ── Remove row ── */
+  /* ── Remove ── */
   const removeRow = (id) => setRows(prev => prev.filter(r => r.id !== id));
 
-  /* ── Save Draft ── */
-  const handleSaveDraft = () => {
-    if (!batchId) { alert('Please select D2 Chamber No and Date first.'); return; }
-    if (rows.length === 0) { alert('No rows to save.'); return; }
-    saveDraft(batchId, rows, { chamberNo, date, batchSeq });
-    alert(`Draft saved for batch: ${batchId}`);
+  /* ── Submit ── */
+  const handleSubmit = async () => {
+    if (!rows.length) { showError('No entries to submit'); return; }
+    if (!chamber) { showError('Select D2 Chamber'); return; }
+    if (!startOperator) { showError('Select Start Operator'); return; }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        d2_batch_id: batchId,
+        start_operator: startOperator,
+        d2_start_date: d2StartDate,
+        d2_start_time: d2StartTime,
+        chamber: Number(chamber),
+        bobbins: rows.map(r => ({
+          bobbin_fid: r.bobbin_fid,
+          bobbin_no: r.bobbin_no,
+          d2_type: r.d2_type,
+        })),
+      };
+
+      const res = await submitD2Issue(payload);
+      if (res?.success) {
+        showSuccess(`${rows.length} bobbin(s) issued to D2 Chamber ${chamber} successfully!`);
+        handleReset();
+      } else {
+        showError(res?.message || 'Submit failed');
+      }
+    } catch (e) {
+      showError(e?.response?.data?.message || 'Something went wrong');
+    }
+    setSubmitting(false);
   };
 
-  /* ── Load Draft modal ── */
-  const openDraftModal = () => {
-    const all = loadAllDrafts();
-    setDraftList(Object.values(all).map(d => ({
-      batchId:  d.batchId,
-      rows:     d.rows.length,
-      savedAt:  new Date(d.savedAt).toLocaleString('en-IN'),
-      header:   d.header,
-    })));
-    setShowDraftModal(true);
-  };
-
-  /* ── On draft select ── */
-  const onDraftSelect = (selected) => {
-    const all = loadAllDrafts();
-    const draft = all[selected.batchId];
-    if (!draft) return;
-    setChamberNo(draft.header.chamberNo);
-    setDate(draft.header.date);
-    setBatchSeq(draft.header.batchSeq);
-    setRows(draft.rows);
-  };
-
-  /* ── Keyboard scan ── */
-  const handleScanKey = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addRow(scanInput); }
+  /* ── Reset ── */
+  const handleReset = () => {
+    setChamber(''); setStartOperator('');
+    setD2StartDate(today); setD2StartTime(nowTime());
+    setBatchId(''); setScanInput(''); setRows([]);
   };
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
-        <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
- <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">D2 Issue Entry</span>
-              <div className="flex gap-1.5">
-                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                <SubmitButton compact type="submit">Submit</SubmitButton>
-                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
-              </div>
+
+        {/* ── Action bar ── */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/30 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+              <FlaskConical size={16} className="text-white" />
             </div>
-          {/* ── Header fields ── */}
-          <ModuleCard compact title="D2 Issue Entry" icon={<FlaskConical size={13} className="text-blue-600" />}>
-            <div className="grid grid-cols-5 gap-2 items-end">
-
-              {/* D2 Chamber No — first */}
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">D2 Chamber No</label>
-                <select
-                  value={chamberNo}
-                  onChange={e => { setChamberNo(e.target.value); setBatchSeq(1); }}
-                  className="w-full appearance-none bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500/20 outline-none cursor-pointer"
-                >
-                  {['Select','Chamber 1','Chamber 2','Chamber 3','Chamber 4','Chamber 5'].map(o => (
-                    <option key={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Batch ID — auto-generated, read-only */}
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Batch ID</label>
-                <div className="flex gap-1">
-                  <input readOnly value={batchId} placeholder="Auto-generated..."
-                    className="flex-1 bg-slate-200 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-600 font-mono outline-none cursor-default" />
-                  {/* Sequence stepper */}
-                  <div className="flex flex-col">
-                    <button type="button" onClick={() => setBatchSeq(s => s + 1)}
-                      className="px-1.5 bg-slate-100 border border-slate-200 rounded-t text-[8px] hover:bg-slate-200 leading-none py-0.5">▲</button>
-                    <button type="button" onClick={() => setBatchSeq(s => Math.max(1, s - 1))}
-                      className="px-1.5 bg-slate-100 border border-slate-200 rounded-b text-[8px] hover:bg-slate-200 leading-none py-0.5">▼</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date */}
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Date</label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                  className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20" />
-              </div>
-
-              {/* Scan barcode */}
-              <div className="flex flex-col gap-0.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Scan Barcode</label>
-                <div className="flex gap-1">
-                  <input
-                    ref={scanRef}
-                    value={scanInput}
-                    onChange={e => setScanInput(e.target.value)}
-                    onKeyDown={handleScanKey}
-                    placeholder="Scan or type..."
-                    className="flex-1 bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20"
-                  />
-                  <button type="button" onClick={() => addRow(scanInput)}
-                    className="flex items-center gap-0.5 px-2 py-1.5 bg-indigo-600 text-white text-[8px] font-bold rounded hover:bg-indigo-700 transition-all">
-                    <Scan size={9} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-1.5 items-end">
-                {/* Test scan */}
-                <button type="button"
-                  onClick={() => addRow(`TEST-${String(testCounter++).padStart(4,'0')}`)}
-                  className="flex items-center gap-1 px-2 py-1.5 bg-amber-500 text-white text-[8px] font-bold rounded hover:bg-amber-600 transition-all whitespace-nowrap">
-                  <Plus size={9} /> Test
-                </button>
-                {/* Load Draft */}
-                <button type="button" onClick={openDraftModal}
-                  className="flex items-center gap-1 px-2 py-1.5 bg-slate-600 text-white text-[8px] font-bold rounded hover:bg-slate-700 transition-all whitespace-nowrap">
-                  <FolderOpen size={9} /> Drafts
-                </button>
-                {/* Save Draft */}
-                <button type="button" onClick={handleSaveDraft}
-                  disabled={rows.length === 0}
-                  className={`flex items-center gap-1 px-2 py-1.5 text-[8px] font-bold rounded transition-all whitespace-nowrap ${
-                    rows.length === 0
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}>
-                  <Save size={9} /> Save Draft {rows.length > 0 ? `(${rows.length})` : ''}
-                </button>
-              </div>
-            </div>
-
-            {/* Row count indicator */}
-            <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-slate-100">
-              <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                rows.length >= MAX_ROWS ? 'bg-rose-100 text-rose-700' :
-                rows.length >= 130      ? 'bg-amber-100 text-amber-700' :
-                                          'bg-emerald-100 text-emerald-700'
-              }`}>
-                {rows.length} / {MAX_ROWS} rows
-              </div>
-              {batchId && (
-                <span className="text-[9px] text-slate-500 font-mono">Batch: <strong>{batchId}</strong></span>
-              )}
-            </div>
-          </ModuleCard>
-
-          {/* ── Main table ── */}
-          <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
-              <ClipboardList size={12} className="text-blue-600" />
-              <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">D2 Issue Log</span>
-              {rows.length > 0 && (
-                <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold ml-1">{rows.length}</span>
-              )}
-            </div>
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-slate-50 z-10">
-                  <tr className="border-b border-slate-200">
-                    {['Sr No','Barcode','PT Len','D2 Chamber','Date & Time','Grade','Batch ID',''].map(h => (
-                      <th key={h} className="px-2 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-[10px] text-slate-400">
-                        No entries yet — scan a barcode or click Test
-                      </td>
-                    </tr>
-                  ) : rows.map((row, i) => (
-                    <tr key={row.id} className="hover:bg-blue-50/20 transition-colors">
-                      <td className="px-2 py-1.5 text-[9px] font-bold text-slate-400 border-r border-slate-100 w-8">{i + 1}</td>
-                      <td className="px-2 py-1.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{row.barcode}</td>
-                      <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.pt_len}</td>
-                      <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.d2_chamber}</td>
-                      <td className="px-2 py-1.5 text-xs text-slate-500 border-r border-slate-100">{row.date_time}</td>
-                      <td className="px-2 py-1.5 border-r border-slate-100">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                          row.grade === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                          row.grade === 'B' ? 'bg-amber-100 text-amber-700' :
-                                              'bg-rose-100 text-rose-700'
-                        }`}>{row.grade}</span>
-                      </td>
-                      <td className="px-2 py-1.5 text-xs font-mono text-slate-500 border-r border-slate-100">{row.batch_id}</td>
-                      <td className="px-2 py-1.5 text-center">
-                        <button type="button" onClick={() => removeRow(row.id)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors">
-                          <Trash2 size={11} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <h1 className="text-sm font-bold text-slate-800 leading-none">D2 Issue Entry</h1>
+              <p className="text-[9px] text-slate-400 font-medium mt-0.5">Deuterium Aging Chamber Management</p>
             </div>
           </div>
-
+          <div className="flex items-center gap-2">
+            {/* Restricted toggle */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+              <button type="button"
+                onClick={() => { if (rows.length === 0) setRestricted(true); }}
+                className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold transition-all ${
+                  restricted ? 'bg-amber-500 text-white' : 'text-slate-500 hover:bg-slate-50'
+                }`}>
+                <ShieldAlert size={12} /> Restricted
+              </button>
+              <button type="button"
+                onClick={() => { if (rows.length === 0) setRestricted(false); }}
+                className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold transition-all ${
+                  !restricted ? 'bg-emerald-500 text-white' : 'text-slate-500 hover:bg-slate-50'
+                }`}>
+                <ShieldOff size={12} /> Not Restricted
+              </button>
+            </div>
+            {/* Count */}
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+              <span className={`text-[10px] font-bold font-mono ${
+                rows.length > 0 ? 'text-emerald-600' : 'text-slate-400'
+              }`}>{rows.length} scanned</span>
+            </div>
+            <ResetButton compact type="button" onClick={handleReset}>Reset</ResetButton>
+            <SubmitButton compact type="button" disabled={submitting || !rows.length}
+              onClick={handleSubmit}>
+              {submitting ? 'Saving...' : `Submit (${rows.length})`}
+            </SubmitButton>
+          </div>
         </div>
+
+        {/* ── Header fields ── */}
+        <div className="px-4 py-3 border-b border-slate-100 bg-white flex-shrink-0">
+          <div className="grid grid-cols-5 gap-3 items-end">
+
+            {/* Chamber */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">D2 Chamber</label>
+              <select value={chamber}
+                onChange={e => { const val = e.target.value; setChamber(val); setBatchId(makeBatchId(val)); }}
+                disabled={rows.length > 0}
+                className="w-full bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-800 outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer transition-all disabled:opacity-50">
+                <option value="">Select</option>
+                {chambers.map(c => <option key={c.d2_chamber_id} value={c.d2_chamber_no}>{c.d2_chamber_no}</option>)}
+              </select>
+            </div>
+
+            {/* Batch ID (auto) */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Batch ID</label>
+              <div className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-600 truncate">
+                {batchId || '—'}
+              </div>
+            </div>
+
+            {/* Start Operator */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Start Operator</label>
+              <select value={startOperator} onChange={e => setStartOperator(e.target.value)}
+                disabled={rows.length > 0}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer transition-all disabled:opacity-50">
+                <option value="">Select</option>
+                {qcUsers.map(u => <option key={u.qc_user_name} value={u.qc_user_name}>{u.qc_user_name}</option>)}
+              </select>
+            </div>
+
+            {/* D2 Start Date */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Start Date</label>
+              <input type="date" value={d2StartDate} onChange={e => setD2StartDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 transition-all" />
+            </div>
+
+            {/* D2 Start Time */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Start Time</label>
+              <input type="time" value={d2StartTime} onChange={e => setD2StartTime(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 transition-all" />
+            </div>
+
+          </div>
+
+          {/* Scan row */}
+          <div className="grid grid-cols-5 gap-3 items-end mt-2">
+            <div className="col-span-2 flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Scan Barcode</label>
+              <div className="flex gap-1.5">
+                <input ref={scanRef} value={scanInput} autoFocus
+                  onChange={e => setScanInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleScan(); } }}
+                  placeholder="Scan bobbin..."
+                  className="flex-1 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-300 placeholder:text-indigo-300 transition-all" />
+                <button type="button" onClick={handleScan}
+                  className="flex items-center justify-center w-9 h-9 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm transition-all active:scale-95">
+                  <Scan size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Table ── */}
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <div className="bg-slate-800 px-4 py-2 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={14} className="text-blue-400" />
+              <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">D2 Issue Log</span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                restricted ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
+              }`}>{restricted ? 'Restricted' : 'Not Restricted'}</span>
+            </div>
+            {rows.length > 0 && (
+              <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-bold">
+                {rows.length} entr{rows.length === 1 ? 'y' : 'ies'}
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-y-auto flex-1 bg-white">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 bg-slate-50 z-10">
+                <tr className="border-b border-slate-200">
+                  {['#', 'Bobbin No', 'Bobbin FID', 'Fiber Type', 'Fiber Color', 'Temp Grade', 'Final Grade', 'D2 Type', ''].map(h => (
+                    <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-16 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+                          <Scan size={22} className="text-slate-300" />
+                        </div>
+                        <p className="text-xs text-slate-400 font-medium">Scan a bobbin barcode to begin</p>
+                        <p className="text-[10px] text-slate-300">Entries will appear here</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : rows.map((row, i) => (
+                  <tr key={row.id} className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
+                    <td className="px-4 py-2.5 text-xs font-bold text-slate-400 w-10">{i + 1}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        {row.bobbin_no}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs font-mono text-slate-600">{row.bobbin_fid || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-600">{row.fiber_type || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-600">{row.fiber_color || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-600">{row.temp_grade || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-slate-600">{row.final_grade || '—'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        row.d2_type === 'restricted' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}>{row.d2_type}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <button type="button" onClick={() => removeRow(row.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded transition-all">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
-      {/* ── 165 Limit Popup ── */}
-      {showLimitPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-80 text-center">
-            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <ClipboardList size={22} className="text-rose-600" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-800 mb-1">
-              {rows.length >= MAX_ROWS ? '165 Entries Reached' : '165 Entry Limit'}
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              {rows.length >= MAX_ROWS
-                ? 'You have reached the maximum of 165 entries. Please save the draft before adding more.'
-                : '165 entries have been recorded. Please save the draft now.'}
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setShowLimitPopup(false)}
-                className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded text-xs font-bold hover:bg-slate-200">
-                Continue
-              </button>
-              <button
-                onClick={() => { handleSaveDraft(); setShowLimitPopup(false); }}
-                className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700">
-                Save Draft Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Draft Selection Modal ── */}
-      <SelectionModal
-        isOpen={showDraftModal}
-        onClose={() => setShowDraftModal(false)}
-        title="Select Draft Batch"
-        data={draftList}
-        columns={[
-          { key: 'batchId',  label: 'Batch ID'   },
-          { key: 'rows',     label: 'Rows'        },
-          { key: 'savedAt',  label: 'Saved At'    },
-        ]}
-        onSelect={(selected) => {
-          onDraftSelect(selected);
-          setShowDraftModal(false);
-        }}
-      />
+      <ConfirmDialog {...confirm} isOpen={confirm.open} />
     </div>
   );
 };

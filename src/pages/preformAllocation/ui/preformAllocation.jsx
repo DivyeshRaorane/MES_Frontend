@@ -12,6 +12,7 @@ import { array } from 'yup';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { preformDiallocation } from '../services/preform_allocation.api';
+import { getCurrentShift } from '../../../utils/shiftHelper';
 
 
 
@@ -35,7 +36,9 @@ const PrerformAllocation = () => {
   const [selectedPreform, setSelectedPreform] = useState(null);
   const [shifts, setShifts] = useState([]);
   const [drawUsers, setDrawUsers] = useState([]);
+  const [autoShift, setAutoShift] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const formikRef = React.useRef(null);
 const [selectedAllocation, setSelectedAllocation] = useState(null);
 
 
@@ -82,6 +85,11 @@ const confirmDeallocation = async () => {
       try {
         const data = await getAllShifts();
         setShifts(data.data);
+        const detected = getCurrentShift(data.data);
+        if (detected) {
+          setAutoShift(detected);
+          if (formikRef.current) formikRef.current.setFieldValue('shift', detected);
+        }
       } catch (error) {
         console.error("Error fetching shifts:", error);
       }
@@ -148,16 +156,13 @@ const confirmDeallocation = async () => {
       console.log("result preform allocation:", result)
       showSuccess(result?.payload?.message)
       setSelectedPreform(null);
-      resetForm();
+      resetForm({ values: { ...FORM_INIT, shift: autoShift, allocation_date: new Date().toISOString().split('T')[0] } });
     }catch(error){
  console.error("Allocation failed:", error);
  showError(error?.message)
+      setSelectedPreform(null);
+      resetForm({ values: { ...FORM_INIT, shift: autoShift, allocation_date: new Date().toISOString().split('T')[0] } });
     }
-
-
-    
-    setSelectedPreform(null);
-    resetForm();
   };
 
   return (
@@ -292,9 +297,9 @@ const confirmDeallocation = async () => {
 
             {/* Formik form body */}
             <Formik
-              initialValues={FORM_INIT}
+              innerRef={formikRef}
+              initialValues={{ ...FORM_INIT, shift: autoShift }}
               onSubmit={handleSubmit}
-              enableReinitialize
             >
               {({ resetForm, setFieldValue, values }) => (
                 <Form className="flex flex-col flex-1 overflow-hidden">

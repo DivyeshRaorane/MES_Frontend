@@ -10,6 +10,7 @@ import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
 import { getPreformByTower } from '../services/draw_spool_entry.api';
 import { drawFlawAutomation, exportFlawReport, reverseFlawPositions } from './draw_flaw_automate';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
+import { getCurrentShift } from '../../../utils/shiftHelper';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { getAllDrawWindingObservations } from '../../Admin_Folder/draw_management/winding_observation/service/winding_observation.api';
 import { getAllDrawFiberCutReason } from '../../Admin_Folder/draw_management/fiber_cut_reason/service/draw_fiber_cut_reason.api';
@@ -51,13 +52,6 @@ const TCell = ({ name }) => (
   <Field name={name}
     className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 transition-all" />
 );
-
-const getCurrentShift = () => {
-  const h = new Date().getHours();
-  if (h >= 7 && h < 15) return 'A';
-  if (h >= 15 && h < 23) return 'B';
-  return 'C';
-};
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -106,7 +100,7 @@ const validationSchema = Yup.object({
   die_clean:             Yup.string().required('Die Clean is required'),
   spool_status:          Yup.string().required('Spool Status is required'),
   indication_fiber_cut:  Yup.string().required('Indication Fiber Cut is required'),
-  indication_reason:     Yup.string().required('Fiber Cut Reason is required'),
+  indication_reason:     Yup.string().when('indication_fiber_cut', { is: 'cut', then: (s) => s.required('Fiber Cut Reason is required'), otherwise: (s) => s.notRequired() }),
   remark:                Yup.string().required('Remarks is required'),
   primary_coating:       Yup.string().required('Primary Coating is required'),
   secondary_coating:     Yup.string().required('Secondary Coating is required'),
@@ -133,6 +127,7 @@ const DrawSpoolEntry = () => {
   const [showPreformEndPopup, setShowPreformEndPopup] = useState(false);
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
   const [pendingResetForm, setPendingResetForm] = useState(null);
+  const formikRef = React.useRef(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
   const { preformByTowerData, pbtLoading, pbtError } = useSelector((state) => state.preformByTower)
 
@@ -141,6 +136,8 @@ const DrawSpoolEntry = () => {
       try {
         const data = await getAllShifts();
         setShifts(data.data);
+        const detected = getCurrentShift(data.data);
+        if (detected && formikRef.current) formikRef.current.setFieldValue('shift', detected);
       } catch (error) {
         console.error("Error fetching shifts:", error);
       }
@@ -207,58 +204,71 @@ const DrawSpoolEntry = () => {
     value: reasons.dfcr_name,
   }))
 
-  const rows = [
-    // Noise
-    { Message: "Message not defined for language English (United Kingdom), en" },
+ const rows = [
+  { Message: "Message not defined for language English (United Kingdom), en" },
 
-    // Random defects before Fast Layer
-    { Message: "Bare fibre diameter Low. Length= @ 0.336 Diameter = 124.248" },
-    { Message: "Bare fibre diameter High @ 0.342 Diameter = 125.641" },
+  { Message: "Bare fibre diameter High @ 2.315 Diameter = 125.612" },
+  { Message: "Coated fibre diameter Low @ 4.981" },
 
-    // Fast Layer Cycle 1
-    { Message: "Coated fibre diameter High @ 16.253" },
-    { Message: "Fast Layer Start @ 16.253" },
-    { Message: "Fast Layer Start @ 16.254" }, // duplicate
-    { Message: "Coated fibre diameter High @ 16.258" },
-    { Message: "Coated fibre diameter High @ 16.303" },
-    { Message: "Coated fibre diameter High @ 17.362" },
-    { Message: "Fast Layer Stop @ 17.814" },
-    { Message: "Fast Layer Stop @ 17.814" }, // duplicate
+  // Fast Layer 1
+  { Message: "Fast Layer Start @ 12.457" },
+  { Message: "Fast Layer Start @ 12.458" },
+  { Message: "Coated fibre diameter High @ 12.463" },
+  { Message: "Lump at length= @ 12.512" },
+  { Message: "Bare fibre diameter Low @ 12.640 Diameter = 123.948" },
+  { Message: "Fast Layer Stop @ 13.106" },
+  { Message: "Fast Layer Stop @ 13.107" },
 
-    // Fast Layer Cycle 2
-    { Message: "Coated fibre diameter Low @ 17.895" },
-    { Message: "Fast Layer Start @ 17.895" },
-    { Message: "Fast Layer Start @ 17.896" },
-    { Message: "Coated fibre diameter Low @ 17.910" },
-    { Message: "Coated fibre diameter Low @ 17.940" },
-    { Message: "Fast Layer Stop @ 18.398" },
-    { Message: "Fast Layer Stop @ 18.398" },
+  { Message: "Coated fibre diameter High @ 55.341" },
 
-    // Fast Layer Cycle 3
-    { Message: "Lump at length= @ 476.566" },
-    { Message: "Fast Layer Start @ 476.567" },
-    { Message: "Fast Layer Start @ 476.568" },
-    { Message: "Lump at length= @ 476.577" },
-    { Message: "Fast Layer Stop @ 476.977" },
-    { Message: "Fast Layer Stop @ 476.978" },
+  // Fast Layer 2
+  { Message: "Fast Layer Start @ 88.750" },
+  { Message: "Fast Layer Start @ 88.751" },
+  { Message: "Coated fibre diameter Low @ 88.760" },
+  { Message: "Lump at length= @ 88.799" },
+  { Message: "Fast Layer Stop @ 89.260" },
+  { Message: "Fast Layer Stop @ 89.261" },
 
-    // Fast Layer Cycle 4
-    { Message: "Lump at length= @ 692.563" },
-    { Message: "Fast Layer Start @ 692.564" },
-    { Message: "Fast Layer Start @ 692.564" },
-    { Message: "Bare fibre diameter High @ 692.569 Diameter = 128.161" },
-    { Message: "Lump at length= @ 692.574" },
-    { Message: "Bare fibre diameter Low. Length= @ 692.656 Diameter = 122.947" },
-    { Message: "Fast Layer Stop @ 693.143" },
-    { Message: "Fast Layer Stop @ 693.144" },
+  { Message: "Bare fibre diameter High @ 125.620 Diameter = 125.831" },
+  { Message: "Lump at length= @ 181.215" },
 
-    // Fibre Breaks
-    { Message: "TowerFibre Break @ 850.831" },
-    { Message: "TowerFibre Break @ 0.116" },
+  // Fast Layer 3
+  { Message: "Fast Layer Start @ 205.812" },
+  { Message: "Fast Layer Start @ 205.813" },
+  { Message: "Coated fibre diameter High @ 205.822" },
+  { Message: "Coated fibre diameter High @ 205.860" },
+  { Message: "Fast Layer Stop @ 206.455" },
+  { Message: "Fast Layer Stop @ 206.456" },
 
-    // More Noise
-    { Message: "Message not defined for language English (United Kingdom), en" }
-  ];
+  { Message: "Bare fibre diameter Low @ 260.115 Diameter = 124.015" },
+
+  // Fast Layer 4
+  { Message: "Fast Layer Start @ 320.501" },
+  { Message: "Fast Layer Start @ 320.502" },
+  { Message: "Lump at length= @ 320.520" },
+  { Message: "Bare fibre diameter High @ 320.571 Diameter = 126.002" },
+  { Message: "Fast Layer Stop @ 321.190" },
+  { Message: "Fast Layer Stop @ 321.191" },
+
+  { Message: "Coated fibre diameter High @ 412.880" },
+  /*{ Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
+
+  // Fast Layer 5
+  { Message: "Fast Layer Start @ 520.110" },
+  { Message: "Fast Layer Start @ 520.111" },
+  { Message: "Coated fibre diameter Low @ 520.140" },
+  { Message: "Lump at length= @ 520.165" },
+  { Message: "Fast Layer Stop @ 520.790" },
+  { Message: "Fast Layer Stop @ 520.791" },
+
+  { Message: "Bare fibre diameter High @ 601.442 Diameter = 125.910" },
+  { Message: "Coated fibre diameter Low @ 622.181" },*/
+
+  // Fibre Break around 640 km
+  { Message: "TowerFibre Break @ 400 .37" },
+
+  { Message: "Message not defined for language English (United Kingdom), en" }
+];
 
 
   useEffect(() => {
@@ -281,11 +291,13 @@ const DrawSpoolEntry = () => {
       const events = res.payload?.data || [];
 
       const mappedFlaws = drawFlawAutomation(rows);
+      console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
       setFieldValue("drawn_length", mappedFlaws?.totalKm)
       setFieldValue("drawn_weight", mappedFlaws?.totalKm / 37)
-      setFieldValue("balance_weight", values.preform_weight - (mappedFlaws?.totalKm / 37) )
+      const flawBalance = values.preform_weight - (mappedFlaws?.totalKm / 37);
+      setFieldValue("balance_weight", flawBalance < 0 ? 0 : flawBalance)
       console.log("What is the mapped flaws:", mappedFlaws)
 
     } catch (err) {
@@ -302,10 +314,8 @@ const DrawWeightWatcher = () => {
     const drawnWeight = Number(values.drawn_length || 0) / 37;
 
     setFieldValue("drawn_weight", drawnWeight);
-    setFieldValue(
-      "balance_weight",
-      Number(values.preform_weight || 0) - drawnWeight
-    );
+    const calcBalance = Number(values.preform_weight || 0) - drawnWeight;
+    setFieldValue("balance_weight", calcBalance < 0 ? 0 : calcBalance);
   }, [values.drawn_length, values.preform_weight]);
 
   return null;
@@ -314,7 +324,7 @@ const DrawWeightWatcher = () => {
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
-        <Formik initialValues={initialValues}
+        <Formik innerRef={formikRef} initialValues={initialValues}
           validateOnChange={false} validateOnBlur={true}
           validationSchema={validationSchema}
           onSubmit={async (values, { resetForm }) => {
@@ -325,12 +335,26 @@ const DrawWeightWatcher = () => {
           const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
           const submitValues = { ...values, pt_flaws: ptFlaws };
 
-          // If balance_weight is negative, show preform end confirmation popup
-          if (Number(submitValues.balance_weight) < 0) {
+          // If balance_weight is negative or zero (preform exhausted), show preform end confirmation popup
+          const actualBalance = Number(values.preform_weight || 0) - Number(submitValues.drawn_weight || 0);
+          if (actualBalance <= 0) {
+            submitValues.balance_weight = 0;
             setPendingSubmitValues(submitValues);
             setPendingResetForm(() => resetForm);
             setShowPreformEndPopup(true);
             return;
+          }
+
+          // If fiber cut reason indicates preform end, ask user to confirm
+          if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+            const reason = values.indication_reason.toLowerCase();
+            if (reason.includes('preform') || reason.includes('end')) {
+              submitValues.balance_weight = 0;
+              setPendingSubmitValues(submitValues);
+              setPendingResetForm(() => resetForm);
+              setShowPreformEndPopup(true);
+              return;
+            }
           }
 
           try {
@@ -355,8 +379,8 @@ const DrawWeightWatcher = () => {
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
                 <div className="flex gap-1.5">
                   <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                  {/* Show Preform End button when balance_weight < 4 */}
-                  {Number(values.balance_weight) < 4 && values.balance_weight !== '' && (
+                  {/* Show Preform End button when balance_weight is low */}
+                  {Number(values.preform_weight) > 0 && Number(values.balance_weight) <= 4 && values.balance_weight !== '' && (
                     <button type="button"
                       onClick={() => {
                         setPendingSubmitValues(values);
@@ -500,7 +524,7 @@ const DrawWeightWatcher = () => {
                           if (Number(val) < 0) { showError("Drawn Length cannot be negative"); setFieldValue("drawn_length", ''); }
                           else { setFieldValue("drawn_length", val); }
                         }} />
-                      <FormikInput compact label="Balance Weight" name="balance_weight" type="number" />
+                      <FormikInput compact label="Balance Weight" name="balance_weight" type="number" readOnly />
                       <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
 
                       <FormikInput compact label="Spool ID" name="spool_id" type='text' />
@@ -546,14 +570,15 @@ const DrawWeightWatcher = () => {
                         options={['cut', 'sample', 'break', 'trial']}
                       />
 
-                      {/* Conditional Reason Dropdown */}
-
-                      <FormikSelect
-                        compact
-                        label="Fiber Cut Reason"
-                        name="indication_reason"
-                        options={drawFiberCutReasonOptions}
-                      />
+                      {/* Fiber Cut Reason — only when indication is 'cut' */}
+                      {values.indication_fiber_cut === 'cut' && (
+                        <FormikSelect
+                          compact
+                          label="Fiber Cut Reason *"
+                          name="indication_reason"
+                          options={drawFiberCutReasonOptions}
+                        />
+                      )}
 
                       <div className="col-span-3">
                         <FormikTextarea compact label="Remarks" name="remark" rows={1} placeholder="" />
@@ -695,10 +720,13 @@ const DrawWeightWatcher = () => {
               </div>
               <h3 className="text-sm font-bold text-slate-800 mb-2">Preform End — Please Confirm</h3>
               <p className="text-xs text-slate-500 mb-1">
-                Balance weight is <strong className="text-rose-600">{Number(pendingSubmitValues?.balance_weight).toFixed(3)} KG</strong> (negative).
+                Balance weight is <strong className="text-rose-600">0 KG</strong> (preform exhausted).
+              </p>
+              <p className="text-xs text-slate-500 mb-1">
+                Tower: <strong className="text-blue-700">DT {pendingSubmitValues?.tower_no}</strong>
               </p>
               <p className="text-xs text-slate-500 mb-4">
-                This indicates the preform is exhausted. Confirming will <strong>save this entry</strong> and <strong>free the tower</strong> (mark as active/available).
+                Confirming will <strong>save this entry</strong>, set balance to 0, and <strong>free the tower</strong>.
               </p>
               <div className="flex gap-2">
                 <button

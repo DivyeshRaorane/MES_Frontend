@@ -2,8 +2,8 @@ import React from 'react';
 import { Formik, Form } from 'formik';
 import { useLocation } from 'react-router-dom';
 import { FileCheck } from 'lucide-react';
-import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
-import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../../components/common_fields';
+import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 
 const today = new Date().toISOString().split('T')[0];
 

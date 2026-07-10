@@ -12,6 +12,7 @@ import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/ser
 import { getSpoolDetailsForPT, ptEntryApi, getPTFlaws, getPTLogs, getFidBySpool } from '../services/pt_entry.api';
 import { checkPTLength } from './pt_helper';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
+import axios from 'axios';
 
 /* ── Password Modal ─────────────────────────────────────── */
 const PasswordModal = ({ isOpen, onClose, onSuccess }) => {
@@ -84,7 +85,7 @@ const initialValues = {
   spool_id: '', preform_id: '', drawn_length: '', tower_no: '', drawn_date: '',
   pt_entry: new Date().toISOString().split('T')[0], fid: '', bobbin_no: '', spool_status: '',
   pt_machine_no: '', operator_name: '', shift_incharge: '', shift: '', bobbin_color: '', bobbin_type: '',
-  pt_length: '', status: 'PENDING', payoff_vibration: 'No', dancer_vibration: 'No',
+  pt_length: '', pt_break: false, pt_scrap: false, status: 'PENDING', payoff_vibration: 'No', dancer_vibration: 'No',
   active_rejection_type: '', // radio token architecture: 'rejection', 'bal_draw_rejection', etc.
   rejection_reason: '', bal_draw_rejection_reason: '', ztmd_id: '', doc_id: '',
   multiple_end_weight: '', drawn_remark: '', pt_logs: [], pt_flaws: []
@@ -94,6 +95,7 @@ const initialValues = {
 const PTEntry = () => {
   const [lastPTID, setLastPTID] = useState('PT-00000');
   const [showPwdModal, setShowPwdModal] = useState(false);
+  const [showSpoolEndPopup, setShowSpoolEndPopup] = useState(false);
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
@@ -111,6 +113,37 @@ const PTEntry = () => {
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
   console.log("What is the ptlogdata:", ptLogsData)
+
+  /* ── Bobbin No onBlur: fetch PT machine log data ── */
+  const handleBobbinBlur = async (bobbin_no, setFieldValue) => {
+    if (!bobbin_no) return;
+    console.log('Fetching PT machine log for:', bobbin_no);
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}`);
+      console.log('PT machine log response:', res.data);
+      const data = res.data;
+      if (data?.success && data.data) {
+        const log = data.data;
+        const realLength = parseFloat(log.real_length) || 0;
+        const setLength = parseFloat(log.set_length) || 0;
+        const realLengthKm = (realLength / 1000).toFixed(3);
+        console.log('Setting pt_length to:', realLengthKm, 'km');
+
+        // Set pt_length as real_length converted to km
+        setFieldValue('pt_length', String(realLengthKm));
+
+        // If real_length < 2100 meters (2.1 km) → scrap
+        if (realLength < 2100) {
+          setFieldValue('pt_scrap', true);
+        }
+      } else {
+        console.log('No machine log data found in response');
+      }
+    } catch (e) {
+      console.log('PT machine log error:', e?.response?.status, e?.message);
+    }
+  };
+
   const handleScan = async (spool_id, setFieldValue) => {
     if (!spool_id) return;
     try {
@@ -137,6 +170,23 @@ const PTEntry = () => {
     } catch (error) {
       console.error(error);
       showError(error.response?.data?.message || "Spool not found");
+      // Clear all auto-filled fields on error
+      setFieldValue("preform_id", '');
+      setFieldValue("drawn_length", '');
+      setFieldValue("tower_no", '');
+      setFieldValue("drawn_date", '');
+      setFieldValue("pt_machine_no", '');
+      setFieldValue("drawn_remark", '');
+      setFieldValue("pt_done_so_far", '');
+      setFieldValue("pt_length", '');
+      setFieldValue("fid", '');
+      setFieldValue("bobbin_no", '');
+      setFieldValue("spool_status", '');
+      setFieldValue("pt_logs", []);
+      setFieldValue("pt_flaws", []);
+      setBalanceLength(0);
+      setActiveFlaw(null);
+      setPtAlert({ message: '', nextFlawMessage: '' });
     }
   };
 
@@ -231,6 +281,11 @@ const PTEntry = () => {
   // Refresh spool details (same as Scan button)
   await handleScan(values.spool_id, setFieldValue);
                 setBalanceLength(spoolResponse.data.balance_qty);
+
+                // If balance is now 0, show spool end popup
+                if (Number(spoolResponse.data.balance_qty) <= 0) {
+                  setShowSpoolEndPopup(true);
+                }
               } else {
                 showError(response.payload?.message || "Failed to save PT Entry");
               }
@@ -316,7 +371,17 @@ const PTEntry = () => {
                         <FormikInput compact label="DT No" name="tower_no" readOnly />
                         <FormikInput compact label="Drawn Date" name="drawn_date" type="date" />
                         <FormikInput compact label="PT Entry Date" name="pt_entry" type="date" />
-                        <FormikInput compact label="PT Bobbin No" name="bobbin_no" placeholder="Scan bobbin..." />
+                        <FormikInput compact label="PT Bobbin No" name="bobbin_no" placeholder="Scan bobbin..."
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFieldValue('bobbin_no', val);
+                            // When scanner fills the value (or user types and leaves), fetch machine log
+                            if (val && val.length >= 5) {
+                              // Debounce: call after value settles (scanner pastes full value instantly)
+                              clearTimeout(window._ptBobbinTimer);
+                              window._ptBobbinTimer = setTimeout(() => { handleBobbinBlur(val, setFieldValue); }, 500);
+                            }
+                          }} />
                         <FormikInput compact label="Spool Status" name="spool_status" placeholder="Spool Status" />
                       </div>
                       <FormikTextarea compact label="Drawn Remark" name="drawn_remark" rows={2} placeholder="Auto-fetched..." readOnly />
@@ -392,7 +457,7 @@ const PTEntry = () => {
                       <div className="grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 bg-slate-50/50 p-1.5 rounded">
                         <div>
                           <label className="text-[8px] font-bold text-slate-400 uppercase">Std Length</label>
-                          <div className="text-[11px] font-mono font-bold text-slate-600">50.400 km</div>
+                          <div className="text-[11px] font-mono font-bold text-slate-600">50.600 km</div>
                         </div>
                         <div>
                           <label className="text-[8px] font-bold text-slate-400 uppercase">PT Done So Far</label>
@@ -526,8 +591,6 @@ const PTEntry = () => {
                           <FormikInput compact name="doc_id" placeholder="Enter DOC ID..." />
                         </RejRowLayout>
 
-                        <RejRowLayout label="Is Break" checked={values.active_rejection_type === 'is_break'} onChange={e => handleRadioSelection('is_break', e.target.checked)} />
-
                       </div>
                     </ModuleCard>
 
@@ -553,23 +616,48 @@ const PTEntry = () => {
                             <table className="w-full text-left border-collapse">
                               <thead className="sticky top-0 bg-slate-50 z-10">
                                 <tr className="border-b border-slate-200">
-                                  {['Barcode / ID / Flaw', 'Length', 'Reason', ''].map(h => (
+                                  {['Bobbin No', 'Length', 'Status', ''].map(h => (
                                     <th key={h} className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase">{h}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
-                                {form.values.pt_logs?.map((_, idx) => (
+                                {form.values.pt_logs?.map((log, idx) => {
+                                  // Determine status: if FID exists → OK, else show rejection type
+                                  const hasFid = log.fid && log.fid.trim() !== '';
+                                  const rejType = log.active_rejection_type;
+                                  const status = hasFid
+                                    ? 'OK'
+                                    : rejType === 'rejection'
+                                      ? (log.rejection_reason || 'Rejection')
+                                      : rejType === 'multiple_end' ? 'Multiple End'
+                                      : rejType === 'scratch' ? 'Scratch'
+                                      : rejType === 'pt_scrap' ? 'PT Scrap'
+                                      : rejType === 'ztmd' ? 'ZTMD'
+                                      : rejType === 'doc' ? 'DOC'
+                                      : rejType === 'bal_draw_rejection' ? 'Bal Draw Rej'
+                                      : rejType ? rejType
+                                      : log.rejection === true ? (log.rejection_reason || 'Rejection')
+                                      : log.pt_scrap === true ? 'PT Scrap'
+                                      : log.scratch === true ? 'Scratch'
+                                      : log.multiple_end === true ? 'Multiple End'
+                                      : log.ztmd === true ? 'ZTMD'
+                                      : log.doc === true ? 'DOC'
+                                      : 'Scrap';
+                                  const isOk = status === 'OK';
+                                  return (
                                   <tr key={idx} className="hover:bg-slate-50/50">
-                                    <td className="px-1 py-1"><Field name={`pt_logs.${idx}.spool_id`} className="w-full bg-transparent px-1 py-0.5 text-xs focus:outline-none focus:bg-white rounded" /></td>
-                                    <td className="px-1 py-1"><Field name={`pt_logs.${idx}.pt_length`} className="w-full bg-transparent px-1 py-0.5 text-xs focus:outline-none focus:bg-white rounded" /></td>
-                                    <td className="px-1 py-1"><Field name={`pt_logs.${idx}.fid`} className="w-full bg-transparent px-1 py-0.5 text-xs focus:outline-none focus:bg-white rounded" /></td>
-
+                                    <td className="px-1 py-1 text-xs font-mono text-slate-700">{log.bobbin_no || log.spool_id || '—'}</td>
+                                    <td className="px-1 py-1 text-xs font-mono text-slate-600">{log.pt_length || '—'}</td>
+                                    <td className="px-1 py-1">
+                                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isOk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{status}</span>
+                                    </td>
                                     <td className="px-1 py-1 text-center">
                                       <button type="button" onClick={() => remove(idx)} className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={11} /></button>
                                     </td>
                                   </tr>
-                                ))}
+                                  );
+                                })}
                                 {form.values.pt_logs?.length === 0 && (
                                   <tr><td colSpan="4" className="px-3 py-4 text-center text-[9px] text-slate-400">No entries — click + to add</td></tr>
                                 )}
@@ -682,6 +770,48 @@ const PTEntry = () => {
             }
           }}
         />
+
+        {/* Spool End Popup */}
+        {showSpoolEndPopup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
+              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">✅</span>
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 mb-2">Spool Complete</h3>
+              <p className="text-xs text-slate-500 mb-1">
+                Balance length is <strong className="text-emerald-600">0 KM</strong>. This spool is fully processed.
+              </p>
+              <p className="text-xs text-slate-500 mb-4">
+                Would you like to mark this spool as <strong>PT Complete</strong> and <strong>free the PT machine</strong>?
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowSpoolEndPopup(false)}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">
+                  Skip
+                </button>
+                <button type="button" onClick={async () => {
+                  setShowSpoolEndPopup(false);
+                  try {
+                    const token = localStorage.getItem('token');
+                    const spool_id = formikRef.current?.values?.spool_id;
+                    const pt_machine_no = formikRef.current?.values?.pt_machine_no;
+                    await axios.put(`${import.meta.env.VITE_API_URL}/api/ptentry/spool-complete`, {
+                      spool_id,
+                      pt_machine_no,
+                    }, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } });
+                    showSuccess('Spool marked as PT Complete. Machine freed.');
+                  } catch (e) {
+                    showError(e?.response?.data?.message || 'Failed to mark spool complete');
+                  }
+                }}
+                  className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">
+                  Confirm Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

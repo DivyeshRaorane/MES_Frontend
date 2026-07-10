@@ -6,7 +6,7 @@ import TensileEntry   from '../pages/temp_tensile_entry/ui/temp_tensile_entry';
 
 const TABS = [
   { id: 'temp',    label: 'Temp Entry',       icon: Thermometer, color: 'blue' },
-  { id: 'cycle',   label: 'Cycle Wise Entry', icon: Wind,        color: 'blue' },
+  { id: 'Temperature Cycle',   label: 'Temperature Cycle', icon: Wind,        color: 'blue' },
   { id: 'tensile', label: 'Tensile Entry',    icon: Dumbbell,    color: 'blue' },
 ];
 
@@ -36,7 +36,7 @@ const TRHTempCycleContainer = () => {
         {/* ── Render Area ── */}
         <div className="flex-1 overflow-hidden">
           {activeTab === 'temp'    && <TempEntry />}
-          {activeTab === 'cycle'   && <CycleWiseEntry />}
+          {activeTab === 'Temperature Cycle'   && <CycleWiseEntry />}
           {activeTab === 'tensile' && <TensileEntry />}
         </div>
 

@@ -1,402 +1,459 @@
-import React from 'react';
+import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { Send, Search, Settings, ShieldCheck } from 'lucide-react';
-import { FormikInput, FormikSelect } from '../../../components/common_fields';
+import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { showSuccess, showError } from '../../../utils/toastService';
+import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry } from '../services/qc_entry.api';
 
-/* ── Compact table-cell input — respects disabled ── */
-const TCell = ({ name, disabled }) => (
-  <Field name={name}
-    disabled={disabled}
-    className={`w-full h-full px-1.5 py-0.5 text-[10px] outline-none text-center transition-all
+/* ── Compact table-cell input ── */
+const TCell = ({ name, disabled, highlight }) => (
+  <Field name={name} disabled={disabled}
+    className={`w-full h-full px-1 py-0 text-[9px] outline-none text-center transition-all
+      ${highlight ? 'bg-red-100 border-red-400 ring-1 ring-red-300' : ''}
       ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
 );
-
-/* ── Section wrapper — no card chrome, just a titled block ── */
-const Section = ({ label, children, className = '' }) => (
-  <div className={`flex flex-col gap-1 ${className}`}>
-    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-0.5 mb-0.5">{label}</p>
-    {children}
-  </div>
-);
-
-/* ── Full-width divider inside a 2-col grid ── */
 const GridDivider = ({ label }) => (
   <div className="col-span-2 pt-0.5 border-t border-slate-100">
-    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
   </div>
 );
-
-/* ── Column wrapper — scrollable, no card ── */
 const Col = ({ children }) => (
-  <div className="flex-1 min-w-0 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-sm px-2 py-2">
-    {children}
+  <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-white border border-slate-200 rounded-lg px-1.5 py-1">
+    <div className="grid grid-cols-2 gap-x-1 gap-y-0.5">{children}</div>
   </div>
 );
 
-const initialValues = {
-  noOfRewinding: '', barcodeId: '', fid: '',
-  manualEntry: false, automatic: true,          // automatic ON by default
-  ptLen: '', opticalLen: '', attn1310Top: '', avgLsa1550: '', attn1310Bot: '',
-  attn1550B: '', spec1285_1330: '', spectral1310: '', spectral1550: '',
-  mfdUni1310: '', mfdUni1550: '', maxAttn1310: '', maxAvgAttn1550: '',
-  attn1310Tb: '', attn1550Tb: '', maxTb1310: '', maxTb1550: '', maxAttn1625: '',
-  attn1625Tb: '', grade: '', rewReason: '', rewSubReason: '',
-  mfdTum: '', mfdBum: '', cutoffTnm: '', cutoffBnm: '', cladDiaTum: '',
-  coreCladConcTum: '', cladOvalityT: '', coreDiaTum: '', coreOvalityT_Percent: '',
-  cladDiaBum: '', coreCladConcBum: '', cladOvalityB: '', coreDiaBum: '', coreOvalityB_Percent: '',
-  rewScrap_1: '', rewScrap_2: '', rewScrap_3: '', rewScrap_4: '',
-  rewScrap_Len1: '', rewScrap_Len2: '', rewScrap_Len3: '', rewScrap_Len4: '',
-  priCoatDiaTum: '', secCoatDiaTum: '', priCoatConcTum: '', secCoatConcTum: '',
-  coatOvalityT: '', priCoatDiaBum: '', secCoatDiaBum: '', priCoatConcBum: '',
-  secCoatConcBum: '', coatOvalityB: '', fiberCurlT: '', fiberCurlB: '',
-  curlDeflectionT: '', curlDeflectionB: '', effAreaTop: '', effAreaBot: '',
-  attn1460: '', attn1410: '', st13Size: '', st15Size: '', spikeSize: '',
-  failReason: '', curing1: '', curing2: '',
-  zeroDispWavelen: '', slopeZeroDisp: '', disp1550: '', disp1285_1330: '',
-  disp1270_1340: '', disp1575: '', pmd1310: '', pmd1550: '', cd1460: '',
-  twpmd: '', disp1625: '', disp1570: '', disp1260: '', bdfLumps: '',
-  specOpr: '', otdrOpr: '', cdPmdOpr: '', ptOpr: '', rewOpr: '', colOpr: '',
-  fType: '', colour: '', otdrNo: '', ptNo: '', dtNo: '', coatType: '', priCoat: '',
-  mb1550_50: '', mb1310_50: '', mb1625_50: '',
-  mb1550_60: '', mb1310_60: '', mb1625_60: '',
-  mb1550_32: '', mb1310_32: '', mb1625_32: '',
-  mb1550_30: '', mb1310_30: '', mb1625_30: '',
-  mb1550_20: '', mb1310_20: '', mb1625_20: '',
-  mbOpr: '',
-  diff1310OH: '', maxOH: '', minOH: '', dispSlope1550: '', macValue: '',
-  cableCutoff: '', colDia: '', attnUni1310: '', attnUni1550: '',
-  attnMax1625tb: '', mfdUni1625: '', attnUni1625: '',
-};
-
-/* ── Microbend rows config ── */
+/* ── Microbend rows ── */
 const MB_ROWS = [
-  { label: '100T 50mm', s1550: 'mb1550_50', s1310: 'mb1310_50', s1625: 'mb1625_50', full: true  },
-  { label: '100T 60mm', s1550: 'mb1550_60', s1310: 'mb1310_60', s1625: 'mb1625_60', full: true  },
-  { label: '100T 32mm', s1550: 'mb1550_32', s1310: 'mb1310_32', s1625: 'mb1625_32', full: true  },
-  { label: '10T 30mm',  s1550: 'mb1550_30', s1310: 'mb1310_30', s1625: 'mb1625_30', full: true  },
-  { label: '1T 20mm',   s1550: 'mb1550_20', s1310: 'mb1310_20', s1625: 'mb1625_20', full: true  },
+  { label: '100T 50mm', s1550: 'm_100T_50mm_1550', s1310: 'm_100T_50mm_1310', s1625: 'm_100T_50mm_1625' },
+  { label: '100T 60mm', s1550: 'm_100T_60mm_1550', s1310: 'm_100T_60mm_1310', s1625: 'm_100T_60mm_1625' },
+  { label: '1T 32mm',   s1550: 'm_1T_32mm_1550',   s1310: 'm_1T_32mm_1310',   s1625: 'm_1T_32mm_1625' },
+  { label: '10T 30mm',  s1550: 'm_10T_30mm_1550',  s1310: 'm_10T_30mm_1310',  s1625: 'm_10T_30mm_1625' },
+  { label: '1T 20mm',   s1550: 'm_1T_20mm_1550',   s1310: 'm_1T_20mm_1310',   s1625: 'm_1T_20mm_1625' },
+  { label: '1T 15mm',   s1550: 'm_1T_15mm_1550',   s1310: 'm_1T_15mm_1310',   s1625: 'm_1T_15mm_1625' },
+  { label: '1T 10mm',   s1550: 'm_1T_10mm_1550',   s1310: 'm_1T_10mm_1310',   s1625: 'm_1T_10mm_1625' },
 ];
 
+/* ── All measurement fields (DB columns) ── */
+const MEASUREMENT_FIELDS = [
+  'avg_lsa_atn_1310','avg_lsa_atn_1550','avg_lsa_atn_1625','avg_lsa_atn_1383',
+  'max_lsa_atn_1310','max_lsa_atn_1550','max_lsa_atn_1625','max_lsa_atn_1383',
+  'min_lsa_atn_1310','min_lsa_atn_1550','min_lsa_atn_1625','min_lsa_atn_1383',
+  'atn_1310_top','atn_1550_top','atn_1625_top','atn_1383_top',
+  'atn_1310_bottom','atn_1550_bottom','atn_1625_bottom','atn_1383_bottom',
+  'max_atn_1310_top','max_atn_1550_top','max_atn_1625_top','max_atn_1383_top',
+  'max_atn_1310_bottom','max_atn_1550_bottom','max_atn_1625_bottom','max_atn_1383_bottom',
+  'max_tb_1310','max_tb_1550','max_tb_1625','max_tb_1383',
+  'atn_1310_tb','atn_1550_tb','atn_1625_tb','atn_1383_tb',
+  'atn_uniformity_1310','atn_uniformity_1550','atn_uniformity_1625','atn_uniformity_1383',
+  'mfd_uniformity_1310','mfd_uniformity_1550','mfd_uniformity_1625','mfd_uniformity_1383',
+  'step_1310_size','step_1550_size','step_1625_size','step_1383_size',
+  'spike_1310_size','spike_1550_size','spike_1625_size','spike_1383_size',
+  'spec_1310','spec_1550','spec_1285_1330',
+  'mfd_1310_top','mfd_1310_bottom','mfd_1550_top','mfd_1550_bottom',
+  'effective_area_1310','effective_area_1550',
+  'cut_off_top','cut_off_bottom','cable_cut_off','mac_value',
+  'clad_dia_top','clad_dia_bottom','core_clad_concentricity_top','core_clad_concentricity_bottom',
+  'clad_ovality_top','clad_ovality_bottom','core_dia_top','core_dia_bottom',
+  'core_ovality_top','core_ovality_bottom',
+  'primary_coating_dia_top','primary_coating_dia_bottom',
+  'secondary_coating_dia_top','secondary_coating_dia_bottom',
+  'primary_coating_concentricity_top','primary_coating_concentricity_bottom',
+  'secondary_coating_concentricity_top','secondary_coating_concentricity_bottom',
+  'coating_ovality_top','coating_ovality_bottom',
+  'fiber_curl_top','fiber_curl_bottom','curl_defection_top','curl_defection_bottom',
+  'zero_disp_wave','slope_zero_disp','disp_1550','disp_1285_1330','disp_1270_1340',
+  'disp_1575','cd_1460','disp_1625','disp_1570','disp_1260','disp_slope',
+  'pmd_1310','pmd_1550',
+  'm_100T_50mm_1550','m_100T_50mm_1310','m_100T_50mm_1625',
+  'm_100T_60mm_1550','m_100T_60mm_1310','m_100T_60mm_1625',
+  'm_1T_32mm_1550','m_1T_32mm_1310','m_1T_32mm_1625',
+  'm_10T_30mm_1550','m_10T_30mm_1310','m_10T_30mm_1625',
+  'm_1T_20mm_1550','m_1T_20mm_1310','m_1T_20mm_1625',
+  'm_1T_15mm_1550','m_1T_15mm_1310','m_1T_15mm_1625',
+  'm_1T_10mm_1550','m_1T_10mm_1310','m_1T_10mm_1625',
+];
+
+const buildInitialValues = () => {
+  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '' };
+  MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
+  return vals;
+};
+
+/* ── Failure Dialog ── */
+const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+      <div className="bg-white rounded-xl shadow-2xl p-5 w-[420px]">
+        <div className="flex items-center gap-2 mb-3">
+          <AlertTriangle size={18} className="text-red-500" />
+          <h3 className="text-sm font-bold text-red-700">QC Evaluation Failed</h3>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 space-y-1.5">
+          <p className="text-xs text-slate-700"><span className="font-bold">Grade Checked:</span> {details?.grade_checked}</p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Failed Parameter:</span> <span className="text-red-600 font-mono">{details?.failed_parameter}</span></p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Measured Value:</span> {details?.measured_value}</p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Allowed Range:</span> [{details?.min} to {details?.max}]</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={onFail} className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-all">FAIL</button>
+          <button onClick={onRew} className="flex-1 px-3 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all">REWINDING</button>
+          <button onClick={onCancel} className="flex-1 px-3 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300 transition-all">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ══════════════════════════════════════════════════════════ */
-const QCEntryScreen = () => (
-  <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
-    <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+const QCEntryScreen = () => {
+  const [scanInput, setScanInput] = useState('');
+  const [source, setSource] = useState(null); // 'temp' | 'final' | null
+  const [grade, setGrade] = useState('');
+  const [graded, setGraded] = useState(false);
+  const [failedParam, setFailedParam] = useState('');
+  const [processStatus, setProcessStatus] = useState(null);
+  const [failDialog, setFailDialog] = useState({ open: false, details: null });
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const formRef = useRef(null);
+  const scanRef = useRef(null);
 
-      <Formik initialValues={initialValues} onSubmit={(v) => console.log('QC Submit:', v)}>
-        {({ values, setFieldValue }) => {
-          /* fields are editable only when Manual Entry is checked */
-          const locked = !values.manualEntry;
+  const locked = source === 'final';
 
-          /* shared disabled-aware input props */
-          const fi = (label, name, extra = {}) => (
-            <FormikInput compact label={label} name={name} disabled={locked} {...extra} />
-          );
-          const fs = (label, name, opts) => (
-            <FormikSelect compact label={label} name={name} options={opts} disabled={locked} />
-          );
+  /* ── Fetch ── */
+  const handleFetch = async (setValues) => {
+    const bobbin_no = scanInput.trim();
+    if (!bobbin_no) { showError('Enter bobbin number'); return; }
+    setLoading(true);
+    setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
+    try {
+      const res = await fetchBobbinQC(bobbin_no);
+      if (!res?.success) { showError(res?.message || 'Bobbin not found.'); setSource(null); setLoading(false); return; }
+      setSource(res.source); // 'temp' or 'final'
+      const data = res.data || {};
+      const newVals = buildInitialValues();
+      Object.keys(newVals).forEach(k => { if (data[k] !== undefined && data[k] !== null) newVals[k] = data[k]; });
+      newVals.bobbin_no = bobbin_no;
+      setValues(newVals);
+      if (res.source === 'final') showError('Final QC has already been completed for this bobbin.');
+    } catch (e) { showError(e?.response?.data?.message || 'Fetch failed'); setSource(null); }
+    setLoading(false);
+  };
 
-          return (
+  /* ── Grade ── */
+  const handleGrade = async (values) => {
+    if (!values.bobbin_no) { showError('Fetch a bobbin first'); return; }
+    setLoading(true);
+    try {
+      const res = await gradeBobbin(values.bobbin_no);
+      console.log('Grade response:', res);
+      
+      // Handle both direct response and nested .data response
+      const data = res?.data || res;
+      
+      if (data?.status === 'PASSED') {
+        setGrade(data.matched_grade);
+        setGraded(true);
+        setFailedParam('');
+        showSuccess(`Grade: ${data.matched_grade}`);
+      } else if (data?.status === 'FAILED') {
+        setFailedParam(data.failure_details?.failed_parameter || '');
+        setFailDialog({ open: true, details: data.failure_details });
+      } else {
+        showError(data?.message || 'Unexpected grading response');
+      }
+    } catch (e) { showError(e?.response?.data?.message || 'Grading failed'); }
+    setLoading(false);
+  };
+
+  const handleFailAction = (action) => {
+    setGrade(action === 'fail' ? 'FAIL' : 'REW');
+    setGraded(true);
+    setFailDialog({ open: false, details: null });
+  };
+
+  /* ── Submit ── */
+  const handleSubmit = async (values) => {
+    if (!graded) { showError('Click Grade first'); return; }
+    setSubmitting(true);
+    try {
+      // Process check first
+      const pRes = await checkProcessStatus(values.bobbin_no);
+      setProcessStatus(pRes);
+
+      // Build measurements
+      const measurements = {};
+      MEASUREMENT_FIELDS.forEach(f => { if (values[f] !== '' && values[f] !== null) measurements[f] = Number(values[f]); });
+
+      const payload = {
+        bobbin_no: values.bobbin_no,
+        bobbin_fid: values.bobbin_fid,
+        matcode: values.matcode,
+        grade,
+        measurements,
+      };
+
+      const res = await submitQCEntry(payload);
+      if (res?.success) {
+        if (res.type === 'temp') showSuccess(`Temporary QC saved. Pending: ${res.pending?.join(', ') || 'none'}`);
+        else if (res.type === 'final') showSuccess(`Final QC submitted! Grade: ${grade}`);
+      } else { showError(res?.message || 'Submit failed'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Submit failed'); }
+    setSubmitting(false);
+  };
+
+  /* ── Grade badge color ── */
+  const gradeColor = grade === 'FAIL' ? 'bg-red-100 text-red-700 border-red-300'
+    : grade === 'REW' ? 'bg-amber-100 text-amber-700 border-amber-300'
+    : grade ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : '';
+
+  /* ── Field helper ── */
+  const fi = (label, name) => (
+    <FormikInput compact label={label} name={name} disabled={locked}
+      className={failedParam === name ? 'bg-red-50 border-red-400 ring-1 ring-red-300' : ''} />
+  );
+
+  return (
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <Formik initialValues={buildInitialValues()} onSubmit={() => {}}>
+          {({ values, setValues }) => (
             <Form className="flex flex-col flex-1 overflow-hidden">
 
               {/* ── Action Bar ── */}
-              <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <div className="bg-slate-700 p-1.5 text-white rounded flex-shrink-0">
                   <ShieldCheck size={13} />
                 </div>
 
-                {/* Rewind No */}
+                {/* Scan */}
                 <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                  <span className="bg-emerald-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">REWIND NO</span>
-                  <Field name="noOfRewinding" className="w-10 px-2 py-1 text-xs outline-none font-bold" />
+                  <span className="bg-blue-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BOBBIN</span>
+                  <input ref={scanRef} value={scanInput} onChange={e => setScanInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleFetch(setValues); } }}
+                    className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-700" placeholder="Scan..." />
                 </div>
+                <button type="button" onClick={() => handleFetch(setValues)} disabled={loading}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 disabled:opacity-50 transition-all">
+                  <Scan size={10} /> {loading ? 'Loading...' : 'Fetch'}
+                </button>
 
-                {/* Barcode ID */}
-                <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                  <span className="bg-amber-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BARCODE ID</span>
-                  <Field name="barcodeId" className="w-28 px-2 py-1 text-xs outline-none font-bold text-blue-700" />
-                </div>
+                {/* FID display */}
+                {values.bobbin_fid && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-orange-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.bobbin_fid}</span>
+                  </div>
+                )}
 
-                {/* FID Ref */}
-                <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                  <span className="bg-orange-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID REF</span>
-                  <Field name="fid" className="w-28 px-2 py-1 text-xs outline-none font-bold" />
-                </div>
+                {/* Source badge */}
+                {source && (
+                  <span className={`text-[9px] font-bold px-2 py-1 rounded border ${
+                    source === 'final' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-blue-100 text-blue-700 border-blue-300'
+                  }`}>{source === 'final' ? 'Final QC Done' : 'Temp QC'}</span>
+                )}
 
-                {/* Manual Entry toggle */}
-                <label className={`flex items-center gap-1.5 text-[10px] font-bold cursor-pointer px-2 py-1 border rounded transition-all ${
-                  values.manualEntry ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}>
-                  <Field type="checkbox" name="manualEntry"
-                    onChange={(e) => {
-                      setFieldValue('manualEntry', e.target.checked);
-                      if (e.target.checked) setFieldValue('automatic', false);
-                      else setFieldValue('automatic', true);
-                    }}
-                    className="w-3 h-3 accent-blue-600" />
-                  Manual Entry
-                </label>
-
-                {/* Automatic toggle */}
-                <label className={`flex items-center gap-1.5 text-[10px] font-bold cursor-pointer px-2 py-1 border rounded transition-all ${
-                  values.automatic ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}>
-                  <Field type="checkbox" name="automatic"
-                    onChange={(e) => {
-                      setFieldValue('automatic', e.target.checked);
-                      if (e.target.checked) setFieldValue('manualEntry', false);
-                    }}
-                    className="w-3 h-3 accent-emerald-600" />
-                  Automatic
-                </label>
-
-                {locked && (
-                  <span className="text-[9px] text-amber-600 font-bold bg-amber-50 border border-amber-200 px-2 py-1 rounded">
-                    🔒 Enable Manual Entry to edit fields
+                {/* Grade badge */}
+                {grade && (
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded border ${gradeColor}`}>
+                    <Award size={10} className="inline mr-1" />{grade}
                   </span>
                 )}
 
+                {/* Process status */}
+                {processStatus && (
+                  <div className="flex items-center gap-1.5">
+                    {[['PV', processStatus.is_pv], ['D2', processStatus.is_d2], ['H2', processStatus.is_h2]].map(([l, v]) => (
+                      <span key={l} className="flex items-center gap-0.5 text-[8px] font-bold">
+                        {v ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-400" />}
+                        {l}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <div className="ml-auto flex gap-2">
-                  <ResetButton compact>Reset</ResetButton>
-                  <SubmitButton compact><Send size={11} /> Submit Entry</SubmitButton>
+                  <button type="button" onClick={() => handleGrade(values)} disabled={locked || loading || !values.bobbin_no}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded hover:bg-amber-600 disabled:opacity-40 transition-all">
+                    <Award size={10} /> Grade
+                  </button>
+                  <ResetButton compact type="button" onClick={() => {
+                    setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
+                  }}>Reset</ResetButton>
+                  <SubmitButton compact type="button" disabled={submitting || !graded || locked} onClick={() => handleSubmit(values)}>
+                    {submitting ? 'Saving...' : 'Submit'}
+                  </SubmitButton>
                 </div>
               </div>
 
               {/* ── 5-column data grid ── */}
-              <div className="flex gap-2 flex-1 overflow-hidden px-2 py-2">
+              <div className="flex gap-1 flex-1 min-h-0 overflow-hidden px-1.5 py-1">
 
-                {/* ── COL 1: Optical Properties ── */}
+                {/* ── COL 1 ── */}
                 <Col>
-                  <Section label="Optical Properties">
-                    <div className="grid grid-cols-2 gap-1">
-                      {fi('PT Len',         'ptLen')}
-                      {fi('Optical Len',    'opticalLen')}
-                      {fi('Attn 1310 (T)',  'attn1310Top')}
-                      {fi('Avg LSA 1550',   'avgLsa1550')}
-                      {fi('Attn 1310 (B)',  'attn1310Bot')}
-                      {fi('Attn 1550 B',    'attn1550B')}
-                      {fi('Spec 1285-1330', 'spec1285_1330')}
-                      {fi('Spectral 1310',  'spectral1310')}
-                      {fi('Spectral 1550',  'spectral1550')}
-                      {fi('MFD UNI 1310',   'mfdUni1310')}
-                      {fi('MFD UNI 1550',   'mfdUni1550')}
-                      {fi('Max Attn 1310',  'maxAttn1310')}
-                      {fi('Max Avg 1550',   'maxAvgAttn1550')}
-                      {fi('Attn 1310 TB',   'attn1310Tb')}
-                      {fi('Attn 1550 TB',   'attn1550Tb')}
-                      {fi('Max TB 1310',    'maxTb1310')}
-                      {fi('Max TB 1550',    'maxTb1550')}
-                      {fi('Max Attn 1625',  'maxAttn1625')}
-                      {fi('Attn 1625 TB',   'attn1625Tb')}
-                      <GridDivider label="Grading & Rewind" />
-                      {fi('Grade Value',    'grade')}
-                      {fs('Rew Reason',     'rewReason',    ['Select','Attn High','MFD Fail','Coating','Other'])}
-                      {fs('Sub Reason',     'rewSubReason', ['Select','Top','Bottom','Both'])}
-                      {fs('Fail Reason',     'failRreason', ['Select','Top','Bottom','Both'])}
-                    </div>
-                  </Section>
+                  {fi('Avg LSA 1310', 'avg_lsa_atn_1310')}
+                  {fi('Avg LSA 1550', 'avg_lsa_atn_1550')}
+                  {fi('Avg LSA 1625', 'avg_lsa_atn_1625')}
+                  {fi('Avg LSA 1383', 'avg_lsa_atn_1383')}
+                  {fi('Max LSA 1310', 'max_lsa_atn_1310')}
+                  {fi('Max LSA 1550', 'max_lsa_atn_1550')}
+                  {fi('Max LSA 1625', 'max_lsa_atn_1625')}
+                  {fi('Max LSA 1383', 'max_lsa_atn_1383')}
+                  {fi('Min LSA 1310', 'min_lsa_atn_1310')}
+                  {fi('Min LSA 1550', 'min_lsa_atn_1550')}
+                  {fi('Min LSA 1625', 'min_lsa_atn_1625')}
+                  {fi('Min LSA 1383', 'min_lsa_atn_1383')}
+                  <GridDivider label="ATN Top/Bottom" />
+                  {fi('ATN 1310 T', 'atn_1310_top')}
+                  {fi('ATN 1550 T', 'atn_1550_top')}
+                  {fi('ATN 1625 T', 'atn_1625_top')}
+                  {fi('ATN 1383 T', 'atn_1383_top')}
+                  {fi('ATN 1310 B', 'atn_1310_bottom')}
+                  {fi('ATN 1550 B', 'atn_1550_bottom')}
+                  {fi('ATN 1625 B', 'atn_1625_bottom')}
+                  {fi('ATN 1383 B', 'atn_1383_bottom')}
                 </Col>
 
-                {/* ── COL 2: FID Dimensions ── */}
+                {/* ── COL 2 ── */}
                 <Col>
-                  <Section label="FID Dimensions">
-                    <div className="grid grid-cols-2 gap-1">
-                      {fi('MFD T um',      'mfdTum')}
-                      {fi('MFD B um',      'mfdBum')}
-                      {fi('Cutoff T nm',   'cutoffTnm')}
-                      {fi('Cutoff B nm',   'cutoffBnm')}
-                      {fi('Clad Dia T',    'cladDiaTum')}
-                      {fi('Core Clad T',   'coreCladConcTum')}
-                      {fi('Clad Oval T%',  'cladOvalityT')}
-                      {fi('Core Dia T',    'coreDiaTum')}
-                      {fi('Core Oval T%',  'coreOvalityT_Percent')}
-                      {fi('Clad Dia B',    'cladDiaBum')}
-                      {fi('Core Clad B',   'coreCladConcBum')}
-                      {fi('Clad Oval B%',  'cladOvalityB')}
-                      {fi('Core Dia B',    'coreDiaBum')}
-                      {fi('Core Oval B%',  'coreOvalityB_Percent')}
-
-                      {/* REW/SCRAP table */}
-                      <div className="col-span-2 pt-0.5 border-t border-slate-100">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">Rew / Scrap</p>
-                        <table className="w-full text-[9px] border-collapse border border-slate-200 rounded overflow-hidden">
-                          <thead className="bg-slate-700 text-white">
-                            <tr>
-                              <th className="border border-slate-500 py-1 font-normal">REW/SCRAP</th>
-                              <th className="border border-slate-500 py-1 font-normal">LEN (m)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[1,2,3,4].map(i => (
-                              <tr key={i} className="bg-white">
-                                <td className="border border-slate-200 h-6"><TCell name={`rewScrap_${i}`}   disabled={locked} /></td>
-                                <td className="border border-slate-200 h-6"><TCell name={`rewScrap_Len${i}`} disabled={locked} /></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </Section>
+                  {fi('Max ATN 1310 T', 'max_atn_1310_top')}
+                  {fi('Max ATN 1550 T', 'max_atn_1550_top')}
+                  {fi('Max ATN 1625 T', 'max_atn_1625_top')}
+                  {fi('Max ATN 1383 T', 'max_atn_1383_top')}
+                  {fi('Max ATN 1310 B', 'max_atn_1310_bottom')}
+                  {fi('Max ATN 1550 B', 'max_atn_1550_bottom')}
+                  {fi('Max ATN 1625 B', 'max_atn_1625_bottom')}
+                  {fi('Max ATN 1383 B', 'max_atn_1383_bottom')}
+                  <GridDivider label="TB / Uniformity" />
+                  {fi('Max TB 1310', 'max_tb_1310')}
+                  {fi('Max TB 1550', 'max_tb_1550')}
+                  {fi('Max TB 1625', 'max_tb_1625')}
+                  {fi('Max TB 1383', 'max_tb_1383')}
+                  {fi('ATN TB 1310', 'atn_1310_tb')}
+                  {fi('ATN TB 1550', 'atn_1550_tb')}
+                  {fi('ATN TB 1625', 'atn_1625_tb')}
+                  {fi('ATN TB 1383', 'atn_1383_tb')}
+                  {fi('ATN Uni 1310', 'atn_uniformity_1310')}
+                  {fi('ATN Uni 1550', 'atn_uniformity_1550')}
+                  {fi('ATN Uni 1625', 'atn_uniformity_1625')}
+                  {fi('ATN Uni 1383', 'atn_uniformity_1383')}
                 </Col>
 
-                {/* ── COL 3: Coating Parameters ── */}
+                {/* ── COL 3 ── */}
                 <Col>
-                  <Section label="Coating Parameters">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div className="col-span-2">
-                        <button type="button"
-                          className="w-full bg-emerald-50 text-[9px] font-bold py-1.5 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5">
-                          <Search size={11} /> Fetch Preform Data
-                        </button>
-                      </div>
-                      {fi('Pri Coat Dia T',  'priCoatDiaTum')}
-                      {fi('Sec Coat Dia T',  'secCoatDiaTum')}
-                      {fi('Pri Coat Conc T', 'priCoatConcTum')}
-                      {fi('Sec Coat Conc T', 'secCoatConcTum')}
-                      {fi('Coat Oval T',     'coatOvalityT')}
-                      {fi('Pri Coat Dia B',  'priCoatDiaBum')}
-                      {fi('Sec Coat Dia B',  'secCoatDiaBum')}
-                      {fi('Pri Coat Conc B', 'priCoatConcBum')}
-                      {fi('Sec Coat Conc B', 'secCoatConcBum')}
-                      {fi('Coat Oval B',     'coatOvalityB')}
-                      {fi('Fiber Curl T',    'fiberCurlT')}
-                      {fi('Fiber Curl B',    'fiberCurlB')}
-                      {fi('Curl Deflect T',  'curlDeflectionT')}
-                      {fi('Curl Deflect B',  'curlDeflectionB')}
-                      {fi('Eff Area Top',    'effAreaTop')}
-                      {fi('Eff Area Bot',    'effAreaBot')}
-                      {fi('Attn 1460',       'attn1460')}
-                      {fi('Attn 1410',       'attn1410')}
-                      {fi('ST13 Size',       'st13Size')}
-                      {fi('ST15 Size',       'st15Size')}
-                      {fi('Spike Size',      'spikeSize')}
-                      {fi('Fail Reason',     'failReason')}
-                      {/* Curing — full width */}
-                      <div className="col-span-2 flex flex-col gap-0.5">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Curing Level</label>
-                        <div className="flex gap-1">
-                          <Field name="curing1" placeholder="Val 1" disabled={locked}
-                            className={`flex-1 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500/20 transition-all
-                              ${locked ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-100'}`} />
-                          <Field name="curing2" placeholder="Val 2" disabled={locked}
-                            className={`flex-1 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500/20 transition-all
-                              ${locked ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-100'}`} />
-                        </div>
-                      </div>
-                    </div>
-                  </Section>
+                  {fi('MFD 1310 T', 'mfd_1310_top')}
+                  {fi('MFD 1310 B', 'mfd_1310_bottom')}
+                  {fi('MFD 1550 T', 'mfd_1550_top')}
+                  {fi('MFD 1550 B', 'mfd_1550_bottom')}
+                  {fi('MFD Uni 1310', 'mfd_uniformity_1310')}
+                  {fi('MFD Uni 1550', 'mfd_uniformity_1550')}
+                  {fi('MFD Uni 1625', 'mfd_uniformity_1625')}
+                  {fi('MFD Uni 1383', 'mfd_uniformity_1383')}
+                  <GridDivider label="Geometry" />
+                  {fi('Clad Dia T', 'clad_dia_top')}
+                  {fi('Clad Dia B', 'clad_dia_bottom')}
+                  {fi('Core Clad T', 'core_clad_concentricity_top')}
+                  {fi('Core Clad B', 'core_clad_concentricity_bottom')}
+                  {fi('Clad Oval T', 'clad_ovality_top')}
+                  {fi('Clad Oval B', 'clad_ovality_bottom')}
+                  {fi('Core Dia T', 'core_dia_top')}
+                  {fi('Core Dia B', 'core_dia_bottom')}
+                  {fi('Core Oval T', 'core_ovality_top')}
+                  {fi('Core Oval B', 'core_ovality_bottom')}
+                  {fi('Cutoff T', 'cut_off_top')}
+                  {fi('Cutoff B', 'cut_off_bottom')}
+                  {fi('Cable Cut', 'cable_cut_off')}
+                  {fi('MAC Value', 'mac_value')}
+                  {fi('Eff Area 1310', 'effective_area_1310')}
+                  {fi('Eff Area 1550', 'effective_area_1550')}
                 </Col>
 
-                {/* ── COL 4: Manual Log / Dispersion / Operators ── */}
+                {/* ── COL 4 ── */}
                 <Col>
-                  <Section label="Manual Log Entry">
-                    <div className="grid grid-cols-2 gap-1">
-                      {fi('Zero Disp Wave',  'zeroDispWavelen')}
-                      {fi('Slope Zero Disp', 'slopeZeroDisp')}
-                      {fi('Disp 1550',       'disp1550')}
-                      {fi('Disp 1285-1330',  'disp1285_1330')}
-                      {fi('Disp 1270-1340',  'disp1270_1340')}
-                      {fi('Disp 1575',       'disp1575')}
-                      {fi('PMD 1310',        'pmd1310')}
-                      {fi('PMD 1550',        'pmd1550')}
-                      {fi('CD 1460',         'cd1460')}
-                      {fi('TWPMD',           'twpmd')}
-                      {fi('Disp 1625',       'disp1625')}
-                      {fi('Disp 1570',       'disp1570')}
-                      {fi('Disp 1260',       'disp1260')}
-                      {fi('BDF / Lumps',     'bdfLumps')}
-                      <GridDivider label="Operator Identifiers" />
-                      {fi('Spec Opr',    'specOpr')}
-                      {fi('Comb',    'comboopr')}
-                      {fi('F Type',      'fType')}
-                      {fi('Colour',      'colour')}
-                      {fi('OTDR No',     'otdrNo')}
-                      {fi('PT No',       'ptNo')}
-                      {fi('DT No',       'dtNo')}
-                      {fi('Coat Type',   'coatType')}
-                      {fi('Pri Coat',    'priCoat')}
-                    </div>
-                  </Section>
+                  {fi('Pri Coat T', 'primary_coating_dia_top')}
+                  {fi('Pri Coat B', 'primary_coating_dia_bottom')}
+                  {fi('Sec Coat T', 'secondary_coating_dia_top')}
+                  {fi('Sec Coat B', 'secondary_coating_dia_bottom')}
+                  {fi('Pri Conc T', 'primary_coating_concentricity_top')}
+                  {fi('Pri Conc B', 'primary_coating_concentricity_bottom')}
+                  {fi('Sec Conc T', 'secondary_coating_concentricity_top')}
+                  {fi('Sec Conc B', 'secondary_coating_concentricity_bottom')}
+                  {fi('Coat Oval T', 'coating_ovality_top')}
+                  {fi('Coat Oval B', 'coating_ovality_bottom')}
+                  {fi('Fiber Curl T', 'fiber_curl_top')}
+                  {fi('Fiber Curl B', 'fiber_curl_bottom')}
+                  {fi('Curl Def T', 'curl_defection_top')}
+                  {fi('Curl Def B', 'curl_defection_bottom')}
+                  <GridDivider label="Dispersion / PMD" />
+                  {fi('Zero Disp', 'zero_disp_wave')}
+                  {fi('Slope Zero', 'slope_zero_disp')}
+                  {fi('Disp 1550', 'disp_1550')}
+                  {fi('Disp 1285', 'disp_1285_1330')}
+                  {fi('Disp 1270', 'disp_1270_1340')}
+                  {fi('Disp 1575', 'disp_1575')}
+                  {fi('CD 1460', 'cd_1460')}
+                  {fi('Disp 1625', 'disp_1625')}
+                  {fi('Disp 1570', 'disp_1570')}
+                  {fi('Disp 1260', 'disp_1260')}
+                  {fi('Disp Slope', 'disp_slope')}
+                  {fi('PMD 1310', 'pmd_1310')}
+                  {fi('PMD 1550', 'pmd_1550')}
                 </Col>
 
-                {/* ── COL 5: Microbend + Status + Extra ── */}
+                {/* ── COL 5: Microbend + Step/Spike ── */}
                 <Col>
-                  <Section label="Microbend & Status">
-                    <div className="grid grid-cols-2 gap-1">
-
-                      {/* Microbend table — full width */}
-                      <div className="col-span-2">
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">Microbend Loss Analysis</p>
-                        <table className="w-full text-[9px] border-collapse border border-slate-200 rounded overflow-hidden">
-                          <thead className="bg-slate-700 text-white">
-                            <tr>
-                              <th className="border border-slate-500 py-1 font-normal px-1 text-left">Spec</th>
-                              <th className="border border-slate-500 py-1 font-normal">1550</th>
-                              <th className="border border-slate-500 py-1 font-normal">1310</th>
-                              <th className="border border-slate-500 py-1 font-normal">1625</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {MB_ROWS.map(({ label, s1550, s1310, s1625 }) => (
-                              <tr key={label} className="bg-white">
-                                <td className="border border-slate-200 px-1 text-[8px] font-bold bg-slate-50 whitespace-nowrap">{label}</td>
-                                <td className="border border-slate-200 h-6"><TCell name={s1550} disabled={locked} /></td>
-                                <td className="border border-slate-200 h-6"><TCell name={s1310} disabled={locked} /></td>
-                                <td className="border border-slate-200 h-6"><TCell name={s1625} disabled={locked} /></td>
-                              </tr>
-                            ))}
-                            <tr className="bg-white">
-                              <td className="border border-slate-200 px-1 text-[8px] font-bold bg-slate-50">MB Opr</td>
-                              <td colSpan={3} className="border border-slate-200 h-6">
-                                <Field name="mbOpr" disabled={locked}
-                                  className={`w-full h-full px-2 text-[10px] font-bold text-blue-600 uppercase outline-none focus:bg-blue-50 transition-all
-                                    ${locked ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-transparent'}`} />
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Status indicators */}
-                      <div className="col-span-2 grid grid-cols-2 gap-1">
-                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                          <span className="bg-slate-100 text-[8px] font-bold px-1.5 py-1 border-r border-slate-200 whitespace-nowrap">TEMP GRADE</span>
-                          <div className="flex-1 h-5 bg-emerald-500 rounded-r" />
-                        </div>
-                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                          <span className="bg-slate-100 text-[8px] font-bold px-1.5 py-1 border-r border-slate-200 whitespace-nowrap">D2 STATUS</span>
-                          <span className="text-[9px] font-black text-emerald-700 px-2">PASS</span>
-                        </div>
-                      </div>
-
-                      {/* Additional parameters */}
-                      <GridDivider label="Additional Parameters" />
-                      {fi('Diff 1310-OH',  'diff1310OH')}
-                      {fi('Max OH',        'maxOH')}
-                      {fi('Min OH',        'minOH')}
-                      {fi('Disp Slope',    'dispSlope1550')}
-                      {fi('MAC Value',     'macValue')}
-                      {fi('Cable Cutoff',  'cableCutoff')}
-                      {fi('Col Dia',       'colDia')}
-                      {fi('Attn Uni 1310', 'attnUni1310')}
-                      {fi('Attn Uni 1550', 'attnUni1550')}
-                      {fi('Max 1625 TB',   'attnMax1625tb')}
-                      {fi('MFD UNI 1625',  'mfdUni1625')}
-                      {fi('Attn UNI 1625', 'attnUni1625')}
-                    </div>
-                  </Section>
+                  <GridDivider label="Step / Spike" />
+                  {fi('Step 1310', 'step_1310_size')}
+                  {fi('Step 1550', 'step_1550_size')}
+                  {fi('Step 1625', 'step_1625_size')}
+                  {fi('Step 1383', 'step_1383_size')}
+                  {fi('Spike 1310', 'spike_1310_size')}
+                  {fi('Spike 1550', 'spike_1550_size')}
+                  {fi('Spike 1625', 'spike_1625_size')}
+                  {fi('Spike 1383', 'spike_1383_size')}
+                  {fi('Spec 1310', 'spec_1310')}
+                  {fi('Spec 1550', 'spec_1550')}
+                  {fi('Spec 1285', 'spec_1285_1330')}
+                  {/* Microbend table */}
+                  <div className="col-span-2 mt-1">
+                    <table className="w-full text-[8px] border-collapse border border-slate-200 rounded overflow-hidden">
+                      <thead className="bg-slate-700 text-white">
+                        <tr>
+                          <th className="border border-slate-500 py-0.5 font-normal px-1 text-left">Spec</th>
+                          <th className="border border-slate-500 py-0.5 font-normal">1550</th>
+                          <th className="border border-slate-500 py-0.5 font-normal">1310</th>
+                          <th className="border border-slate-500 py-0.5 font-normal">1625</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {MB_ROWS.map(({ label, s1550, s1310, s1625 }) => (
+                          <tr key={label} className="bg-white">
+                            <td className="border border-slate-200 px-1 text-[7px] font-bold bg-slate-50 whitespace-nowrap">{label}</td>
+                            <td className="border border-slate-200 h-5"><TCell name={s1550} disabled={locked} highlight={failedParam === s1550} /></td>
+                            <td className="border border-slate-200 h-5"><TCell name={s1310} disabled={locked} highlight={failedParam === s1310} /></td>
+                            <td className="border border-slate-200 h-5"><TCell name={s1625} disabled={locked} highlight={failedParam === s1625} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </Col>
 
               </div>
-              {/* ── end 5-col grid ── */}
 
             </Form>
-          );
-        }}
-      </Formik>
+          )}
+        </Formik>
+
+        <FailureDialog isOpen={failDialog.open} details={failDialog.details}
+          onFail={() => handleFailAction('fail')} onRew={() => handleFailAction('rew')}
+          onCancel={() => setFailDialog({ open: false, details: null })} />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default QCEntryScreen;
