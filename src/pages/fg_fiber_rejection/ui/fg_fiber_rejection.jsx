@@ -195,7 +195,7 @@ const RewindPanel = ({ qcUsers }) => {
   const [rows, setRows] = useState([]);
   const [popup, setPopup] = useState(null); // { bobbin data for popup }
   const [rewindType, setRewindType] = useState(''); // 'REWINDING' | 'CUT'
-  const [cuts, setCuts] = useState([{ p1: '', p2: '' }]);
+  const [cuts, setCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
   const [submitting, setSubmitting] = useState(false);
   const scanRef = useRef(null);
 
@@ -213,7 +213,7 @@ const RewindPanel = ({ qcUsers }) => {
       // Show popup for rewinding type selection
       setPopup(res.data);
       setRewindType('');
-      setCuts([{ p1: '', p2: '' }]);
+      setCuts([{ p1: '', p2: '', c_remark: '' }]);
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); refocus(); }
   };
 
@@ -232,7 +232,7 @@ const RewindPanel = ({ qcUsers }) => {
     }]);
     setPopup(null);
     setRewindType('');
-    setCuts([{ p1: '', p2: '' }]);
+    setCuts([{ p1: '', p2: '', c_remark: '' }]);
     refocus();
   };
 
@@ -343,7 +343,7 @@ const RewindPanel = ({ qcUsers }) => {
                 className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
                   rewindType === 'REWINDING' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}>Whole Length</button>
-              <button type="button" onClick={() => { setRewindType('CUT'); setCuts([{ p1: '', p2: '' }]); }}
+              <button type="button" onClick={() => { setRewindType('CUT'); setCuts([{ p1: '', p2: '', c_remark: '' }]); }}
                 className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
                   rewindType === 'CUT' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}>Cut</button>
@@ -354,7 +354,7 @@ const RewindPanel = ({ qcUsers }) => {
               <div className="border border-slate-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[9px] font-bold text-slate-500 uppercase">Cutting Instructions</span>
-                  <button type="button" onClick={() => setCuts(prev => [...prev, { p1: '', p2: '' }])}
+                  <button type="button" onClick={() => setCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
                     className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
                     <Plus size={9} /> Add Row
                   </button>
@@ -364,6 +364,7 @@ const RewindPanel = ({ qcUsers }) => {
                     <tr className="text-[9px] text-slate-500 font-bold">
                       <th className="text-left py-1">P1</th>
                       <th className="text-left py-1">P2</th>
+                      <th className="text-left py-1">Remark</th>
                       <th className="w-8"></th>
                     </tr>
                   </thead>
@@ -377,6 +378,10 @@ const RewindPanel = ({ qcUsers }) => {
                         <td className="py-1 pr-1">
                           <input type="number" value={cut.p2} onChange={e => { const v = [...cuts]; v[ci].p2 = e.target.value; setCuts(v); }}
                             className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="P2" />
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input type="text" value={cut.c_remark} onChange={e => { const v = [...cuts]; v[ci].c_remark = e.target.value; setCuts(v); }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="e.g. h1310" />
                         </td>
                         <td className="py-1 text-center">
                           {cuts.length > 1 && (

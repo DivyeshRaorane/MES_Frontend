@@ -107,9 +107,13 @@ const H2IssueTab = ({ qcUsers }) => {
     (async () => {
       try {
         const [cRes, bRes] = await Promise.all([getH2ChambersInUse(), getBatchesForH2Issue()]);
+        console.log("h2 chambers response:", cRes);
+        console.log("h2 batches response:", bRes);
         if (cRes?.success) setChambers(cRes.data || []);
+        else console.warn("H2 chambers not success:", cRes);
         if (bRes?.success) setBatches(bRes.data || []);
-      } catch (e) { console.error('Load error:', e); }
+        else console.warn("H2 batches not success:", bRes);
+      } catch (e) { console.error('H2 Load error:', e?.response?.status, e?.response?.data, e?.message); }
     })();
   }, []);
 

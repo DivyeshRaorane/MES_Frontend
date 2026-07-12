@@ -8,19 +8,19 @@ const authHeaders = () => ({
 
 /* ── Fetch bobbin QC data ── */
 export const fetchBobbinQC = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/fetch/${bobbin_no}`);
+  const res = await axios.get(`${API}/api/qcentry/fetch/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Grade bobbin ── */
 export const gradeBobbin = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/grade/${bobbin_no}`);
+  const res = await axios.get(`${API}/api/qcentry/grade/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Check process status ── */
 export const checkProcessStatus = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/process-check/${bobbin_no}`);
+  const res = await axios.get(`${API}/api/qcentry/process-check/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 

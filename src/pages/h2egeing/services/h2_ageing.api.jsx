@@ -8,13 +8,13 @@ const authHeaders = () => ({
 
 /* ── H2 Chambers (is_active=true for available chambers) ── */
 export const getH2ChambersInUse = async () => {
-  const res = await axios.get(`${API}/api/geth2chambers?is_active=true`);
+  const res = await axios.get(`${API}/api/geth2chambers?is_active=true`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Batches pending H2 issue (no chamber param needed) ── */
 export const getBatchesForH2Issue = async () => {
-  const res = await axios.get(`${API}/api/h2ageing/batches-for-issue`);
+  const res = await axios.get(`${API}/api/h2ageing/batches-for-issue`, { headers: authHeaders() });
   return res.data;
 };
 

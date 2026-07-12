@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2 } from 'lucide-react';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
@@ -118,6 +118,10 @@ const QCEntryScreen = () => {
   const [failDialog, setFailDialog] = useState({ open: false, details: null });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [existingTempGrade, setExistingTempGrade] = useState('');
+  const [existingFinalGrade, setExistingFinalGrade] = useState('');
+  const [rewPopup, setRewPopup] = useState(false);
+  const [rewCuts, setRewCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
   const formRef = useRef(null);
   const scanRef = useRef(null);
 
@@ -129,17 +133,21 @@ const QCEntryScreen = () => {
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
     setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
+    setExistingTempGrade(''); setExistingFinalGrade('');
     try {
       const res = await fetchBobbinQC(bobbin_no);
-      if (!res?.success) { showError(res?.message || 'Bobbin not found.'); setSource(null); setLoading(false); return; }
+      if (!res?.success) { showError(res?.message || 'Bobbin not found.'); setSource(null); setValues(buildInitialValues()); setLoading(false); return; }
       setSource(res.source); // 'temp' or 'final'
       const data = res.data || {};
       const newVals = buildInitialValues();
       Object.keys(newVals).forEach(k => { if (data[k] !== undefined && data[k] !== null) newVals[k] = data[k]; });
       newVals.bobbin_no = bobbin_no;
       setValues(newVals);
+      // Show existing grades if available
+      if (data.temp_grade) setExistingTempGrade(data.temp_grade);
+      if (data.final_grade) setExistingFinalGrade(data.final_grade);
       if (res.source === 'final') showError('Final QC has already been completed for this bobbin.');
-    } catch (e) { showError(e?.response?.data?.message || 'Fetch failed'); setSource(null); }
+    } catch (e) { showError(e?.response?.data?.message || 'Fetch failed'); setSource(null); setValues(buildInitialValues()); }
     setLoading(false);
   };
 
@@ -155,10 +163,27 @@ const QCEntryScreen = () => {
       const data = res?.data || res;
       
       if (data?.status === 'PASSED') {
-        setGrade(data.matched_grade);
+        const matchedGrade = data.matched_grade;
+        setGrade(matchedGrade);
         setGraded(true);
         setFailedParam('');
-        showSuccess(`Grade: ${data.matched_grade}`);
+        setExistingTempGrade(matchedGrade);
+        showSuccess(`Temp Grade: ${matchedGrade}`);
+
+        // Save temp_grade to qc_entry_temp and bobbin_entries
+        try {
+          const measurements = {};
+          MEASUREMENT_FIELDS.forEach(f => { if (values[f] !== '' && values[f] !== null) measurements[f] = Number(values[f]); });
+          await submitQCEntry({
+            bobbin_no: values.bobbin_no,
+            bobbin_fid: values.bobbin_fid,
+            matcode: values.matcode,
+            grade: matchedGrade,
+            action: 'temp_grade',
+            measurements,
+          });
+        } catch (err) { console.error('Temp grade save error:', err); }
+
       } else if (data?.status === 'FAILED') {
         setFailedParam(data.failure_details?.failed_parameter || '');
         setFailDialog({ open: true, details: data.failure_details });
@@ -170,20 +195,91 @@ const QCEntryScreen = () => {
   };
 
   const handleFailAction = (action) => {
-    setGrade(action === 'fail' ? 'FAIL' : 'REW');
-    setGraded(true);
-    setFailDialog({ open: false, details: null });
+    if (action === 'fail') {
+      setGrade('FAIL');
+      setGraded(true);
+      setFailDialog({ open: false, details: null });
+    } else {
+      // Show rewinding instruction popup
+      setFailDialog({ open: false, details: null });
+      setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+      setRewPopup(true);
+    }
   };
 
-  /* ── Submit ── */
+  /* ── Rewinding popup confirm ── */
+  const handleRewConfirm = () => {
+    // Validate at least one cut has p1 and p2
+    const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
+    if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
+
+    // Build remark string: "Cut from {p1} km to {p2}({c_remark}:)"
+    const remarkParts = rewCuts.map(cut =>
+      `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`
+    );
+    const remarkStr = remarkParts.join(', ');
+
+    setGrade('REW');
+    setGraded(true);
+    setRewPopup(false);
+    // Store remark in a ref so submit can access it
+    formRef.current = remarkStr;
+  };
+
+  /* ── Final Grade ── */
+  const handleFinalGrade = async (values) => {
+    if (!existingTempGrade) { showError('Temp Grade must be assigned first'); return; }
+    setLoading(true);
+    try {
+      // Use existing temp_grade — do NOT recalculate
+      // Execute existing Final Grade Validation via backend
+      const pRes = await checkProcessStatus(values.bobbin_no);
+      const processData = pRes?.data || pRes;
+      setProcessStatus(processData);
+
+      // Check if all validations pass
+      if (processData?.is_final_eligible || (processData?.is_pv && processData?.is_d2 && processData?.is_h2_after)) {
+        // Validation passed — set final_grade = temp_grade
+        setGrade(existingTempGrade);
+        setGraded(true);
+        setExistingFinalGrade(existingTempGrade);
+        showSuccess(`Final Grade assigned: ${existingTempGrade}`);
+
+        // Submit immediately with action = 'final_grade'
+        const measurements = {};
+        MEASUREMENT_FIELDS.forEach(f => { if (values[f] !== '' && values[f] !== null) measurements[f] = Number(values[f]); });
+        const payload = {
+          bobbin_no: values.bobbin_no,
+          bobbin_fid: values.bobbin_fid,
+          matcode: values.matcode,
+          grade: existingTempGrade,
+          action: 'final_grade',
+          measurements,
+        };
+        const res = await submitQCEntry(payload);
+        if (res?.success) {
+          showSuccess(`Final QC completed! Grade: ${existingTempGrade}`);
+          setSource('final');
+        } else { showError(res?.message || 'Final grade update failed'); }
+      } else {
+        // Validation failed — show what's pending
+        const pending = processData?.pending || [];
+        if (!pending.length) {
+          if (!processData?.is_pv) pending.push('PV');
+          if (!processData?.is_d2) pending.push('D2');
+          if (!processData?.is_h2_after) pending.push('H2');
+        }
+        showError(`Final Grade cannot be assigned. Pending: ${pending.join(', ')}`);
+      }
+    } catch (e) { showError(e?.response?.data?.message || 'Final Grade validation failed'); }
+    setLoading(false);
+  };
+
+  /* ── Submit (Update) ── */
   const handleSubmit = async (values) => {
-    if (!graded) { showError('Click Grade first'); return; }
+    if (!graded) { showError('Click Temp Grade first'); return; }
     setSubmitting(true);
     try {
-      // Process check first
-      const pRes = await checkProcessStatus(values.bobbin_no);
-      setProcessStatus(pRes);
-
       // Build measurements
       const measurements = {};
       MEASUREMENT_FIELDS.forEach(f => { if (values[f] !== '' && values[f] !== null) measurements[f] = Number(values[f]); });
@@ -193,15 +289,24 @@ const QCEntryScreen = () => {
         bobbin_fid: values.bobbin_fid,
         matcode: values.matcode,
         grade,
+        action: (grade === 'FAIL' || grade === 'REW') ? 'immediate_final' : 'temp_grade',
         measurements,
+        remark: grade === 'REW' ? (formRef.current || null) : null,
       };
 
       const res = await submitQCEntry(payload);
       if (res?.success) {
-        if (res.type === 'temp') showSuccess(`Temporary QC saved. Pending: ${res.pending?.join(', ') || 'none'}`);
-        else if (res.type === 'final') showSuccess(`Final QC submitted! Grade: ${grade}`);
-      } else { showError(res?.message || 'Submit failed'); }
-    } catch (e) { showError(e?.response?.data?.message || 'Submit failed'); }
+        if (grade === 'FAIL' || grade === 'REW') {
+          showSuccess(`QC finalized as ${grade}. All tables updated.`);
+          setExistingTempGrade(grade);
+          setExistingFinalGrade(grade);
+          setSource('final');
+        } else {
+          showSuccess(`Temp Grade saved: ${grade}`);
+          setExistingTempGrade(grade);
+        }
+      } else { showError(res?.message || 'Update failed'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Update failed'); }
     setSubmitting(false);
   };
 
@@ -256,6 +361,20 @@ const QCEntryScreen = () => {
                   }`}>{source === 'final' ? 'Final QC Done' : 'Temp QC'}</span>
                 )}
 
+                {/* Existing Temp Grade badge */}
+                {existingTempGrade && (
+                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                    Temp: {existingTempGrade}
+                  </span>
+                )}
+
+                {/* Existing Final Grade badge */}
+                {existingFinalGrade && (
+                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">
+                    Final: {existingFinalGrade}
+                  </span>
+                )}
+
                 {/* Grade badge */}
                 {grade && (
                   <span className={`text-[10px] font-bold px-2 py-1 rounded border ${gradeColor}`}>
@@ -266,7 +385,7 @@ const QCEntryScreen = () => {
                 {/* Process status */}
                 {processStatus && (
                   <div className="flex items-center gap-1.5">
-                    {[['PV', processStatus.is_pv], ['D2', processStatus.is_d2], ['H2', processStatus.is_h2]].map(([l, v]) => (
+                    {[['PV', processStatus.is_pv], ['D2', processStatus.is_d2], ['H2', processStatus.is_h2_after]].map(([l, v]) => (
                       <span key={l} className="flex items-center gap-0.5 text-[8px] font-bold">
                         {v ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-400" />}
                         {l}
@@ -278,13 +397,17 @@ const QCEntryScreen = () => {
                 <div className="ml-auto flex gap-2">
                   <button type="button" onClick={() => handleGrade(values)} disabled={locked || loading || !values.bobbin_no}
                     className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded hover:bg-amber-600 disabled:opacity-40 transition-all">
-                    <Award size={10} /> Grade
+                    <Award size={10} /> Temp Grade
+                  </button>
+                  <button type="button" onClick={() => handleFinalGrade(values)} disabled={locked || loading || !values.bobbin_no}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 disabled:opacity-40 transition-all">
+                    <CheckCircle2 size={10} /> Final Grade
                   </button>
                   <ResetButton compact type="button" onClick={() => {
-                    setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
+                    setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null); setExistingTempGrade(''); setExistingFinalGrade('');
                   }}>Reset</ResetButton>
-                  <SubmitButton compact type="button" disabled={submitting || !graded || locked} onClick={() => handleSubmit(values)}>
-                    {submitting ? 'Saving...' : 'Submit'}
+                  <SubmitButton compact type="button" disabled={submitting || !graded || locked || (!!existingTempGrade && !!existingFinalGrade)} onClick={() => handleSubmit(values)}>
+                    {submitting ? 'Saving...' : 'Update'}
                   </SubmitButton>
                 </div>
               </div>
@@ -451,6 +574,73 @@ const QCEntryScreen = () => {
         <FailureDialog isOpen={failDialog.open} details={failDialog.details}
           onFail={() => handleFailAction('fail')} onRew={() => handleFailAction('rew')}
           onCancel={() => setFailDialog({ open: false, details: null })} />
+
+        {/* ── Rewinding Instruction Popup ── */}
+        {rewPopup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={16} className="text-amber-500" />
+                <h3 className="text-sm font-bold text-slate-800">Rewinding Instructions</h3>
+              </div>
+              <p className="text-[10px] text-slate-500 mb-3">Enter cutting instructions for rewinding. These will be saved as the QC remark.</p>
+
+              <div className="border border-slate-200 rounded-lg p-3 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">Cutting Instructions</span>
+                  <button type="button" onClick={() => setRewCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
+                    <Plus size={9} /> Add Row
+                  </button>
+                </div>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="text-[9px] text-slate-500 font-bold">
+                      <th className="text-left py-1">P1 (km)</th>
+                      <th className="text-left py-1">P2 (km)</th>
+                      <th className="text-left py-1">Remark</th>
+                      <th className="w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rewCuts.map((cut, ci) => (
+                      <tr key={ci}>
+                        <td className="py-1 pr-1">
+                          <input type="number" step="0.001" value={cut.p1}
+                            onChange={e => { const v = [...rewCuts]; v[ci].p1 = e.target.value; setRewCuts(v); }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input type="number" step="0.001" value={cut.p2}
+                            onChange={e => { const v = [...rewCuts]; v[ci].p2 = e.target.value; setRewCuts(v); }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input type="text" value={cut.c_remark}
+                            onChange={e => { const v = [...rewCuts]; v[ci].c_remark = e.target.value; setRewCuts(v); }}
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="e.g. h1310" />
+                        </td>
+                        <td className="py-1 text-center">
+                          {rewCuts.length > 1 && (
+                            <button type="button" onClick={() => setRewCuts(prev => prev.filter((_, i) => i !== ci))}
+                              className="text-slate-300 hover:text-rose-500"><Trash2 size={11} /></button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); }}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+                <button type="button" onClick={handleRewConfirm}
+                  className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

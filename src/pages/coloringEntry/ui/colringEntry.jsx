@@ -52,7 +52,12 @@ console.log("fgcolor:", fgColor)
     try {
       const res = await scanBobbinForColoring(bobbin_no);
       console.log("what is the bobbin res", res)
-      if (!res?.success) { showError(res?.message || 'No pending coloring request found for this bobbin.'); return; }
+      if (!res?.success) {
+        showError(res?.message || 'No pending coloring request found for this bobbin.');
+        setFgColor(null); setHistory([]); setGeneratedFid('');
+        setValues(prev => ({ ...prev, bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
+        return;
+      }
       setFgColor(res.data.fg_color);
       setHistory(res.data.history || []);
       setGeneratedFid('');
@@ -68,7 +73,11 @@ console.log("fgcolor:", fgColor)
         color_batch_code: '', machine_no: '', die_change: 'No',
         bobbin_type: '', operator: '', bobbin_color: '', remark: '',
       }));
-    } catch (e) { showError(e?.response?.data?.message || 'Scan failed'); }
+    } catch (e) {
+      showError(e?.response?.data?.message || 'Scan failed');
+      setFgColor(null); setHistory([]); setGeneratedFid('');
+      setValues(prev => ({ ...prev, bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
+    }
   };
 
   /* ── Generate FID ── */

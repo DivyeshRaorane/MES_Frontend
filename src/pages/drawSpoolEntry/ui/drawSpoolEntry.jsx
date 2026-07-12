@@ -55,6 +55,9 @@ const TCell = ({ name }) => (
 
 const today = new Date().toISOString().split('T')[0];
 
+/* ── Configurable threshold for preform end (KG) ── */
+const PRE_END_THRESHOLD = 4;
+
 const initialValues = {
   tower_no: '', preform_id: '',
   spool_id: '', spool_fid: '', start_date: '', end_date: '', start_time: '',
@@ -125,6 +128,7 @@ const DrawSpoolEntry = () => {
   const [drawWindingObs, setDrawWindingObs] = useState([]);
   const [drawFiberCutReasons, setDrawFiberCutReasons] = useState([]);
   const [showPreformEndPopup, setShowPreformEndPopup] = useState(false);
+  const [preformEndScenario, setPreformEndScenario] = useState(null); // 'balance' | 'fiber_cut' | 'preform_remove'
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
   const [pendingResetForm, setPendingResetForm] = useState(null);
   const formikRef = React.useRef(null);
@@ -251,7 +255,7 @@ const DrawSpoolEntry = () => {
   { Message: "Fast Layer Stop @ 321.191" },
 
   { Message: "Coated fibre diameter High @ 412.880" },
-  /*{ Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
+  { Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
 
   // Fast Layer 5
   { Message: "Fast Layer Start @ 520.110" },
@@ -262,10 +266,10 @@ const DrawSpoolEntry = () => {
   { Message: "Fast Layer Stop @ 520.791" },
 
   { Message: "Bare fibre diameter High @ 601.442 Diameter = 125.910" },
-  { Message: "Coated fibre diameter Low @ 622.181" },*/
+  { Message: "Coated fibre diameter Low @ 622.181" },
 
   // Fibre Break around 640 km
-  { Message: "TowerFibre Break @ 400 .37" },
+  { Message: "TowerFibre Break @ 650.37" },
 
   { Message: "Message not defined for language English (United Kingdom), en" }
 ];
@@ -335,28 +339,47 @@ const DrawWeightWatcher = () => {
           const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
           const submitValues = { ...values, pt_flaws: ptFlaws };
 
-          // If balance_weight is negative or zero (preform exhausted), show preform end confirmation popup
-          const actualBalance = Number(values.preform_weight || 0) - Number(submitValues.drawn_weight || 0);
-          if (actualBalance <= 0) {
-            submitValues.balance_weight = 0;
-            setPendingSubmitValues(submitValues);
-            setPendingResetForm(() => resetForm);
-            setShowPreformEndPopup(true);
-            return;
-          }
-
-          // If fiber cut reason indicates preform end, ask user to confirm
+          // Scenario 3: Fiber Cut with reason = "Preform Remove" — deallocation only, NOT preform end
           if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
             const reason = values.indication_reason.toLowerCase();
-            if (reason.includes('preform') || reason.includes('end')) {
-              submitValues.balance_weight = 0;
+            if (reason.includes('preform') && reason.includes('remove')) {
+              if (!values.tower_no) {
+                showError("Please select a tower before performing Preform Remove.");
+                return;
+              }
               setPendingSubmitValues(submitValues);
               setPendingResetForm(() => resetForm);
+              setPreformEndScenario('preform_remove');
               setShowPreformEndPopup(true);
               return;
             }
           }
 
+          // Scenario 2: Fiber Cut with reason containing "preform end" — mark preform as completed
+          if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+            const reason = values.indication_reason.toLowerCase();
+            if (reason.includes('preform') && reason.includes('end')) {
+              submitValues.balance_weight = 0;
+              setPendingSubmitValues(submitValues);
+              setPendingResetForm(() => resetForm);
+              setPreformEndScenario('fiber_cut');
+              setShowPreformEndPopup(true);
+              return;
+            }
+          }
+
+          // Scenario 1: Balance weight exhausted — show confirmation
+          const actualBalance = Number(values.preform_weight || 0) - Number(submitValues.drawn_weight || 0);
+          if (actualBalance <= 0) {
+            submitValues.balance_weight = 0;
+            setPendingSubmitValues(submitValues);
+            setPendingResetForm(() => resetForm);
+            setPreformEndScenario('balance');
+            setShowPreformEndPopup(true);
+            return;
+          }
+
+          // Normal save — no preform end
           try {
             const response = await dispatch(createDrawEntry(submitValues));
 
@@ -380,15 +403,22 @@ const DrawWeightWatcher = () => {
                 <div className="flex gap-1.5">
                   <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
                   {/* Show Preform End button when balance_weight is low */}
-                  {Number(values.preform_weight) > 0 && Number(values.balance_weight) <= 4 && values.balance_weight !== '' && (
+                  {Number(values.preform_weight) > 0 && Number(values.balance_weight) <= PRE_END_THRESHOLD && values.balance_weight !== '' && (
                     <button type="button"
                       onClick={() => {
-                        setPendingSubmitValues(values);
-                        setPendingResetForm(() => resetForm);
+                        if (!values.tower_no) {
+                          showError("Please select a tower before marking the preform as completed.");
+                          return;
+                        }
+                        const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
+                        const submitVals = { ...values, pt_flaws: ptFlaws, balance_weight: 0 };
+                        setPendingSubmitValues(submitVals);
+                        setPendingResetForm(null);
+                        setPreformEndScenario('balance');
                         setShowPreformEndPopup(true);
                       }}
                       className="px-3 py-1 bg-amber-600 text-white text-[9px] font-bold rounded hover:bg-amber-700 transition-all">
-                      Confirm Preform End
+                      Mark Preform End
                     </button>
                   )}
                   <SubmitButton compact type="button" onClick={async () => {
@@ -711,43 +741,93 @@ const DrawWeightWatcher = () => {
           )}
         </Formik>
 
-        {/* ── Preform End Confirmation Popup ── */}
+        {/* ── Preform End / Tower Free Confirmation Popup ── */}
         {showPreformEndPopup && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
               <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="text-2xl">⚠️</span>
               </div>
-              <h3 className="text-sm font-bold text-slate-800 mb-2">Preform End — Please Confirm</h3>
-              <p className="text-xs text-slate-500 mb-1">
-                Balance weight is <strong className="text-rose-600">0 KG</strong> (preform exhausted).
-              </p>
+              <h3 className="text-sm font-bold text-slate-800 mb-2">
+                {preformEndScenario === 'preform_remove' ? 'Preform Remove Confirmation' : 'Preform End Confirmation'}
+              </h3>
+
+              {preformEndScenario === 'balance' && (
+                <p className="text-xs text-slate-500 mb-2">
+                  The remaining preform weight is below the configured threshold (<strong>{PRE_END_THRESHOLD} KG</strong>).<br/>
+                  Do you want to mark this preform as completed and free the tower?
+                </p>
+              )}
+              {preformEndScenario === 'fiber_cut' && (
+                <p className="text-xs text-slate-500 mb-2">
+                  The selected cut reason is <strong className="text-rose-600">"Preform End"</strong>.<br/>
+                  Do you want to mark this preform as completed and free the tower?
+                </p>
+              )}
+              {preformEndScenario === 'preform_remove' && (
+                <p className="text-xs text-slate-500 mb-2">
+                  You have selected <strong className="text-rose-600">Preform Remove</strong>.<br/>
+                  This will <strong>deallocate</strong> the preform and <strong>free the tower</strong>.<br/>
+                  This is <strong>NOT</strong> a preform end — the preform can be re-allocated later.
+                </p>
+              )}
+
               <p className="text-xs text-slate-500 mb-1">
                 Tower: <strong className="text-blue-700">DT {pendingSubmitValues?.tower_no}</strong>
               </p>
-              <p className="text-xs text-slate-500 mb-4">
-                Confirming will <strong>save this entry</strong>, set balance to 0, and <strong>free the tower</strong>.
-              </p>
+              {preformEndScenario !== 'preform_remove' && (
+                <p className="text-xs text-slate-400 mb-4">
+                  Balance will be set to <strong>0</strong>, entry marked as last, tower freed.
+                </p>
+              )}
+              {preformEndScenario === 'preform_remove' && (
+                <p className="text-xs text-slate-400 mb-4">
+                  Tower will be freed. Preform deallocated (can be re-allocated). No preform end marked.
+                </p>
+              )}
+
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => { setShowPreformEndPopup(false); setPendingSubmitValues(null); setPendingResetForm(null); }}
+                  onClick={() => { setShowPreformEndPopup(false); setPendingSubmitValues(null); setPendingResetForm(null); setPreformEndScenario(null); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all"
                 >
-                  Cancel
+                  No
                 </button>
                 <button
                   type="button"
                   onClick={async () => {
                     setShowPreformEndPopup(false);
+
+                    // Validate tower selected
+                    if (!pendingSubmitValues?.tower_no) {
+                      showError("Please select a tower before performing this action.");
+                      setPendingSubmitValues(null);
+                      setPendingResetForm(null);
+                      setPreformEndScenario(null);
+                      return;
+                    }
+
                     try {
-                      // Submit with handle_active: true to free the tower
-                      const payload = { ...pendingSubmitValues, handle_active: true, preform_end: true };
+                      const payload = {
+                        ...pendingSubmitValues,
+                        handle_active: true,
+                        preform_end: preformEndScenario !== 'preform_remove',
+                        preform_remove: preformEndScenario === 'preform_remove',
+                        is_last: preformEndScenario !== 'preform_remove',
+                      };
+                      if (preformEndScenario !== 'preform_remove') {
+                        payload.balance_weight = 0;
+                      }
+
                       const response = await dispatch(createDrawEntry(payload));
 
                       if (response.payload?.success) {
-                        showSuccess("Saved & Tower Freed Successfully");
+                        showSuccess(preformEndScenario === 'preform_remove'
+                          ? "Preform Removed & Tower Freed"
+                          : "Saved & Tower Freed — Preform End");
                         if (pendingResetForm) pendingResetForm();
+                        else if (formikRef.current) formikRef.current.resetForm();
                       } else {
                         showError(response?.payload?.message || "Save Failed");
                       }
@@ -757,10 +837,11 @@ const DrawWeightWatcher = () => {
                     }
                     setPendingSubmitValues(null);
                     setPendingResetForm(null);
+                    setPreformEndScenario(null);
                   }}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all"
                 >
-                  Confirm Preform End
+                  Yes
                 </button>
               </div>
             </div>

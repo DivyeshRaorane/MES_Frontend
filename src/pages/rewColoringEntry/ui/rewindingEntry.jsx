@@ -76,17 +76,18 @@ const RewindingEntry = () => {
     try {
       const res = await scanBobbinForRewinding(bobbin_no);
       if (!res?.success) { showError(res?.message || 'No pending rewinding request found for this bobbin.'); return; }
-      setFgRewind(res.data.fg_rewind);
-      setInstructions(res.data.instructions || []);
-      setHistory(res.data.history || []);
+      const { bobbin, rew_record, balance_length, instructions: instr, history: hist } = res.data;
+      const effectiveBalance = balance_length ?? rew_record?.balance_length ?? bobbin?.fiber_length ?? '';
+      setFgRewind({ ...bobbin, ...rew_record, balance_length: effectiveBalance, parent_bobbin_no: bobbin.bobbin_no });
+      setInstructions(instr || []);
+      setHistory(hist || []);
       setSelectedInstr([]);
       setGeneratedFid('');
-      const fg = res.data.fg_rewind;
       setValues(prev => ({
         ...prev,
-        bobbin_no: fg.bobbin_no, bobbin_fid: fg.bobbin_fid || '',
-        total_length: fg.total_length || '', balance_length: (fg.balance_length ?? fg.total_length) || '',
-        rewinding_type: fg.rewinding_type || '', qc_remark: fg.remark || '',
+        bobbin_no: '', bobbin_fid: bobbin.fid || '',
+        total_length: bobbin.fiber_length || '', balance_length: effectiveBalance,
+        rewinding_type: rew_record?.rewinding_type || '', qc_remark: rew_record?.remark || '',
         fiber_length: '', is_scrap: false, machine_no: '', rew_reason: '',
         rew_type: '', bobbin_type: '', operator: '', bobbin_color: '', remark: '',
       }));
@@ -96,7 +97,7 @@ const RewindingEntry = () => {
   /* ── Generate FID ── */
   const handleGenerateFid = () => {
     if (!fgRewind) return '';
-    const parentFid = fgRewind.bobbin_fid || '';
+    const parentFid = fgRewind.fid || fgRewind.bobbin_fid || '';
     const lastChild = fgRewind.last_child_fid;
     const count = fgRewind.count || 0;
     let newFid;
@@ -117,7 +118,15 @@ const RewindingEntry = () => {
     const isScrap = values.is_scrap;
     const available = parseFloat(values.balance_length) || 0;
     const remaining = available - len;
-    if (remaining < 0) { showError('Entered rewind length exceeds available balance.'); return; }
+    // Only validate if balance_length is actually set (non-zero)
+    if (available > 0 && remaining < 0) { showError('Entered rewind length exceeds available balance.'); return; }
+    if (!isScrap && !values.bobbin_no?.trim()) { showError('Please enter a Bobbin No.'); return; }
+
+    // Check duplicate bobbin_no in history
+    if (!isScrap && values.bobbin_no?.trim()) {
+      const isDuplicate = history.some(h => h.bobbin_no === values.bobbin_no.trim());
+      if (isDuplicate) { showError('This Bobbin No has already been used. Please enter a different one.'); return; }
+    }
 
     let fid = '';
     if (!isScrap && len > 0) { fid = generatedFid || handleGenerateFid(); }
@@ -125,7 +134,8 @@ const RewindingEntry = () => {
     setSubmitting(true);
     try {
       const payload = {
-        bobbin_no: values.bobbin_no, fg_rewind_id: fgRewind.fg_rewind_id,
+        bobbin_no: values.bobbin_no,
+        parent_bobbin_no: fgRewind.parent_bobbin_no || scanInput.trim(),
         fiber_length: len, is_scrap: isScrap,
         generated_fid: fid, machine_no: values.machine_no,
         rew_reason: values.rew_reason, rew_type: values.rew_type,
@@ -135,26 +145,53 @@ const RewindingEntry = () => {
       };
       const res = await saveRewindingEntry(payload);
       if (res?.success) {
-        if (remaining === 0) showSuccess('Rewinding completed successfully.');
-        else showSuccess(`Rewinding Entry saved. ${remaining.toFixed(3)} KM still pending.`);
-        setFgRewind(prev => ({ ...prev, balance_length: remaining, is_done: remaining === 0,
+        // Use backend-returned balance if available, otherwise calculate locally
+        const updatedBalance = res.data?.balance_length ?? remaining;
+        if (updatedBalance <= 0) showSuccess('Rewinding completed successfully.');
+        else showSuccess(`Rewinding Entry saved. ${parseFloat(updatedBalance).toFixed(3)} KM still pending.`);
+        setFgRewind(prev => ({ ...prev, balance_length: updatedBalance, is_done: updatedBalance <= 0,
           last_child_fid: fid || prev.last_child_fid, count: fid ? (prev.count || 0) + 1 : prev.count }));
         setHistory(res.data?.history || history);
-        setInstructions(res.data?.instructions || instructions);
+        // Update instructions: mark selected ones as done, keep the rest
+        const updatedInstructions = res.data?.instructions ||
+          instructions.map(instr =>
+            selectedInstr.includes(instr.rewind_instr_id) ? { ...instr, is_done: true } : instr
+          );
+        setInstructions(updatedInstructions);
         setSelectedInstr([]);
         setGeneratedFid('');
-        setFieldValue('balance_length', remaining.toFixed(3));
+        setFieldValue('balance_length', parseFloat(updatedBalance).toFixed(3));
         setFieldValue('fiber_length', ''); setFieldValue('is_scrap', false);
-        setFieldValue('remark', '');
+        setFieldValue('remark', ''); setFieldValue('bobbin_no', '');
       } else showError(res?.message || 'Save failed');
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
     setSubmitting(false);
   };
 
-  /* ── Handle submit click — check if instructions selected ── */
+  /* ── Handle submit click — check if an overlapping instruction is not selected ── */
   const handleSubmit = async (values, { setFieldValue }) => {
     if (!fgRewind) { showError('Scan a bobbin first'); return; }
-    if (selectedInstr.length === 0) {
+
+    // Calculate the current entry range based on what has been done so far
+    const totalLength = parseFloat(fgRewind.total_length) || 0;
+    const balanceLength = parseFloat(values.balance_length) || 0;
+    const entryLength = parseFloat(values.fiber_length) || 0;
+    // Current entry covers from (totalLength - balanceLength) to (totalLength - balanceLength + entryLength)
+    const entryStart = totalLength - balanceLength;
+    const entryEnd = entryStart + entryLength;
+
+    // Check if any pending instruction overlaps with this entry range but is NOT selected
+    const pendingInstructions = instructions.filter(i => !i.is_done);
+    const overlapping = pendingInstructions.filter(instr => {
+      const instrP1 = parseFloat(instr.p1) || 0;
+      const instrP2 = parseFloat(instr.p2) || 0;
+      // Instruction overlaps if its range intersects with entry range
+      return instrP1 < entryEnd && instrP2 > entryStart;
+    });
+    const unselectedOverlapping = overlapping.filter(instr => !selectedInstr.includes(instr.rewind_instr_id));
+
+    if (unselectedOverlapping.length > 0 && selectedInstr.length === 0) {
+      // There's an instruction in this range but not selected — warn user
       setPendingSubmitValues({ values, setFieldValue });
       setConfirmDialog(true);
     } else {
@@ -207,7 +244,7 @@ const RewindingEntry = () => {
                           Fetch
                         </button>
                       </div>
-                      <FormikInput compact label="Bobbin No" name="bobbin_no" readOnly />
+                      <FormikInput compact label="Bobbin No" name="bobbin_no" />
                       <FormikInput compact label="Parent FID" name="bobbin_fid" readOnly />
                       <FormikInput compact label="Total Length" name="total_length" readOnly />
                       <FormikInput compact label="Balance Length" name="balance_length" readOnly />
@@ -243,19 +280,38 @@ const RewindingEntry = () => {
                       <FormikSelect compact label="Operator *" name="operator" options={operatorOptions} />
                       <FormikSelect compact label="Bobbin Color" name="bobbin_color" options={bobbinColorOptions} />
                       <FormikInput compact label="Remark" name="remark" placeholder="Remark..." />
-                      {/* Balance indicator */}
+                      {/* Balance & Done indicator */}
                       {fgRewind && (
-                        <div className={`col-span-2 rounded-lg border p-2 text-center mt-1 ${remaining < 0 ? 'bg-red-50 border-red-200' : remaining === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">Remaining: </span>
-                          <span className={`text-sm font-black font-mono ${remaining < 0 ? 'text-red-700' : remaining === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>{remaining.toFixed(3)} KM</span>
+                        <div className="col-span-2 grid grid-cols-2 gap-1 mt-1">
+                          <div className={`rounded-lg border p-2 text-center ${remaining < 0 ? 'bg-red-50 border-red-200' : remaining === 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <span className="text-[7px] font-bold text-slate-500 uppercase block">Remaining</span>
+                            <span className={`text-sm font-black font-mono ${remaining < 0 ? 'text-red-700' : remaining === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>{remaining.toFixed(3)} KM</span>
+                          </div>
+                          <div className="rounded-lg border border-blue-200 bg-blue-50 p-2 text-center">
+                            <span className="text-[7px] font-bold text-slate-500 uppercase block">Done</span>
+                            <span className="text-sm font-black font-mono text-blue-700">
+                              {((parseFloat(values.total_length) || 0) - (parseFloat(values.balance_length) || 0)).toFixed(3)} KM
+                            </span>
+                          </div>
                         </div>
                       )}
-                      {nextInstruction && (
-                        <div className="col-span-2 bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
-                          <span className="text-[8px] font-bold text-orange-700 uppercase">Next: </span>
-                          <span className="text-xs font-mono font-bold text-orange-800">{nextInstruction.p1} → {nextInstruction.p2}</span>
-                        </div>
-                      )}
+                      {/* Next instruction suggestion */}
+                      {nextInstruction && (() => {
+                        const done = (parseFloat(values.total_length) || 0) - (parseFloat(values.balance_length) || 0);
+                        const instrP1 = parseFloat(nextInstruction.p1) || 0;
+                        const suggestedLen = instrP1 - done;
+                        return (
+                          <div className="col-span-2 bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
+                            <span className="text-[8px] font-bold text-orange-700 uppercase">Next Instruction: </span>
+                            <span className="text-xs font-mono font-bold text-orange-800">{nextInstruction.p1} → {nextInstruction.p2}</span>
+                            {suggestedLen > 0 && suggestedLen !== (parseFloat(values.balance_length) || 0) && (
+                              <div className="mt-1 text-[9px] font-bold text-indigo-700 bg-indigo-50 rounded px-2 py-0.5 inline-block">
+                                Please set length to {suggestedLen.toFixed(3)} KM
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </ModuleCard>
 
@@ -263,19 +319,19 @@ const RewindingEntry = () => {
                   <ModuleCard compact title="Instructions" icon={<ListChecks size={12} className="text-orange-600" />}>
                     <div className="flex flex-col gap-1.5 h-full">
                       <FormikInput compact label="QC Remark" name="qc_remark" readOnly />
-                      {instructions.length > 0 ? (
+                      {instructions.filter(i => !i.is_done).length > 0 ? (
                         <div className="flex-1 overflow-y-auto border border-slate-200 rounded max-h-32">
                           <table className="w-full text-[9px] border-collapse">
                             <thead className="bg-slate-50 sticky top-0">
-                              <tr><th className="px-1.5 py-1 text-left">✔</th><th className="px-1.5 py-1 text-left">P1</th><th className="px-1.5 py-1 text-left">P2</th><th className="px-1.5 py-1">Done</th></tr>
+                              <tr><th className="px-1.5 py-1 text-left">✔</th><th className="px-1.5 py-1 text-left">P1</th><th className="px-1.5 py-1 text-left">P2</th><th className="px-1.5 py-1 text-left">Instr</th></tr>
                             </thead>
                             <tbody>
-                              {instructions.map(instr => (
-                                <tr key={instr.rewind_instr_id} className={instr.is_done ? 'opacity-40 bg-slate-50' : ''}>
-                                  <td className="px-1.5 py-0.5"><input type="checkbox" disabled={instr.is_done} checked={instr.is_done || selectedInstr.includes(instr.rewind_instr_id)} onChange={() => toggleInstr(instr.rewind_instr_id)} className="w-3 h-3 accent-indigo-600" /></td>
+                              {instructions.filter(instr => !instr.is_done).map(instr => (
+                                <tr key={instr.rewind_instr_id}>
+                                  <td className="px-1.5 py-0.5"><input type="checkbox" checked={selectedInstr.includes(instr.rewind_instr_id)} onChange={() => toggleInstr(instr.rewind_instr_id)} className="w-3 h-3 accent-indigo-600" /></td>
                                   <td className="px-1.5 py-0.5 font-mono">{instr.p1}</td>
                                   <td className="px-1.5 py-0.5 font-mono">{instr.p2}</td>
-                                  <td className="px-1.5 py-0.5 text-center">{instr.is_done ? '✓' : '—'}</td>
+                                  <td className="px-1.5 py-0.5 font-mono">{instr.instruction || '—'}</td>
                                 </tr>
                               ))}
                             </tbody>
