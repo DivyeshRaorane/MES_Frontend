@@ -11,7 +11,7 @@ import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/ser
 
 const MACHINES = [{ label: '1', value: '1' }, { label: '2', value: '2' }, { label: '3', value: '3' }, { label: '4', value: '4' }];
 const REW_REASONS = ['Select', 'Attn High', 'MFD Fail', 'Customer Req', 'Break', 'Other'];
-const REW_TYPES = ['Select', 'Standard', 'Premium', 'Custom'];
+const REW_TYPES = ['Standard', 'Premium', 'Custom'];
 
 const validationSchema = Yup.object({
   fiber_length: Yup.number().typeError('Must be a number').required('Length is required').min(0.001, 'Must be > 0'),
@@ -168,33 +168,41 @@ const RewindingEntry = () => {
     setSubmitting(false);
   };
 
-  /* ── Handle submit click — check if an overlapping instruction is not selected ── */
+  /* ── Handle submit click — check if cut overlaps with pending instruction not booked ── */
   const handleSubmit = async (values, { setFieldValue }) => {
     if (!fgRewind) { showError('Scan a bobbin first'); return; }
 
-    // Calculate the current entry range based on what has been done so far
-    const totalLength = parseFloat(fgRewind.total_length) || 0;
-    const balanceLength = parseFloat(values.balance_length) || 0;
-    const entryLength = parseFloat(values.fiber_length) || 0;
-    // Current entry covers from (totalLength - balanceLength) to (totalLength - balanceLength + entryLength)
-    const entryStart = totalLength - balanceLength;
-    const entryEnd = entryStart + entryLength;
-
-    // Check if any pending instruction overlaps with this entry range but is NOT selected
     const pendingInstructions = instructions.filter(i => !i.is_done);
-    const overlapping = pendingInstructions.filter(instr => {
-      const instrP1 = parseFloat(instr.p1) || 0;
-      const instrP2 = parseFloat(instr.p2) || 0;
-      // Instruction overlaps if its range intersects with entry range
-      return instrP1 < entryEnd && instrP2 > entryStart;
-    });
-    const unselectedOverlapping = overlapping.filter(instr => !selectedInstr.includes(instr.rewind_instr_id));
 
-    if (unselectedOverlapping.length > 0 && selectedInstr.length === 0) {
-      // There's an instruction in this range but not selected — warn user
-      setPendingSubmitValues({ values, setFieldValue });
-      setConfirmDialog(true);
+    // Only check overlap if there are pending instructions and none selected
+    if (pendingInstructions.length > 0 && selectedInstr.length === 0) {
+      // Calculate the current entry range
+      const totalLength = parseFloat(fgRewind.total_length || values.total_length) || 0;
+      const balanceLength = parseFloat(values.balance_length) || 0;
+      const entryLength = parseFloat(values.fiber_length) || 0;
+      // Entry starts where previous cuts ended: totalLength - balanceLength
+      const entryStart = totalLength - balanceLength;
+      const entryEnd = entryStart + entryLength;
+
+      // Check if any pending instruction overlaps with this entry range
+      const overlapping = pendingInstructions.filter(instr => {
+        const instrP1 = parseFloat(instr.p1) || 0;
+        const instrP2 = parseFloat(instr.p2) || 0;
+        // Overlaps if: entry starts before instruction ends AND entry ends after instruction starts
+        return entryStart < instrP2 && entryEnd > instrP1;
+      });
+
+      if (overlapping.length > 0) {
+        // Cut range overlaps with a pending instruction that's not booked — warn user
+        const instr = overlapping[0];
+        setPendingSubmitValues({ values, setFieldValue });
+        setConfirmDialog(true);
+      } else {
+        // Cut does NOT overlap with any instruction — proceed normally
+        await doSubmit(values, setFieldValue);
+      }
     } else {
+      // No pending instructions OR instruction already selected — proceed normally
       await doSubmit(values, setFieldValue);
     }
   };
@@ -396,8 +404,8 @@ const RewindingEntry = () => {
 
       {/* Confirm Dialog */}
       <ConfirmDialog isOpen={confirmDialog}
-        title="No Instruction Selected"
-        message="No rewinding instruction has been selected. Do you want to continue without completing any instruction?"
+        title="Pending Cut Instruction"
+        message={"A cut instruction is available for this bobbin, but it has not been selected/booked.\n\nIt is recommended to cancel this operation, select the cut instruction, and submit it before continuing.\n\nDo you still want to continue without booking the instruction?"}
         onYes={handleConfirmYes}
         onNo={() => { setConfirmDialog(false); setPendingSubmitValues(null); }} />
     </div>
