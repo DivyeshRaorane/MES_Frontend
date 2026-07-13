@@ -294,7 +294,7 @@ const DrawSpoolEntry = () => {
 
       const events = res.payload?.data || [];
 
-      const mappedFlaws = drawFlawAutomation(rows);
+      const mappedFlaws = drawFlawAutomation(events);
       console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
