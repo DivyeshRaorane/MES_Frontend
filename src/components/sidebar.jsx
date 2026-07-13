@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ChevronRight, Shield,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logOut } from '../pages/login/controller/user.slice';
 
 /* ── Menu definition ─────────────────────────────────────── */
@@ -32,7 +32,7 @@ const MENU = [
       { label: 'Draw Shift Plan',       path: '/drawmange/drawshiftplan'},
       { label: 'Draw Shift Report',     path: '/drawmange/drawshiftreport'},
       { label: 'Draw Timeloss Entry',   path: '/drawmange/drawtimeloss'},
-      { label: 'Reports',               path: '/underdev' },
+      { label: 'Reports',               path: '/drawmange/reports' },
     ],
   },
   {
@@ -116,11 +116,43 @@ const MENU = [
   },
 ];
 
+/* ── Department → Menu Key Mapping ── */
+const DEPT_MENU_MAP = {
+  'Draw': ['draw'],
+  'Proof Testing': ['proof'],
+  'Quality': ['quality'],
+  'Quality Assurance': ['qa'],
+  'Finish Goods': ['finishgoods'],
+  'All': ['draw', 'proof', 'quality', 'qa', 'finishgoods', 'admin', 'settings'],
+};
+
 /* ── Sidebar ─────────────────────────────────────────────── */
 const Sidebar = () => {
   const navigate  = useNavigate();
   const location  = useLocation();
   const dispatch  = useDispatch();
+  const user = useSelector(state => state.auth?.user);
+
+  // Determine which menu keys are allowed
+  const getAllowedMenuKeys = () => {
+    if (!user) return ['dashboard']; // Not logged in — only dashboard
+    if (user.role === 'admin') return null; // Admin sees everything
+    // Regular user — filter by departments
+    const departments = user.departments || [];
+    const allowedKeys = new Set(['dashboard']); // Everyone gets dashboard
+    departments.forEach(dept => {
+      const keys = DEPT_MENU_MAP[dept] || [];
+      keys.forEach(k => allowedKeys.add(k));
+    });
+    return [...allowedKeys];
+  };
+
+  const allowedKeys = getAllowedMenuKeys();
+
+  // Filter MENU based on role/departments
+  const visibleMenu = allowedKeys === null
+    ? MENU // Admin sees all
+    : MENU.filter(item => allowedKeys.includes(item.key));
 
   // which drawer is open (key string | null)
   const [openDrawer, setOpenDrawer] = useState(null);
@@ -156,7 +188,7 @@ const Sidebar = () => {
     navigate('/')
   };
 
-  const activeDrawer = MENU.find(m => m.key === openDrawer);
+  const activeDrawer = visibleMenu.find(m => m.key === openDrawer);
 
   return (
     <div ref={drawerRef} className="relative flex h-screen z-50">
@@ -171,7 +203,7 @@ const Sidebar = () => {
 
         {/* Nav icons */}
         <nav className="flex flex-col items-center gap-1 flex-1 w-full px-1.5">
-          {MENU.map((item) => {
+          {visibleMenu.map((item) => {
             const Icon = item.icon;
             const isOpen   = openDrawer === item.key;
             const isActive = item.path

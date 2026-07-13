@@ -64,6 +64,7 @@ import OrderRegister from './pages/order_register/ui/order_register'
 import HighTempHumidityAgeing from './pages/High_temp_&_humadity_ageing_test/ui/htha_entry'
 import WaterImmersion from './pages/water_immersion/ui/water_immersion'
 import AcceleratedAgeing from './pages/accelerated_ageing_test/ui/accelerated_ageing'
+import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
 
 
 function App() {
@@ -84,6 +85,7 @@ function App() {
         <Route path='drawmange/drawshiftplan' element={<DrawShiftPlan/>}/>
         <Route path='drawmange/drawshiftreport' element={<DrawShiftReport/>}/>
         <Route path='drawmange/drawtimeloss' element={<DrawTimelossEntry/>}/>
+        <Route path='drawmange/reports' element={<DrawReports/>}/>
         <Route path='prooftesting/ptentry' element={<PTEntry/>}/>
         <Route path='prooftesting/rewcolztentry' element={<RewColContainer/>}/>
         <Route path='prooftesting/ptallocation' element={<PTAllocationContainer/>}/>
