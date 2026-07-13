@@ -96,6 +96,8 @@ const PTEntry = () => {
   const [lastPTID, setLastPTID] = useState('PT-00000');
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [showSpoolEndPopup, setShowSpoolEndPopup] = useState(false);
+  const [showFlawConfirm, setShowFlawConfirm] = useState(false);
+  const [pendingPtSubmit, setPendingPtSubmit] = useState(null);
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
@@ -112,7 +114,7 @@ const PTEntry = () => {
   const dispatch = useDispatch();
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
-  console.log("What is the ptlogdata:", ptLogsData)
+  console.log("What is the ptAlert:", ptAlert)
 
   /* ── Bobbin No onBlur: fetch PT machine log data ── */
   const handleBobbinBlur = async (bobbin_no, setFieldValue) => {
@@ -218,6 +220,8 @@ const PTEntry = () => {
       balanceLength,
       ptFlaws: ptFlawsData
     });
+
+    console.log("result:", result)
     if (result?.hit) {
       showError(result.message);
     }
@@ -245,6 +249,43 @@ const PTEntry = () => {
   const bobbinTypesOption = Array.isArray(bobbinTypes) ? bobbinTypes.map(t => ({ label: t.bobbin_type_name, value: t.bobbin_type_name })) : [];
   const shiftOptions = Array.isArray(shifts) ? shifts.map(s => ({ label: s.shift_name, value: s.shift_name })) : [];
 
+  /* ── Actual PT submit logic (extracted for reuse with confirmation) ── */
+  const doPtSubmit = async (values, setFieldValue) => {
+    // Validate: PT length should not exceed balance
+    const ptLen = parseFloat(values.pt_length) || 0;
+    const remaining = balanceLength - ptLen;
+    if (remaining < 0) {
+      showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
+      return;
+    }
+
+    try {
+      const response = await dispatch(ptEntryApi(values));
+
+      if (response.payload?.success) {
+        showSuccess(response.payload.message || "PT Entry saved successfully");
+
+        setFieldValue("pt_length", "");
+        setFieldValue("active_rejection_type", "");
+        setFieldValue("fid", "");
+        setFieldValue("bobbin_no", "");
+
+        const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
+        await handleScan(values.spool_id, setFieldValue);
+        setBalanceLength(spoolResponse.data.balance_qty);
+
+        if (Number(spoolResponse.data.balance_qty) <= 0) {
+          setShowSpoolEndPopup(true);
+        }
+      } else {
+        showError(response.payload?.message || "Failed to save PT Entry");
+      }
+    } catch (error) {
+      console.error(error);
+      showError("Something went wrong");
+    }
+  };
+
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
@@ -263,39 +304,29 @@ const PTEntry = () => {
               return;
             }
 
-            try {
-              const response = await dispatch(ptEntryApi(values));
+            // Check if PT length range overlaps with a pending flaw and no rejection selected
+            if (!values.active_rejection_type && ptFlawsData?.length > 0) {
+              const ptDone = parseFloat(values.pt_done_so_far) || 0;
+              const ptLen = parseFloat(values.pt_length) || 0;
+              const entryStart = ptDone;
+              const entryEnd = ptDone + ptLen;
 
-              if (response.payload?.success) {
-                showSuccess(response.payload.message || "PT Entry saved successfully");
+              const pendingFlaws = ptFlawsData.filter(f => !f.is_complete);
+              const overlapping = pendingFlaws.filter(flaw => {
+                const p1 = parseFloat(flaw.pos1) || 0;
+                const p2 = parseFloat(flaw.pos2) || 0;
+                return entryStart < p2 && entryEnd > p1;
+              });
 
-                // Reset fields if needed
-                setFieldValue("pt_length", "");
-                setFieldValue("active_rejection_type", "");
-                setFieldValue("pt_length", "");
-                setFieldValue("fid", "");
-                setFieldValue("bobbin_no", "");
-
-                const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
-
-  // Refresh spool details (same as Scan button)
-  await handleScan(values.spool_id, setFieldValue);
-                setBalanceLength(spoolResponse.data.balance_qty);
-
-                // If balance is now 0, show spool end popup
-                if (Number(spoolResponse.data.balance_qty) <= 0) {
-                  setShowSpoolEndPopup(true);
-                }
-              } else {
-                showError(response.payload?.message || "Failed to save PT Entry");
+              if (overlapping.length > 0) {
+                // PT length overlaps with a flaw but no rejection selected — show confirmation
+                setPendingPtSubmit({ values, setFieldValue });
+                setShowFlawConfirm(true);
+                return;
               }
-            } catch (error) {
-              console.error(error);
-              showError("Something went wrong");
             }
 
-
-
+            await doPtSubmit(values, setFieldValue);
           }}
         >
           {({ values, setFieldValue, resetForm }) => {
@@ -647,7 +678,7 @@ const PTEntry = () => {
                                   const isOk = status === 'OK';
                                   return (
                                   <tr key={idx} className="hover:bg-slate-50/50">
-                                    <td className="px-1 py-1 text-xs font-mono text-slate-700">{log.bobbin_no || log.spool_id || '—'}</td>
+                                    <td className="px-1 py-1 text-xs font-mono text-slate-700">{log.bobbin_no|| '—'}</td>
                                     <td className="px-1 py-1 text-xs font-mono text-slate-600">{log.pt_length || '—'}</td>
                                     <td className="px-1 py-1">
                                       <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isOk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{status}</span>
@@ -770,6 +801,30 @@ const PTEntry = () => {
             }
           }}
         />
+
+        {/* Flaw Overlap Confirmation Popup */}
+        {showFlawConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-5 w-96">
+              <h3 className="text-sm font-bold text-slate-800 mb-2">Pending Flaw Instruction</h3>
+              <p className="text-xs text-slate-600 mb-4 whitespace-pre-line">
+                {"Your PT length falls within a flaw instruction range, but you have not selected the rejection for this flaw.\n\nIt is recommended to cancel, select the appropriate rejection type, and submit.\n\nDo you still want to continue without addressing this flaw?"}
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setShowFlawConfirm(false); setPendingPtSubmit(null); }}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+                <button type="button" onClick={async () => {
+                  setShowFlawConfirm(false);
+                  if (pendingPtSubmit) {
+                    await doPtSubmit(pendingPtSubmit.values, pendingPtSubmit.setFieldValue);
+                  }
+                  setPendingPtSubmit(null);
+                }}
+                  className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Continue Anyway</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Spool End Popup */}
         {showSpoolEndPopup && (

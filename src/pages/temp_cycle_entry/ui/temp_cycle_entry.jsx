@@ -105,6 +105,7 @@ const CycleWiseEntry = () => {
 
   /* ── Submit: insert each temp row + update temp_entry ── */
   const handleSubmit = async (values, { resetForm }) => {
+    console.log("Values:", values)
     if (!values.barcode_id.trim()) { showError('Enter Barcode ID first'); return; }
     setSubmitting(true);
     try {
@@ -198,7 +199,7 @@ const CycleWiseEntry = () => {
                             <div className="relative">
                               <Field as="select" name="result"
                                 className="appearance-none bg-white border border-slate-200 rounded px-2 py-0.5 text-[10px] outline-none pr-5 cursor-pointer w-24">
-                                {['Select', 'pass', 'fail'].map(o => <option key={o} value={o === 'Select' ? '' : o}>{o.toUpperCase()}</option>)}
+                                {['pass', 'fail'].map(o => <option key={o} value={o === 'Select' ? '' : o}>{o.toUpperCase()}</option>)}
                               </Field>
                               <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 text-[8px]">▾</span>
                             </div>

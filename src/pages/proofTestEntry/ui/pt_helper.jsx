@@ -111,6 +111,35 @@ export const checkPTLength = ({
     }
 
     if (balance < standard) {
+        //-------------------------
+        // Even with short balance, check for flaws in remaining section
+        //-------------------------
+        if (Array.isArray(ptFlaws) && ptFlaws.length > 0) {
+            const activeFlaws = ptFlaws
+                .filter(f => !f.is_complete)
+                .sort((a, b) => Number(a.pos1) - Number(b.pos1));
+
+            const remainingEnd = done + balance;
+
+            for (const flaw of activeFlaws) {
+                const pos1 = Number(flaw.pos1);
+
+                if (pos1 > done && pos1 <= remainingEnd) {
+                    const safeLength = Number((pos1 - done).toFixed(3));
+
+                    return {
+                        hit: true,
+                        type: "FLAW",
+                        suggestedLength: safeLength,
+                        flaw,
+                        message:
+                            `Flaw "${flaw.reason}" found at ${pos1} km.\nBalance: ${balance.toFixed(3)} km remaining.\n\nPlease set PT Length to ${safeLength} km.`,
+                        nextFlawMessage: null
+                    };
+                }
+            }
+        }
+
         return {
             hit: true,
             type: "BALANCE",
