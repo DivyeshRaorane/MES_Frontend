@@ -74,6 +74,7 @@ const MENU = [
       { label: 'Accelerated Ageing', path: '/qa/acceleratedageing'},
       { label: 'Splicing', path: '/qa/splicing'},
       { label: 'Short Term Entry', path: '/qa/shorttermentry'},
+      { label: 'Spec Creation', path: '/qa/speccreation'},
       { label: 'Customer Complaint',  path: '/qa/customer' },
     ],
   },

@@ -65,6 +65,7 @@ import HighTempHumidityAgeing from './pages/High_temp_&_humadity_ageing_test/ui/
 import WaterImmersion from './pages/water_immersion/ui/water_immersion'
 import AcceleratedAgeing from './pages/accelerated_ageing_test/ui/accelerated_ageing'
 import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
+import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
 
 
 function App() {
@@ -119,6 +120,7 @@ function App() {
         <Route path='qa/waterimmersion' element={<WaterImmersion/>}/>
         <Route path='qa/acceleratedageing' element={<AcceleratedAgeing/>}/>
         <Route path='qa/shorttermentry' element={<ShortTermContainer/>}/>
+        <Route path='qa/speccreation' element={<SpecCreation/>}/>
         <Route path='qa/splicing' element={<Splicing/>}/>
         <Route path='qa/customer' element={<CustomerComplaint/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>
