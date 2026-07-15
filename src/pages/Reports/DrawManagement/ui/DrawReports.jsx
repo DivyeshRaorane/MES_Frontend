@@ -1,27 +1,22 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Layers, Box, AlertTriangle, Zap, Users, Clock, GitBranch, Settings2, Trash2, LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Link2, GitBranch, Box, AlertTriangle, BarChart3 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import ReportFilters from '../components/ReportFilters';
 import ReportTable from '../components/ReportTable';
 import { showError } from '../../../../utils/toastService';
 import {
-  getDashboardSummary, getProductionSummary, getPreformReport, getSpoolReport,
-  getFlawReport, getBreakReport, getTowerPerformance, getShiftPerformance,
-  getOperatorPerformance, getTraceability, getDrawParameters, getScrapAnalysis, exportDrawReport,
+  getDashboardSummary, exportDrawReport,
+  getPreformAcceptReport, getHandleJoinReport, getPreformAllocReport, getDrawEntryReport,
+  getFlawReport,
 } from '../services/drawReport.api';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'production', label: 'Production', icon: BarChart3 },
-  { key: 'preform', label: 'Preform', icon: Layers },
-  { key: 'spool', label: 'Spool', icon: Box },
-  { key: 'flaw', label: 'Flaws', icon: AlertTriangle },
-  { key: 'break', label: 'Breaks', icon: Zap },
-  { key: 'tower', label: 'Tower', icon: GitBranch },
-  { key: 'shift', label: 'Shift', icon: Clock },
-  { key: 'operator', label: 'Operator', icon: Users },
-  { key: 'parameters', label: 'Parameters', icon: Settings2 },
-  { key: 'scrap', label: 'Scrap', icon: Trash2 },
+  { key: 'preform_accept', label: 'Preform Accept', icon: ClipboardCheck },
+  { key: 'handle_join', label: 'Handle Join', icon: Link2 },
+  { key: 'preform_alloc', label: 'Allocation', icon: GitBranch },
+  { key: 'draw_entry', label: 'Draw Entry', icon: Box },
+  { key: 'flaws', label: 'Flaws', icon: AlertTriangle },
 ];
 
 const DrawReports = () => {
@@ -45,16 +40,11 @@ const DrawReports = () => {
     try {
       let res;
       switch (tab) {
-        case 'production': res = await getProductionSummary(f); break;
-        case 'preform': res = await getPreformReport(f); break;
-        case 'spool': res = await getSpoolReport(f); break;
-        case 'flaw': res = await getFlawReport(f); break;
-        case 'break': res = await getBreakReport(f); break;
-        case 'tower': res = await getTowerPerformance(f); break;
-        case 'shift': res = await getShiftPerformance(f); break;
-        case 'operator': res = await getOperatorPerformance(f); break;
-        case 'parameters': res = await getDrawParameters(f); break;
-        case 'scrap': res = await getScrapAnalysis(f); break;
+        case 'preform_accept': res = await getPreformAcceptReport(f); break;
+        case 'handle_join': res = await getHandleJoinReport(f); break;
+        case 'preform_alloc': res = await getPreformAllocReport(f); break;
+        case 'draw_entry': res = await getDrawEntryReport(f); break;
+        case 'flaws': res = await getFlawReport(f); break;
         default: res = null;
       }
       if (res?.success) setReportData(res.data || []);
@@ -92,68 +82,48 @@ const DrawReports = () => {
   /* ── Column definitions per tab ── */
   const getColumns = () => {
     switch (activeTab) {
-      case 'production': return [
-        { key: 'date', label: 'Date' }, { key: 'total_preforms', label: 'Preforms' },
-        { key: 'total_drawn_length', label: 'Drawn (km)' }, { key: 'total_drawn_weight', label: 'Weight (kg)' },
-        { key: 'total_spools', label: 'Spools' }, { key: 'avg_spool_length', label: 'Avg Length' },
-        { key: 'break_count', label: 'Breaks' }, { key: 'flaw_count', label: 'Flaws' },
-        { key: 'total_scrap', label: 'Scrap' }, { key: 'yield_pct', label: 'Yield %', render: v => v ? `${v}%` : '—' },
+      case 'preform_accept': return [
+        { key: 'preform_id', label: 'Preform ID' }, { key: 'preform_weight', label: 'Weight (kg)' },
+        { key: 'charge_weight', label: 'Charge Wt' }, { key: 'preform_length', label: 'Preform Len' },
+        { key: 'charge_length', label: 'Charge Len' }, { key: 'drawing_length', label: 'Drawing Len' },
+        { key: 'material_code', label: 'Mat Code' }, { key: 'preform_type', label: 'Type' },
+        { key: 'product_type', label: 'Product' }, { key: 'acceptance_status', label: 'Status' },
+        { key: 'accepted_by', label: 'Accepted By' }, { key: 'entry_date', label: 'Date' },
       ];
-      case 'preform': return [
-        { key: 'preform_id', label: 'Preform ID' }, { key: 'material_code', label: 'Mat Code' },
-        { key: 'preform_weight', label: 'Weight' }, { key: 'drawing_length', label: 'Expected' },
-        { key: 'actual_length', label: 'Actual' }, { key: 'total_spools', label: 'Spools' },
-        { key: 'total_breaks', label: 'Breaks' }, { key: 'total_flaws', label: 'Flaws' },
-        { key: 'yield_pct', label: 'Yield %', render: v => v ? `${v}%` : '—' },
+      case 'handle_join': return [
+        { key: 'preform_id', label: 'Preform ID' }, { key: 'handle_number', label: 'Handle No' },
+        { key: 'handle_length', label: 'Handle Len' }, { key: 'handle_diameter', label: 'Handle Dia' },
+        { key: 'cone_length', label: 'Cone Len' },
+        { key: 'dia1', label: 'Dia1' }, { key: 'dia2', label: 'Dia2' }, { key: 'dia3', label: 'Dia3' },
+        { key: 'dia4', label: 'Dia4' }, { key: 'dia5', label: 'Dia5' },
+        { key: 'is_allocate', label: 'Allocated', render: v => v ? '✓' : '—' },
+        { key: 'handle_rejected', label: 'Rejected', render: v => v ? 'Yes' : '—' },
+        { key: 'entry_date', label: 'Date' },
       ];
-      case 'spool': return [
-        { key: 'spool_id', label: 'Spool ID' }, { key: 'spool_fid', label: 'FID' },
-        { key: 'preform_id', label: 'Preform' }, { key: 'start_date', label: 'Date' },
+      case 'preform_alloc': return [
+        { key: 'preform_id', label: 'Preform ID' }, { key: 'allocation_date', label: 'Alloc Date' },
         { key: 'tower_no', label: 'Tower' }, { key: 'shift', label: 'Shift' },
-        { key: 'drawn_length', label: 'Length' }, { key: 'drawn_weight', label: 'Weight' },
-        { key: 'spool_status', label: 'Status' }, { key: 'is_pt_allocate', label: 'PT', render: v => v ? '✓' : '—' },
+        { key: 'operator', label: 'Operator' }, { key: 'preform_type', label: 'Preform Type' },
+        { key: 'product_type', label: 'Product Type' }, { key: 'process_type', label: 'Process Type' },
+        { key: 'preform_draw', label: 'Draw Done', render: v => v ? '✓' : '—' },
+        { key: 'average_diameter', label: 'Avg Dia' },
+        { key: 'draw_instruction', label: 'Instruction' }, { key: 'process_remarks', label: 'Remarks' },
       ];
-      case 'flaw': return [
-        { key: 'entry_date', label: 'Date' }, { key: 'spool_id', label: 'Spool' },
-        { key: 'preform_id', label: 'Preform' }, { key: 'reason', label: 'Reason' },
-        { key: 'pos1', label: 'From' }, { key: 'pos2', label: 'To' },
-        { key: 'defect_length', label: 'Defect Len' }, { key: 'actual_cutting', label: 'Cutting' },
+      case 'draw_entry': return [
+        { key: 'spool_id', label: 'Spool ID' }, { key: 'spool_fid', label: 'Spool FID' },
+        { key: 'preform_id', label: 'Preform' }, { key: 'tower_no', label: 'Tower' },
+        { key: 'start_date', label: 'Start Date' }, { key: 'shift', label: 'Shift' },
+        { key: 'drawn_length', label: 'Length (km)' }, { key: 'drawn_weight', label: 'Weight (kg)' },
+        { key: 'balance_weight', label: 'Balance' }, { key: 'drawn_line_speed', label: 'Speed' },
+        { key: 'indication_fiber_cut', label: 'Indication' }, { key: 'spool_status', label: 'Status' },
+        { key: 'is_pt_allocate', label: 'PT', render: v => v ? '✓' : '—' },
+        { key: 'shift_incharge', label: 'Incharge' },
       ];
-      case 'break': return [
-        { key: 'fiber_id', label: 'Fiber ID' }, { key: 'machine_no', label: 'Machine' },
-        { key: 'break_length', label: 'Break Len' }, { key: 'break_type', label: 'Type' },
-        { key: 'break_category', label: 'Category' }, { key: 'main_break_type', label: 'Main Type' },
-        { key: 'sub_reason', label: 'Sub Reason' }, { key: 'bsa_done_by', label: 'Analyst' },
-        { key: 'created_at', label: 'Date', render: v => v ? v.split('T')[0] : '—' },
-      ];
-      case 'tower': return [
-        { key: 'tower_no', label: 'Tower' }, { key: 'total_preforms', label: 'Preforms' },
-        { key: 'total_drawn', label: 'Drawn (km)' }, { key: 'total_spools', label: 'Spools' },
-        { key: 'breaks', label: 'Breaks' }, { key: 'flaws', label: 'Flaws' },
-        { key: 'avg_speed', label: 'Avg Speed' }, { key: 'yield_pct', label: 'Yield %', render: v => v ? `${v}%` : '—' },
-      ];
-      case 'shift': return [
-        { key: 'shift', label: 'Shift' }, { key: 'drawn_length', label: 'Drawn (km)' },
-        { key: 'total_spools', label: 'Spools' }, { key: 'breaks', label: 'Breaks' },
-        { key: 'flaws', label: 'Flaws' }, { key: 'yield_pct', label: 'Yield %', render: v => v ? `${v}%` : '—' },
-      ];
-      case 'operator': return [
-        { key: 'operator', label: 'Operator' }, { key: 'tower_no', label: 'Tower' },
-        { key: 'total_drawn', label: 'Drawn (km)' }, { key: 'total_spools', label: 'Spools' },
-        { key: 'breaks', label: 'Breaks' }, { key: 'flaws', label: 'Flaws' },
-        { key: 'yield_pct', label: 'Yield %', render: v => v ? `${v}%` : '—' },
-      ];
-      case 'parameters': return [
-        { key: 'group_key', label: 'Group' }, { key: 'avg_speed', label: 'Avg Speed' },
-        { key: 'avg_tension', label: 'Avg Tension' }, { key: 'avg_furnace_power', label: 'Furnace' },
-        { key: 'avg_argon', label: 'Argon' }, { key: 'avg_he', label: 'Helium' },
-        { key: 'avg_co2', label: 'CO₂' }, { key: 'avg_n2', label: 'N₂' },
-        { key: 'avg_pri_pressure', label: 'Pri Press' }, { key: 'avg_sec_pressure', label: 'Sec Press' },
-      ];
-      case 'scrap': return [
-        { key: 'group_key', label: 'Group' }, { key: 'top_scrap', label: 'Top Scrap' },
-        { key: 'bottom_scrap', label: 'Bottom Scrap' }, { key: 'total_scrap', label: 'Total' },
-        { key: 'scrap_pct', label: 'Scrap %', render: v => v ? `${v}%` : '—' },
+      case 'flaws': return [
+        { key: 'spool_id', label: 'Spool ID' }, { key: 'reason', label: 'Reason' },
+        { key: 'pos1', label: 'Pos 1' }, { key: 'pos2', label: 'Pos 2' },
+        { key: 'defect_length', label: 'Defect Length' }, { key: 'actual_cutting', label: 'Actual Cutting' },
+        { key: 'entry_date', label: 'Date' },
       ];
       default: return [];
     }
@@ -184,7 +154,8 @@ const DrawReports = () => {
 
         {/* ── Filters ── */}
         <div className="px-3 py-1.5 flex-shrink-0">
-          <ReportFilters onApply={handleApply} onReset={handleReset} onExport={activeTab !== 'dashboard' ? handleExport : null} loading={loading} hideFields={activeTab === 'dashboard' ? ['preform_id', 'spool_id'] : []} />
+          <ReportFilters onApply={handleApply} onReset={handleReset} onExport={activeTab !== 'dashboard' ? handleExport : null} loading={loading}
+            hideFields={activeTab === 'dashboard' ? ['preform_id', 'spool_id'] : (activeTab === 'preform_accept' || activeTab === 'handle_join') ? ['tower_no', 'shift', 'preform_id', 'spool_id'] : activeTab === 'preform_alloc' ? ['spool_id'] : activeTab === 'flaws' ? ['tower_no', 'shift', 'preform_id'] : []} />
         </div>
 
         {/* ── Content ── */}

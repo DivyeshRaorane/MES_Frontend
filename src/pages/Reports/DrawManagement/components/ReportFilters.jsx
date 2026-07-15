@@ -39,12 +39,12 @@ const ReportFilters = ({ onApply, onReset, onExport, loading = false, hideFields
       <input type="date" value={filters.date_to} onChange={e => handleChange('date_to', e.target.value)}
         className="border border-slate-200 rounded px-2 py-1 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 w-28" />
       <select value={filters.tower_no} onChange={e => handleChange('tower_no', e.target.value)}
-        className="border border-slate-200 rounded px-2 py-1 text-[10px] outline-none w-20">
+        className="border border-slate-200 rounded px-2 py-1 text-[10px] outline-none w-20" style={{ display: hideFields.includes('tower_no') ? 'none' : undefined }}>
         <option value="">Tower</option>
         {[1, 2, 3, 4].map(t => <option key={t} value={t}>DT{t}</option>)}
       </select>
       <select value={filters.shift} onChange={e => handleChange('shift', e.target.value)}
-        className="border border-slate-200 rounded px-2 py-1 text-[10px] outline-none w-20">
+        className="border border-slate-200 rounded px-2 py-1 text-[10px] outline-none w-20" style={{ display: hideFields.includes('shift') ? 'none' : undefined }}>
         <option value="">Shift</option>
         {['Morning', 'Evening', 'Night'].map(s => <option key={s} value={s}>{s}</option>)}
       </select>
