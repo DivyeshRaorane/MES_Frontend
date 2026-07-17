@@ -284,7 +284,7 @@ const DrawSpoolEntry = () => {
       console.log("What is the date:", values.start_date, values.start_time, values.end_date, values.end_time)
       const res = await dispatch(
         getTowerEvent({
-          tower_id: values.tower_id,
+          tower_id: values.tower_no,
           start_date: values.start_date,
           start_time: values.start_time,
           end_date: values.end_date,
