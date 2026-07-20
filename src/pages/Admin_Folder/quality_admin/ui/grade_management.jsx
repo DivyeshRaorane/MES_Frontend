@@ -80,8 +80,8 @@ const PARAM_GROUPS = [
   { title: 'Fiber Curl', fields: [['fiber_curl_top'],['fiber_curl_bottom']]},
   { title: 'Curl Deflection', fields: [['curl_defection_top'],['curl_defection_bottom']]},
   { title: 'Dispersion', fields: [
-    ['zero_disp_wave'],['slope_zero_disp'],['disp_1550'],['disp_1285_1330'],
-    ['disp_1270_1340'],['disp_1575'],['cd_1460'],['disp_1625'],['disp_1570'],['disp_1260'],['disp_slope'],
+    ['zero_disp_wave'],['slope_zero_disp'],['disp_1550'],['disp_1285_1330'],['disp_1270_1360'],
+    ['disp_1270_1340'],['disp_1575'],['cd_1460'],['disp_1625'],['disp_1570'],['disp_1260'],['disp_1460'],['disp_1490'],['disp_slope'],['slope_1550'],['slope_1290'],['slope_1490']
   ]},
   { title: 'PMD', fields: [['pmd_1310'],['pmd_1550']]},
   { title: 'Microbend 100T 50mm', fields: [['m_100t_50mm_1550'],['m_100t_50mm_1310'],['m_100t_50mm_1625']]},
@@ -100,7 +100,7 @@ PARAM_GROUPS.forEach(g => g.fields.forEach(([f]) => {
 }));
 
 const buildInitialValues = (data) => {
-  const vals = { grade: data?.grade || '', matcode: data?.matcode || '', priority: data?.priority || '', status: data?.status ?? true };
+  const vals = { grade: data?.grade || '', product_type: data?.product_type || '', priority: data?.priority || '', status: data?.status ?? true };
   ALL_LIMIT_FIELDS.forEach(f => { vals[f] = data?.[f] ?? ''; });
   return vals;
 };
@@ -126,7 +126,7 @@ const GradeManagement = ({ onBack }) => {
 
   const filtered = grades.filter(g => {
     const q = search.toLowerCase();
-    return !q || g.grade?.toLowerCase().includes(q) || g.matcode?.toLowerCase().includes(q);
+    return !q || g.grade?.toLowerCase().includes(q) || g.product_type?.toLowerCase().includes(q);
   });
 
   const handleToggle = async (item) => {
@@ -162,7 +162,7 @@ const GradeManagement = ({ onBack }) => {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search grade/matcode..."
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search grade/product_type..."
                 className="pl-7 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500/20 w-44" />
             </div>
             <button type="button" onClick={() => setIsCreating(true)}
@@ -179,7 +179,7 @@ const GradeManagement = ({ onBack }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 z-10">
               <tr>
-                {['ID','Grade','Matcode','Priority','Status','Actions'].map(h => (
+                {['ID','Grade','product_type','Priority','Status','Actions'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>
                 ))}
               </tr>
@@ -191,7 +191,7 @@ const GradeManagement = ({ onBack }) => {
                 <tr key={g.qc_entry_id} className="hover:bg-blue-50/30 transition-colors">
                   <td className="px-4 py-2.5 text-xs font-mono text-slate-500 border-r border-slate-100">{g.qc_entry_id}</td>
                   <td className="px-4 py-2.5 text-xs font-bold text-slate-700 border-r border-slate-100">{g.grade}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.matcode || '—'}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.product_type || '—'}</td>
                   <td className="px-4 py-2.5 text-xs font-bold text-indigo-700 border-r border-slate-100">{g.priority}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${g.status ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
@@ -234,7 +234,7 @@ const GradeForm = ({ data, onBack, onSaved }) => {
     setSubmitting(true);
     try {
       // Build payload with only non-empty numeric fields
-      const payload = { grade: values.grade, matcode: values.matcode, priority: Number(values.priority), status: values.status };
+      const payload = { grade: values.grade, product_type: values.product_type, priority: Number(values.priority), status: values.status };
       ALL_LIMIT_FIELDS.forEach(f => {
         if (values[f] !== '' && values[f] !== null && values[f] !== undefined) payload[f] = Number(values[f]);
         else payload[f] = null;
@@ -278,7 +278,7 @@ const GradeForm = ({ data, onBack, onSaved }) => {
               <div className="px-4 py-2 border-b border-slate-100 flex-shrink-0">
                 <div className="grid grid-cols-4 gap-3">
                   <FormikInput compact label="Grade Name" name="grade" placeholder="e.g. A+" />
-                  <FormikInput compact label="Matcode" name="matcode" placeholder="Material code" />
+                  <FormikInput compact label="product Type" name="product_type" placeholder="Product Type" />
                   <FormikInput compact label="Priority (1=highest)" name="priority" type="number" placeholder="1" />
                   <div className="flex items-end gap-2 pb-0.5">
                     <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Home, RotateCcw, Box, GitMerge, LayoutDashboard } from 'lucide-react';
 
-import Splicing from '../pages/splicing/ui/splicing';
+import Splicing from '../pages/splicing/ui/SplicingList';
 import Macrobend from '../pages/macrobend/ui/macrobend';
 
 const MacrobendContainer = () => {

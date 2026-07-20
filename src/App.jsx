@@ -27,9 +27,8 @@ import FGFiberAllocation from './pages/fgFiberAllocation/ui/fgFiberAllocation'
 import FGRejectinContainer from './components/fgRejectionContainer'
 import TCGenerationDashboard from './components/tcGeneration'
 import MacrobendContainer from './components/macrobendContainer'
-import TRH_Cycle from './pages/trh_cycle/ui/trh_cycle'
-import TEMP_Cycle from './pages/temp_cycle/ui/temp_cycle'
-import TRHTempCycleContainer from './components/trhTempContainer'
+import TRHList from './pages/trh_entry/ui/TRHList'
+import TemperatureList from './pages/temp_entry/ui/TemperatureList'
 import ComplaintStatusMonitor from './pages/customer_complaint/complaintTable/ui/complaintTable'
 import ComplaintClosure from './pages/customer_complaint/complaintClosure/ui/complainClosure'
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
@@ -51,7 +50,7 @@ import CustomerEnquiryList from './pages/order_and_dispatch_management/customer_
 import CustomerEnquiryFormPage from './pages/order_and_dispatch_management/customer_enquiry/ui/customer_enquiry_form'
 import DrawShiftReport from './pages/draw_shift_report/ui/draw_shift_report'
 import DrawTimelossEntry from './pages/draw_timeloss_entry/ui/draw_timeloss_entry'
-import Splicing from './pages/splicing/ui/splicing'
+import Splicing from './pages/splicing/ui/SplicingList'
 import ShortTermContainer from './components/short_term_container'
 import CustomerComplaint from './pages/customer_complaint/ui/customer_complaint'
 import { ToastContainer } from 'react-toastify'
@@ -61,9 +60,11 @@ import GeneralAdmin from './pages/Admin_Folder/general_admin/ui/general_admin'
 import QualityAdmin from './pages/Admin_Folder/quality_admin/ui/quality_admin'
 import TrayManagement from './pages/Admin_Folder/FG/tray_management/ui/tray_management'
 import OrderRegister from './pages/order_register/ui/order_register'
-import HighTempHumidityAgeing from './pages/High_temp_&_humadity_ageing_test/ui/htha_entry'
-import WaterImmersion from './pages/water_immersion/ui/water_immersion'
-import AcceleratedAgeing from './pages/accelerated_ageing_test/ui/accelerated_ageing'
+import HighTempHumidityAgeing from './pages/htha_entry/ui/HTHAList'
+import WaterImmersion from './pages/water_immersion/ui/WIList'
+import AcceleratedAgeing from './pages/accelerated_ageing/ui/AATList'
+import HotWaterTest from './pages/hot_water_test/ui/HWList'
+import DynamicFatigue from './pages/dynamic_fatigue/ui/DFList'
 import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
 import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
 
@@ -114,11 +115,13 @@ function App() {
         <Route path='order/enquiryform' element={<CustomerEnquiryFormPage/>}/>
         <Route path='order/customerenquirylist' element={<CustomerEnquiryList/>}/>
         <Route path='qa/macrobendC' element={<MacrobendContainer/>}/>
-        <Route path='qa/trhtempentry' element={<TRHTempCycleContainer/>}/>
-        <Route path='qa/trhcycle' element={<TRH_Cycle/>}/>
+        <Route path='qa/temperature' element={<TemperatureList/>}/>
+        <Route path='qa/trhentry' element={<TRHList/>}/>
         <Route path='qa/hthatest' element={<HighTempHumidityAgeing/>}/>
         <Route path='qa/waterimmersion' element={<WaterImmersion/>}/>
         <Route path='qa/acceleratedageing' element={<AcceleratedAgeing/>}/>
+        <Route path='qa/hotwatertest' element={<HotWaterTest/>}/>
+        <Route path='qa/dynamicfatigue' element={<DynamicFatigue/>}/>
         <Route path='qa/shorttermentry' element={<ShortTermContainer/>}/>
         <Route path='qa/speccreation' element={<SpecCreation/>}/>
         <Route path='qa/splicing' element={<Splicing/>}/>
