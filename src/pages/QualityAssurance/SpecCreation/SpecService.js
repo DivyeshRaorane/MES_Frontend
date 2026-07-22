@@ -30,3 +30,15 @@ export const deactivateSpec = async (id) => {
   const res = await axios.patch(`${API}/api/spec/${id}/deactivate`, {}, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Get grade list for dropdown ── */
+export const getGradeList = async () => {
+  const res = await axios.get(`${API}/api/qcgrade/list`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Get grade by ID to auto-fill values ── */
+export const getGradeById = async (gradeId) => {
+  const res = await axios.get(`${API}/api/qcgrade/${gradeId}`, { headers: authHeaders() });
+  return res.data;
+};

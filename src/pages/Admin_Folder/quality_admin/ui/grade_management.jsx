@@ -101,7 +101,14 @@ PARAM_GROUPS.forEach(g => g.fields.forEach(([f]) => {
 
 const buildInitialValues = (data) => {
   const vals = { grade: data?.grade || '', product_type: data?.product_type || '', priority: data?.priority || '', status: data?.status ?? true };
-  ALL_LIMIT_FIELDS.forEach(f => { vals[f] = data?.[f] ?? ''; });
+  ALL_LIMIT_FIELDS.forEach(f => {
+    if (data?.[f] !== undefined && data?.[f] !== null) {
+      vals[f] = data[f];
+    } else {
+      // Default: min = 0, max = 1000 for new entries
+      vals[f] = f.startsWith('min_') ? 0 : f.startsWith('max_') ? 1000 : '';
+    }
+  });
   return vals;
 };
 
