@@ -29,3 +29,9 @@ export const submitQCEntry = async (payload) => {
   const res = await axios.post(`${API}/api/qcentry/submit`, payload, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Update missing QC values ── */
+export const updateMissingValues = async (payload) => {
+  const res = await axios.post(`${API}/api/qc/update-missing-values`, payload, { headers: authHeaders() });
+  return res.data;
+};

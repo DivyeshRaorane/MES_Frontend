@@ -67,6 +67,7 @@ import HotWaterTest from './pages/hot_water_test/ui/HWList'
 import DynamicFatigue from './pages/dynamic_fatigue/ui/DFList'
 import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
 import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
+import QualityReports from './pages/Reports/QualityReports/ui/QualityReports'
 
 
 function App() {
@@ -100,6 +101,7 @@ function App() {
         <Route path='quality/d2recieving' element={<D2Combined/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
+        <Route path='quality/reports' element={<QualityReports/>}/>
         <Route path='fg/customerallocation' element={<CustomerAllocation/>}/>
         <Route path='dispatch/dispatchchecking' element={<DispatchChecking/>}/>
         <Route path='dispatch/fibermakingcheck' element={<FiberMakingCheck/>}/>

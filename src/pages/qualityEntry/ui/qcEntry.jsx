@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry } from '../services/qc_entry.api';
+import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues } from '../services/qc_entry.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -122,6 +122,11 @@ const QCEntryScreen = () => {
   const [existingFinalGrade, setExistingFinalGrade] = useState('');
   const [rewPopup, setRewPopup] = useState(false);
   const [rewCuts, setRewCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
+  const [missingPopup, setMissingPopup] = useState(false);
+  const [missingParams, setMissingParams] = useState([]);
+  const [missingValues, setMissingValues] = useState({});
+  const [missingBobbin, setMissingBobbin] = useState('');
+  const [savingMissing, setSavingMissing] = useState(false);
   const formRef = useRef(null);
   const scanRef = useRef(null);
 
@@ -159,8 +164,8 @@ const QCEntryScreen = () => {
       const res = await gradeBobbin(values.bobbin_no);
       console.log('Grade response:', res);
       
-      // Handle both direct response and nested .data response
-      const data = res?.data || res;
+      // Handle response — res is already axios res.data, may have nested .data
+      const data = res?.data?.status ? res.data : res;
       
       if (data?.status === 'PASSED') {
         const matchedGrade = data.matched_grade;
@@ -187,6 +192,13 @@ const QCEntryScreen = () => {
       } else if (data?.status === 'FAILED') {
         setFailedParam(data.failure_details?.failed_parameter || '');
         setFailDialog({ open: true, details: data.failure_details });
+      } else if (data?.status === 'MISSING_DATA') {
+        // Open missing data popup
+        const params = data.missing_parameters || [];
+        setMissingParams(params);
+        setMissingValues(params.reduce((acc, p) => ({ ...acc, [p]: '' }), {}));
+        setMissingBobbin(values.bobbin_no);
+        setMissingPopup(true);
       } else {
         showError(data?.message || 'Unexpected grading response');
       }
@@ -637,6 +649,62 @@ const QCEntryScreen = () => {
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" onClick={handleRewConfirm}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Missing QC Parameters Popup ── */}
+        {missingPopup && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
+              <h3 className="text-sm font-bold text-slate-800 mb-1">Missing QC Parameters</h3>
+              <p className="text-[10px] text-slate-500 mb-4">The following QC values are required before grading can continue.</p>
+              <div className="space-y-2 mb-4">
+                {missingParams.map(param => (
+                  <div key={param} className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-600 uppercase">{param.replace(/_/g, ' ')}</label>
+                    <input
+                      type="number" step="any"
+                      value={missingValues[param] || ''}
+                      onChange={e => setMissingValues(prev => ({ ...prev, [param]: e.target.value }))}
+                      className="border border-slate-200 rounded px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400"
+                      placeholder="Enter value..."
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setMissingPopup(false); setMissingParams([]); setMissingValues({}); }}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+                <button type="button" disabled={savingMissing} onClick={async () => {
+                  // Only save fields that have values (not mandatory to fill all)
+                  const filledValues = {};
+                  missingParams.forEach(p => {
+                    if (missingValues[p] && missingValues[p].trim() !== '') {
+                      filledValues[p.toLowerCase()] = Number(missingValues[p]);
+                    }
+                  });
+
+                  if (Object.keys(filledValues).length === 0) { showError('Please fill at least one value'); return; }
+
+                  setSavingMissing(true);
+                  try {
+                    const res = await updateMissingValues({ bobbin_no: missingBobbin, values: filledValues });
+                    if (res?.success) {
+                      showSuccess('Values saved. Re-validating...');
+                      setMissingPopup(false);
+                      setMissingParams([]);
+                      setMissingValues({});
+                      // Auto re-run grade validation
+                      setTimeout(() => handleGrade({ bobbin_no: missingBobbin, bobbin_fid: '', matcode: '' }), 500);
+                    } else { showError(res?.message || 'Save failed'); }
+                  } catch (e) { showError(e?.response?.data?.message || 'Failed to save missing values'); }
+                  setSavingMissing(false);
+                }}
+                  className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">
+                  {savingMissing ? 'Saving...' : 'Save & Re-validate'}
+                </button>
               </div>
             </div>
           </div>

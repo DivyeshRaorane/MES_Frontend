@@ -58,7 +58,7 @@ const MENU = [
       { label: 'D2 Management',     path: '/quality/d2issue' },
       { label: 'H2 Ageing',           path: '/quality/h2egeing' },
       { label: 'QC Out',             path: '/quality/qcinout' },
-      { label: 'Report',      path: '/underdev' },
+      { label: 'Report',      path: '/quality/reports' },
     ],
   },
   {
