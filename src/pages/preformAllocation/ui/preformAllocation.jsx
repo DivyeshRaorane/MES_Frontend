@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import { Plus, ClipboardList, History, X, Keyboard, Settings, Building2, ListOrdered,Trash2 } from 'lucide-react';
+import { Plus, ClipboardList, History, X, Keyboard, Settings, ListOrdered, Trash2 } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getPreformForAllocation, preformAllocationEntry , getRecentAllocatedPreforms  } from '../services/preform_allocation.api';
 import { getTowerForAllocation } from '../../draw_tower/service/draw_tower.api';
-import { resume } from 'react-dom/server';
 import { showSuccess,showError } from '../../../utils/toastService';
-import { array } from 'yup';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { preformDiallocation } from '../services/preform_allocation.api';
 import { getCurrentShift } from '../../../utils/shiftHelper';
+import axios from 'axios';
 
 
+
+const API = import.meta.env.VITE_API_URL;
 
 const FORM_INIT = {
   preform_id: "",
@@ -38,6 +39,7 @@ const PrerformAllocation = () => {
   const [drawUsers, setDrawUsers] = useState([]);
   const [autoShift, setAutoShift] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [processTypeOptions, setProcessTypeOptions] = useState([]);
   const formikRef = React.useRef(null);
 const [selectedAllocation, setSelectedAllocation] = useState(null);
 
@@ -109,7 +111,32 @@ const confirmDeallocation = async () => {
       fetchDrawUsers();
     }, [])
 
+  // Fetch process types filtered by preform_type from mapping table
+  useEffect(() => {
+    const fetchProcessTypes = async () => {
+      if (!selectedPreform?.preform_type) {
+        setProcessTypeOptions([]);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API}/api/admin/process-types/by-preform/${selectedPreform.preform_type}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = res.data?.data || [];
+        setProcessTypeOptions(data.map(pt => ({
+          label: String(pt.process_type),
+          value: pt.process_type,
+        })));
+      } catch (e) {
+        console.error("Error fetching process types:", e);
+        setProcessTypeOptions([]);
+      }
+    };
+    fetchProcessTypes();
+  }, [selectedPreform?.preform_type]);
 
+console.log("Process type:", processTypeOptions)
   const shiftOptions = shifts.map((shift) => ({
     label: `${shift.shift_name}`,
     value: shift.shift_name,
@@ -347,7 +374,7 @@ const confirmDeallocation = async () => {
                       <div className="grid grid-cols-3 gap-2">
                         <FormikInput compact label="Preform Type" name="preform_type" value={selectedPreform?.preform_type} disabled placeholder="e.g. 1" />
                         <FormikInput compact label="Product Type" name="product_type" value= { selectedPreform?.product_type} disabled />
-                        <FormikSelect compact label="Process Type" name="process_type" options={['250', '200', '180','160']} />
+                        <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions} />
                       </div>
                       <FormikTextarea compact label="Draw Instruction" name="draw_instruction" placeholder="Draw Instruction..." rows={2} />
                     </div>

@@ -203,14 +203,43 @@ export const drawFlawAutomation = (rows) => {
 
 
 
-export const reverseFlawPositions = (totalKm, results) => {
-    return results
+export const reverseFlawPositions = (totalKm, results, goodLength = 2.1) => {
+    const reversed = results
         .map(item => ({
             ...item,
             pos1: +(totalKm - item.pos2).toFixed(3),
             pos2: +(totalKm - item.pos1).toFixed(3),
         }))
         .sort((a, b) => a.pos1 - b.pos1);
+
+    // Merge consecutive flaws where gap < goodLength
+    if (reversed.length <= 1) return reversed;
+
+    const merged = [];
+    let current = { ...reversed[0] };
+
+    for (let i = 1; i < reversed.length; i++) {
+        const next = reversed[i];
+        const gap = next.pos1 - current.pos2;
+
+        if (gap < goodLength) {
+            // Extend current group — keep pos1 from first, update pos2 to latest
+            current.pos2 = next.pos2;
+        } else {
+            // Gap too large — finalize current group and start new one
+            current.defect_length = +(current.pos2 - current.pos1).toFixed(3);
+            current.actual_cutting = +(current.defect_length + 0.1).toFixed(3);
+            merged.push(current);
+            current = { ...next };
+        }
+    }
+
+    // Push the last group
+    current.defect_length = +(current.pos2 - current.pos1).toFixed(3);
+    current.actual_cutting = +(current.defect_length + 0.1).toFixed(3);
+    merged.push(current);
+
+    return merged;
 };
 
 

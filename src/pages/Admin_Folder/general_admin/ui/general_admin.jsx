@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
+  Package, Layers,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -9,6 +10,8 @@ import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import UserHomeScreen from '../../user_management/user/ui/user_home_screen';
+import MaterialMasterPanel from './MaterialMasterPanel';
+import ProcessTypePanel from './ProcessTypePanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -57,6 +60,22 @@ const ADMIN_CARDS = [
     color: 'text-pink-600 bg-pink-100',
     component: 'bobbin_colors',
   },
+  {
+    key: 'material_master',
+    title: 'Material Master',
+    desc: 'Manage material codes & categories',
+    icon: Package,
+    color: 'text-teal-600 bg-teal-100',
+    component: 'material_master',
+  },
+  {
+    key: 'process_type',
+    title: 'Process Type',
+    desc: 'Manage process types & preform mapping',
+    icon: Layers,
+    color: 'text-violet-600 bg-violet-100',
+    component: 'process_type',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -93,6 +112,14 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'bobbin_colors') {
     return <BobbinColorPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'material_master') {
+    return <MaterialMasterPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'process_type') {
+    return <ProcessTypePanel onBack={() => setActiveCard(null)} />;
   }
 
   return (
@@ -772,7 +799,7 @@ const BobbinColorFormModal = ({ item, onClose, onSaved }) => {
       if (isEdit) {
         res = await axios.put(`${API}/api/admin/bobbincolors/${item.bobbin_color_id}`, { bobbin_color_name: values.bobbin_color_name, is_disable: item.is_disable ?? false }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/bobbincolors`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
+        res = await axios.post(`${API}/api/createbobbincolor`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Color updated' : 'Color created'); onSaved(); }
       else showError(res.data?.message || 'Failed');

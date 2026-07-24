@@ -9,7 +9,13 @@ const ptFlawsSlice = createSlice({
         ptfError:null
     },
 
-    reducers:{},
+    reducers:{
+        clearPtFlaws: (state) => {
+            state.ptFlawsData = [];
+            state.ptfLoading = false;
+            state.ptfError = null;
+        }
+    },
     extraReducers:(builder)=>{
         builder
         .addCase(getPTFlaws.pending, (state) => {
@@ -30,4 +36,5 @@ const ptFlawsSlice = createSlice({
 })
 
 
+export const { clearPtFlaws } = ptFlawsSlice.actions;
 export default ptFlawsSlice.reducer;

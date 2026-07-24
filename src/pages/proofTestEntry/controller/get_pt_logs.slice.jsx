@@ -9,7 +9,13 @@ const ptLogsSlice = createSlice({
         ptLError:null
     },
 
-    reducers:{},
+    reducers:{
+        clearPtLogs: (state) => {
+            state.ptLogsData = [];
+            state.ptLLoading = false;
+            state.ptLError = null;
+        }
+    },
     extraReducers:(builder)=>{
         builder
         .addCase(getPTLogs.pending, (state) => {
@@ -30,4 +36,5 @@ const ptLogsSlice = createSlice({
 })
 
 
+export const { clearPtLogs } = ptLogsSlice.actions;
 export default ptLogsSlice.reducer;
