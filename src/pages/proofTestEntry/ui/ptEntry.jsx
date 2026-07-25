@@ -346,6 +346,7 @@ console.log("Pt data:,", response)
     // 1. There are missed flaws that fall WITHIN this specific PT entry range
     // 2. FID is generated (good entry, not a rejection)
     let ptFlawRemark = '';
+    let aFlawCut = '';
     if (missedFlaws.length > 0 && !values.active_rejection_type && values.fid) {
       // Only include flaws whose position falls within this entry's range (currentPtDone to newPtDone)
       const flawsInThisEntry = missedFlaws.filter(f => {
@@ -361,6 +362,17 @@ console.log("Pt data:,", response)
             return `Flaw missed from ${relPos1} km to ${relPos2} km`;
           })
           .join('; ');
+
+        // Reverse remark: measured from end of PT length (takeup side)
+        aFlawCut = flawsInThisEntry
+          .map(f => {
+            const relPos1 = (parseFloat(f.pos1) - currentPtDone).toFixed(3);
+            const relPos2 = (parseFloat(f.pos2) - currentPtDone).toFixed(3);
+            const revPos1 = (ptLen - parseFloat(relPos2)).toFixed(3);
+            const revPos2 = (ptLen - parseFloat(relPos1)).toFixed(3);
+            return `Flaw missed from ${revPos1} km to ${revPos2} km`;
+          })
+          .join('; ');
       }
     }
 
@@ -370,6 +382,7 @@ console.log("Pt data:,", response)
       // Do not send bobbin_no when it's a rejection entry
       bobbin_no: values.active_rejection_type ? '' : values.bobbin_no,
       pt_flaw_remark: ptFlawRemark || null,
+      a_cut_flaw: aFlawCut || null,
       missed_flaws: missedFlaws.map(f => ({
         pt_flaw_id: f.pt_flaw_id,
         pos1: f.pos1,

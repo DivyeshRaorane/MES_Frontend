@@ -236,6 +236,45 @@ const GradeManagement = ({ onBack }) => {
 const GradeForm = ({ data, onBack, onSaved }) => {
   const isEdit = !!data;
   const [submitting, setSubmitting] = useState(false);
+  const [mandatoryFields, setMandatoryFields] = useState({});
+  const [mandatoryLoading, setMandatoryLoading] = useState(false);
+
+  // Fetch existing mandatory params when editing
+  useEffect(() => {
+    if (isEdit && data?.grade && data?.product_type) {
+      const fetchMandatory = async () => {
+        try {
+          const res = await axios.get(`${API}/api/admin/grade-mandatory`, {
+            params: { grade: data.grade, product_type: data.product_type },
+            headers: authHeaders()
+          });
+          if (res.data?.data?.mandatory_params) {
+            const params = res.data.data.mandatory_params.split(',').map(s => s.trim()).filter(Boolean);
+            const obj = {};
+            params.forEach(p => { obj[p] = true; });
+            setMandatoryFields(obj);
+          }
+        } catch (e) { console.error('Failed to load mandatory params', e); }
+      };
+      fetchMandatory();
+    }
+  }, []);
+
+  const toggleMandatory = (fieldName) => {
+    setMandatoryFields(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
+  };
+
+  const saveMandatoryFields = async (grade, product_type) => {
+    const checked = Object.entries(mandatoryFields).filter(([, v]) => v).map(([k]) => k);
+    const mandatory_params = checked.join(',');
+    try {
+      setMandatoryLoading(true);
+      await axios.post(`${API}/api/admin/grade-mandatory`, {
+        grade, product_type, mandatory_params
+      }, { headers: authHeaders() });
+    } catch (e) { console.error('Failed to save mandatory params', e); }
+    setMandatoryLoading(false);
+  };
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
@@ -253,7 +292,12 @@ const GradeForm = ({ data, onBack, onSaved }) => {
       } else {
         res = await axios.post(`${API}/api/admin/grades`, payload, { headers: authHeaders() });
       }
-      if (res.data?.success) { showSuccess(isEdit ? 'Grade updated' : 'Grade created'); onSaved(); }
+      if (res.data?.success) {
+        // Save mandatory fields after grade is saved
+        await saveMandatoryFields(values.grade, values.product_type);
+        showSuccess(isEdit ? 'Grade updated' : 'Grade created');
+        onSaved();
+      }
       else showError(res.data?.message || 'Failed');
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
     setSubmitting(false);
@@ -305,6 +349,7 @@ const GradeForm = ({ data, onBack, onSaved }) => {
                       <table className="w-full text-[9px] border-collapse">
                         <thead>
                           <tr className="text-slate-400">
+                            <th className="text-left font-bold py-0.5 w-6">M</th>
                             <th className="text-left font-bold py-0.5 w-1/3">Parameter</th>
                             <th className="text-center font-bold py-0.5">Min</th>
                             <th className="text-center font-bold py-0.5">Max</th>
@@ -313,6 +358,15 @@ const GradeForm = ({ data, onBack, onSaved }) => {
                         <tbody>
                           {group.fields.map(([field]) => (
                             <tr key={field} className="border-t border-slate-50">
+                              <td className="py-1 pr-1">
+                                <input
+                                  type="checkbox"
+                                  checked={!!mandatoryFields[field]}
+                                  onChange={() => toggleMandatory(field)}
+                                  className="w-3 h-3 rounded border-slate-300 text-indigo-600 cursor-pointer accent-indigo-600"
+                                  title={`Mark ${field} as mandatory`}
+                                />
+                              </td>
                               <td className="py-1 pr-2 text-[8px] font-medium text-slate-600 whitespace-nowrap">{field.replace(/_/g, ' ')}</td>
                               <td className="py-1 px-0.5">
                                 <Field name={`min_${field}`} type="number" step="0.001" placeholder="—"
