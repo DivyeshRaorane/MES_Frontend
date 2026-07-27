@@ -101,6 +101,7 @@ const PTEntry = () => {
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [showSpoolEndPopup, setShowSpoolEndPopup] = useState(false);
   const [showFlawConfirm, setShowFlawConfirm] = useState(false);
+  const [showBreakScrapAlert, setShowBreakScrapAlert] = useState(false);
   const [pendingPtSubmit, setPendingPtSubmit] = useState(null);
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
@@ -543,6 +544,11 @@ console.log("Pt data:,", response)
 
       if (response.payload?.success) {
         showSuccess(response.payload.message || "PT Entry saved successfully");
+
+        // Show break scrap alert if pt_break was true
+        if (values.pt_break) {
+          setShowBreakScrapAlert(true);
+        }
 
         setFieldValue("pt_length", "");
         setFieldValue("active_rejection_type", "");
@@ -1155,6 +1161,26 @@ console.log("Pt data:,", response)
             </div>
           </div>
         )}
+        {/* Break Scrap Alert Popup */}
+        {showBreakScrapAlert && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
+              <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-sm font-bold text-rose-700 mb-2">PT Break Detected</h3>
+              <p className="text-xs text-slate-600 mb-4">
+                This entry has a <strong className="text-rose-600">PT Break</strong>.<br/>
+                Please book <strong className="text-rose-700 text-sm">1.80 km</strong> scrap for this break.
+              </p>
+              <button type="button" onClick={() => setShowBreakScrapAlert(false)}
+                className="px-6 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all">
+                OK, Understood
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
