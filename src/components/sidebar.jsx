@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Activity, Box, ShieldCheck, CheckCircle2,
   Truck, MessageSquareWarning, Settings, LogOut,
-  LayoutDashboard, ChevronRight, Shield,
+  LayoutDashboard, ChevronRight, Shield, FileBarChart2,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -108,7 +108,15 @@ const MENU = [
       { label: 'Draw Management',  path: '/admin/drawmanagement' },
       { label: 'Quality Admin',    path: '/admin/quality' },
       { label: 'FG / Tray Mgmt',  path: '/admin/traymanagement' },
+      { label: 'Report Builder',   path: '/admin/reportbuilder' },
     ],
+  },
+  {
+    key: 'dynamicreports',
+    label: 'Dynamic Reports',
+    icon: FileBarChart2,
+    path: '/dynamicreports',
+    color: 'text-cyan-400',
   },
   {
     key: 'settings',
@@ -121,12 +129,12 @@ const MENU = [
 
 /* ── Department → Menu Key Mapping ── */
 const DEPT_MENU_MAP = {
-  'Draw': ['draw'],
-  'Proof Testing': ['proof'],
-  'Quality': ['quality'],
-  'Quality Assurance': ['qa'],
-  'Finish Goods': ['finishgoods'],
-  'All': ['draw', 'proof', 'quality', 'qa', 'finishgoods', 'admin', 'settings'],
+  'Draw': ['draw', 'dynamicreports'],
+  'Proof Testing': ['proof', 'dynamicreports'],
+  'Quality': ['quality', 'dynamicreports'],
+  'Quality Assurance': ['qa', 'dynamicreports'],
+  'Finish Goods': ['finishgoods', 'dynamicreports'],
+  'All': ['draw', 'proof', 'quality', 'qa', 'finishgoods', 'admin', 'settings', 'dynamicreports'],
 };
 
 /* ── Sidebar ─────────────────────────────────────────────── */

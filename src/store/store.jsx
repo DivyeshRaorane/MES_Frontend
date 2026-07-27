@@ -18,6 +18,10 @@ import ptEntryReducer from '../pages/proofTestEntry/controller/pt_entry.slice'
 import ptFlawsReducer from '../pages/proofTestEntry/controller/get_pt_flaws.slice' 
 import ptLogsReducer from '../pages/proofTestEntry/controller/get_pt_logs.slice'
 
+// Dynamic Reports Module
+import reportBuilderReducer from '../pages/DynamicReports/controller/reportBuilder.slice'
+import dynamicReportsReducer from '../pages/DynamicReports/controller/dynamicReports.slice'
+
 
 
 export const store = configureStore({
@@ -40,5 +44,7 @@ export const store = configureStore({
         ptEntry: ptEntryReducer,
         ptFlaws: ptFlawsReducer,
         ptLogs: ptLogsReducer,
+        reportBuilder: reportBuilderReducer,
+        dynamicReports: dynamicReportsReducer,
     }
 })

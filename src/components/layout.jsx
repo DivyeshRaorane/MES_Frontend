@@ -46,6 +46,9 @@ const ROUTE_TITLES = {
   '/customer/complaintclosure':    'Complaint Closure',
   '/admin/users':                  'User Management',
   '/admin/usercreation':           'Create User',
+  '/admin/reportbuilder':          'Report Builder',
+  '/admin/reportbuilder/wizard':   'Report Builder Wizard',
+  '/dynamicreports':               'Dynamic Reports',
   '/underdev':                     'Under Development',
 };
 

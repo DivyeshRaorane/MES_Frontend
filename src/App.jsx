@@ -69,6 +69,12 @@ import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
 import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
 import QualityReports from './pages/Reports/QualityReports/ui/QualityReports'
 
+// Dynamic Reports Module
+import DynamicReportsList from './pages/DynamicReports/ui/DynamicReportsList'
+import ReportViewer from './pages/DynamicReports/ui/ReportViewer'
+import ReportBuilderList from './pages/DynamicReports/ui/ReportBuilder/ReportBuilderList'
+import ReportBuilderWizard from './pages/DynamicReports/ui/ReportBuilder/ReportBuilderWizard'
+
 
 function App() {
 
@@ -135,6 +141,10 @@ function App() {
         <Route path='admin/drawmanagement' element={<DrawManagementAdmin/>}/>
         <Route path='admin/quality' element={<QualityAdmin/>}/>
         <Route path='admin/traymanagement' element={<TrayManagement/>}/>
+        <Route path='admin/reportbuilder' element={<ReportBuilderList/>}/>
+        <Route path='admin/reportbuilder/wizard' element={<ReportBuilderWizard/>}/>
+        <Route path='dynamicreports' element={<DynamicReportsList/>}/>
+        <Route path='dynamicreports/view/:reportId' element={<ReportViewer/>}/>
         <Route path='/*' element={<PageNotFound/>}/>
         </Route>
         </Routes>  

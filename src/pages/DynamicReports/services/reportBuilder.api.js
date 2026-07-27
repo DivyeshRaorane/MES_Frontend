@@ -1,0 +1,234 @@
+/**
+ * Report Builder API Service
+ * Handles all API calls for report metadata CRUD operations,
+ * database discovery, report execution, and exports.
+ */
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+// ─── Database Discovery ─────────────────────────────────────────────────────
+
+/** Fetch all available PostgreSQL tables */
+export const fetchTables = async () => {
+  const res = await axios.get(`${API_URL}/api/report-builder/tables`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Fetch columns for a specific table */
+export const fetchTableColumns = async (tableName) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/tables/${tableName}/columns`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Fetch foreign key relationships for a table */
+export const fetchTableRelationships = async (tableName) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/tables/${tableName}/relationships`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Report CRUD ────────────────────────────────────────────────────────────
+
+/** Get all reports (admin view) */
+export const fetchAllReports = async () => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Get a single report by ID */
+export const fetchReportById = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Create a new report */
+export const createReport = async (reportData) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports`, reportData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Update an existing report */
+export const updateReport = async (reportId, reportData) => {
+  const res = await axios.put(`${API_URL}/api/report-builder/reports/${reportId}`, reportData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Soft-delete a report */
+export const deleteReport = async (reportId) => {
+  const res = await axios.delete(`${API_URL}/api/report-builder/reports/${reportId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Duplicate a report */
+export const duplicateReport = async (reportId) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/duplicate`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Report Execution ───────────────────────────────────────────────────────
+
+/** Preview report (first 100 rows) */
+export const previewReport = async (reportConfig) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/preview`, reportConfig, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Execute report with filters and pagination */
+export const executeReport = async (reportId, params) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/execute`, params, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Get generated SQL for a report (developer mode) */
+export const getReportSQL = async (reportConfig) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/sql`, reportConfig, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Dynamic Reports (User Side) ───────────────────────────────────────────
+
+/** Get reports accessible by current user */
+export const fetchUserReports = async () => {
+  const res = await axios.get(`${API_URL}/api/dynamic-reports`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Execute a report from user side */
+export const executeUserReport = async (reportId, params) => {
+  const res = await axios.post(`${API_URL}/api/dynamic-reports/${reportId}/execute`, params, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Export ─────────────────────────────────────────────────────────────────
+
+/** Export report as Excel */
+export const exportReportExcel = async (reportId, params) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/export/excel`,
+    params,
+    { headers: getAuthHeaders(), responseType: 'blob' }
+  );
+  return res.data;
+};
+
+/** Export report as CSV */
+export const exportReportCSV = async (reportId, params) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/export/csv`,
+    params,
+    { headers: getAuthHeaders(), responseType: 'blob' }
+  );
+  return res.data;
+};
+
+/** Export report as PDF */
+export const exportReportPDF = async (reportId, params) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/export/pdf`,
+    params,
+    { headers: getAuthHeaders(), responseType: 'blob' }
+  );
+  return res.data;
+};
+
+// ─── Permissions ────────────────────────────────────────────────────────────
+
+/** Get permissions for a report */
+export const fetchReportPermissions = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/permissions`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Update permissions for a report */
+export const updateReportPermissions = async (reportId, permissions) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/permissions`,
+    permissions,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Get all roles */
+export const fetchRoles = async () => {
+  const res = await axios.get(`${API_URL}/api/report-builder/roles`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Get all users (for permission assignment) */
+export const fetchUsersForPermission = async () => {
+  const res = await axios.get(`${API_URL}/api/report-builder/users`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Saved Filters ──────────────────────────────────────────────────────────
+
+/** Get saved filters for a report */
+export const fetchSavedFilters = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/dynamic-reports/${reportId}/saved-filters`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Save a filter preset */
+export const saveFilter = async (reportId, filterData) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/saved-filters`,
+    filterData,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Delete a saved filter */
+export const deleteSavedFilter = async (reportId, filterId) => {
+  const res = await axios.delete(
+    `${API_URL}/api/dynamic-reports/${reportId}/saved-filters/${filterId}`,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
