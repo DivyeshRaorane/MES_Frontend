@@ -253,8 +253,10 @@ const DrawSpoolEntry = () => {
   { Message: "Bare fibre diameter High @ 320.571 Diameter = 126.002" },
   { Message: "Fast Layer Stop @ 321.190" },
   { Message: "Fast Layer Stop @ 321.191" },
+{ Message: "TowerFibre Break @ 332.37" },
+  
 
-  { Message: "Coated fibre diameter High @ 412.880" },
+  /*{ Message: "Coated fibre diameter High @ 412.880" },
   { Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
 
   // Fast Layer 5
@@ -269,7 +271,7 @@ const DrawSpoolEntry = () => {
   { Message: "Coated fibre diameter Low @ 622.181" },
 
   // Fibre Break around 640 km
-  { Message: "TowerFibre Break @ 650.37" },
+  { Message: "TowerFibre Break @ 650.37" },*/
 
   { Message: "Message not defined for language English (United Kingdom), en" }
 ];
@@ -411,9 +413,17 @@ const DrawWeightWatcher = () => {
                           showError("Please select a tower before marking the preform as completed.");
                           return;
                         }
-                        const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
-                        const submitVals = { ...values, pt_flaws: ptFlaws, balance_weight: 0 };
-                        setPendingSubmitValues(submitVals);
+                        // Bypass validation — only send tower free payload
+                        const preformEndPayload = {
+                          tower_no: values.tower_no,
+                          preform_id: values.preform_id,
+                          balance_weight: 0,
+                          handle_active: true,
+                          preform_end: true,
+                          is_last: true,
+                          preform_remove: false,
+                        };
+                        setPendingSubmitValues(preformEndPayload);
                         setPendingResetForm(null);
                         setPreformEndScenario('balance');
                         setShowPreformEndPopup(true);

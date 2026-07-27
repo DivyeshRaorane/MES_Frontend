@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues } from '../services/qc_entry.api';
+import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac } from '../services/qc_entry.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -107,6 +107,30 @@ const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
   );
 };
 
+/* ══════════════════════════════════════════════════════════
+   Reusable: MBEnd Copy + MAC Calculation
+   Called after a bobbin is successfully fetched via Scan.
+   Delegates all logic to the backend endpoint.
+   ══════════════════════════════════════════════════════════ */
+const executeMbendCopyAndMac = async (bobbin_no) => {
+  if (!bobbin_no) return null;
+  try {
+    console.log('[MBEnd] Triggering MBEnd copy + MAC calc for:', bobbin_no);
+    const res = await copyMbendAndCalcMac(bobbin_no);
+    if (res?.success) {
+      if (res.mbend_copied) console.log('[MBEnd] MBEnd values copied from sample:', res.sample_fid);
+      if (res.mac_calculated) console.log('[MBEnd] MAC value calculated:', res.mac_value);
+      return res;
+    } else {
+      console.log('[MBEnd] Skipped:', res?.message || 'No action needed');
+      return res;
+    }
+  } catch (e) {
+    console.error('[MBEnd] Error:', e?.response?.data?.message || e.message);
+    return null;
+  }
+};
+
 /* ══════════════════════════════════════════════════════════ */
 const QCEntryScreen = () => {
   const [scanInput, setScanInput] = useState('');
@@ -152,6 +176,22 @@ const QCEntryScreen = () => {
       if (data.temp_grade) setExistingTempGrade(data.temp_grade);
       if (data.final_grade) setExistingFinalGrade(data.final_grade);
       if (res.source === 'final') showError('Final QC has already been completed for this bobbin.');
+
+      // Execute MBEnd copy + MAC calculation (backend handles all logic)
+      if (res.source !== 'final') {
+        const mbRes = await executeMbendCopyAndMac(bobbin_no);
+        if (mbRes?.success && (mbRes.mbend_copied || mbRes.mac_calculated)) {
+          // Re-fetch to get updated values after MBEnd copy / MAC calc
+          const refreshRes = await fetchBobbinQC(bobbin_no);
+          if (refreshRes?.success) {
+            const refreshData = refreshRes.data || {};
+            const refreshVals = buildInitialValues();
+            Object.keys(refreshVals).forEach(k => { if (refreshData[k] !== undefined && refreshData[k] !== null) refreshVals[k] = refreshData[k]; });
+            refreshVals.bobbin_no = bobbin_no;
+            setValues(refreshVals);
+          }
+        }
+      }
     } catch (e) { showError(e?.response?.data?.message || 'Fetch failed'); setSource(null); setValues(buildInitialValues()); }
     setLoading(false);
   };

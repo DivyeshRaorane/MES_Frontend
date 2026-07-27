@@ -35,3 +35,9 @@ export const updateMissingValues = async (payload) => {
   const res = await axios.post(`${API}/api/qc/update-missing-values`, payload, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Copy MBEnd data from previous sample + Calculate MAC value ── */
+export const copyMbendAndCalcMac = async (bobbin_no) => {
+  const res = await axios.post(`${API}/api/qcentry/mbend-copy`, { bobbin_no }, { headers: authHeaders() });
+  return res.data;
+};
