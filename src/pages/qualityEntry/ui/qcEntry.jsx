@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac } from '../services/qc_entry.api';
+import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample } from '../services/qc_entry.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -353,6 +353,16 @@ const QCEntryScreen = () => {
           setExistingTempGrade(grade);
           setExistingFinalGrade(grade);
           setSource('final');
+
+          // Trigger MBend cycle reassignment if this was a sample bobbin
+          try {
+            const mbendRes = await updateMbendCycleAfterFailedSample(values.bobbin_no);
+            if (mbendRes?.success && mbendRes?.reassigned) {
+              console.log('[MBend Reassign] New sample assigned:', mbendRes.new_sample_bobbin);
+            }
+          } catch (mbErr) {
+            console.error('[MBend Reassign] Error:', mbErr?.response?.data?.message || mbErr.message);
+          }
         } else {
           showSuccess(`Temp Grade saved: ${grade}`);
           setExistingTempGrade(grade);

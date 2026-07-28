@@ -41,3 +41,9 @@ export const copyMbendAndCalcMac = async (bobbin_no) => {
   const res = await axios.post(`${API}/api/qcentry/mbend-copy`, { bobbin_no }, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Update MBend cycle after a sample bobbin fails/reworks in QC ── */
+export const updateMbendCycleAfterFailedSample = async (bobbin_no) => {
+  const res = await axios.post(`${API}/api/qcentry/mbend-reassign`, { bobbin_no }, { headers: authHeaders() });
+  return res.data;
+};
