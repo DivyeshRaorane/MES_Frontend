@@ -66,6 +66,7 @@ const SpecForm = ({ specId, onBack }) => {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(buildInitialValues());
   const [grades, setGrades] = useState([]);
+  const [mandatoryFields, setMandatoryFields] = useState({});
   const isEdit = !!specId;
 
   useEffect(() => {
@@ -83,12 +84,26 @@ const SpecForm = ({ specId, onBack }) => {
         setLoading(true);
         try {
           const res = await getSpecById(specId);
-          if (res?.success) setInitialValues(buildInitialValues(res.data));
+          if (res?.success) {
+            setInitialValues(buildInitialValues(res.data));
+            // Load mandatory params
+            const params = res.data?.mandatory_params;
+            if (params) {
+              const arr = Array.isArray(params) ? params : (typeof params === 'string' ? JSON.parse(params) : []);
+              const obj = {};
+              arr.forEach(p => { obj[p] = true; });
+              setMandatoryFields(obj);
+            }
+          }
         } catch (e) { showError('Failed to load spec'); }
         setLoading(false);
       })();
     }
   }, [specId]);
+
+  const toggleMandatory = (fieldName) => {
+    setMandatoryFields(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
+  };
 
   const handleGradeSelect = async (gradeId, setValues, currentValues) => {
     if (!gradeId) return;
@@ -115,6 +130,10 @@ const SpecForm = ({ specId, onBack }) => {
       ALL_FIELDS.forEach(f => { if (payload[f] !== '' && payload[f] !== null) payload[f] = Number(payload[f]); else payload[f] = null; });
       if (payload.quantity_km) payload.quantity_km = Number(payload.quantity_km);
       if (payload.priority) payload.priority = Number(payload.priority);
+
+      // Add mandatory_params as JSONB array
+      const mandatoryArr = Object.entries(mandatoryFields).filter(([, v]) => v).map(([k]) => k);
+      payload.mandatory_params = mandatoryArr;
 
       const res = isEdit ? await updateSpec(specId, payload) : await createSpec(payload);
       if (res?.success) { showSuccess(isEdit ? 'Spec updated' : 'Spec created'); onBack(); }
@@ -173,23 +192,39 @@ const SpecForm = ({ specId, onBack }) => {
                 <span className="text-[8px] text-slate-400 italic">Values will be applied. You can still change them.</span>
               </div>
 
-              {/* Parameter Groups — same layout as GradeManagement */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* Parameter Groups — same layout as GradeManagement with Mandatory checkbox */}
+              <div className="grid grid-cols-2 gap-2">
                 {PARAM_GROUPS.map((group) => (
                   <div key={group.title} className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="bg-slate-700 px-2 py-1">
                       <span className="text-[8px] font-bold text-white uppercase tracking-wider">{group.title}</span>
                     </div>
-                    <table className="w-full">
+                    <table className="w-full text-[9px] border-collapse">
                       <thead>
                         <tr className="bg-slate-100">
+                          <th className="px-1 py-0.5 text-[7px] text-slate-500 text-left w-6">M</th>
                           <th className="px-2 py-0.5 text-[7px] text-slate-500 text-left">Parameter</th>
                           <th className="px-1 py-0.5 text-[7px] text-slate-500 text-center w-20">Min</th>
                           <th className="px-1 py-0.5 text-[7px] text-slate-500 text-center w-20">Max</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {group.fields.map(([f]) => <LimitRow key={f} label={f} field={f} />)}
+                        {group.fields.map(([f]) => (
+                          <tr key={f} className="border-t border-slate-50 hover:bg-blue-50/20">
+                            <td className="px-1 py-0.5">
+                              <input
+                                type="checkbox"
+                                checked={!!mandatoryFields[f]}
+                                onChange={() => toggleMandatory(f)}
+                                className="w-3 h-3 rounded border-slate-300 text-indigo-600 cursor-pointer accent-indigo-600"
+                                title={`Mark ${f} as mandatory`}
+                              />
+                            </td>
+                            <td className="px-2 py-0.5 text-[9px] font-mono font-semibold text-slate-700 whitespace-nowrap">{f}</td>
+                            <td className="px-1 py-0.5"><Field name={`min_${f}`} type="number" step="any" className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] text-center outline-none focus:ring-1 focus:ring-blue-300" /></td>
+                            <td className="px-1 py-0.5"><Field name={`max_${f}`} type="number" step="any" className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] text-center outline-none focus:ring-1 focus:ring-blue-300" /></td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
