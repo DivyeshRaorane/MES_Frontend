@@ -174,10 +174,10 @@ const PTEntry = () => {
         const stopReason = log?.machine_stop_reason_t;
 
         if (
-          stopReason === "Fiber Break at TU Fiber Sensor" ||
-          stopReason === "Fiber Break at TakeUp" ||
-          stopReason === "Fiberbreak at Sensor" ||
-          stopReason === "Fiber Break at PayOff"
+          stopReason === "STOP -> Fiber Break at TU Fiber Sensor" ||
+          stopReason === "STOP -> Fiber Break at TakeUp" ||
+          stopReason === "STOP -> Fiberbreak at Sensor" ||
+          stopReason === "STOP -> Fiber Break at PayOff"
         ) {
           setFieldValue("pt_break", true);
           // pt_break is informational only — does NOT count as a rejection
@@ -850,26 +850,21 @@ console.log("Pt data:,", response)
                         </div>
 
                         <RejRowLayout label="Multiple End" checked={values.active_rejection_type === 'multiple_end'} onChange={e => handleRadioSelection('multiple_end', e.target.checked)}>
-                          <div className="flex items-center gap-1.5">
-                            <FormikInput
-                              compact
-                              name="multiple_end_weight"
-                              type="number"
-                              step="0.001"
-                              placeholder="Enter weight (kg)"
-                              className="!bg-white !text-slate-800 !font-semibold !border-slate-300"
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setFieldValue('multiple_end_weight', val); // Updates weight in Formik state
-
-                                // Compute and send length directly to pt_length field in real-time
-                                const weightNum = parseFloat(val) || 0;
-                                const computedLength = weightNum * 37;
-                                setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
-                              }}
-                            />
-                            <div className="bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5 text-[10px] font-bold text-emerald-800 font-mono whitespace-nowrap">={me.toFixed(2)} km</div>
-                          </div>
+                          <FormikInput
+                            compact
+                            name="multiple_end_weight"
+                            type="number"
+                            step="0.001"
+                            placeholder="Enter weight (kg)"
+                            className="!bg-white !text-slate-800 !font-semibold !border-slate-300"
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFieldValue('multiple_end_weight', val);
+                              const weightNum = parseFloat(val) || 0;
+                              const computedLength = weightNum * 37;
+                              setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
+                            }}
+                          />
                         </RejRowLayout>
 
                         <RejRowLayout label="Scratch" checked={values.active_rejection_type === 'scratch'} onChange={e => handleRadioSelection('scratch', e.target.checked)} />
@@ -1171,7 +1166,7 @@ console.log("Pt data:,", response)
               <h3 className="text-sm font-bold text-rose-700 mb-2">PT Break Detected</h3>
               <p className="text-xs text-slate-600 mb-4">
                 This entry has a <strong className="text-rose-600">PT Break</strong>.<br/>
-                Please book <strong className="text-rose-700 text-sm">1.80 km</strong> scrap for this break.
+                Please book <strong className="text-rose-700 text-sm">180M</strong> scrap for this break.
               </p>
               <button type="button" onClick={() => setShowBreakScrapAlert(false)}
                 className="px-6 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all">
