@@ -242,14 +242,13 @@ const processOrderSchema = Yup.object({
   materials: Yup.array()
     .of(
       Yup.object({
-        material_code: Yup.string().required('Material code is required'),
+        material_code: Yup.string(),
         process_qty: Yup.number()
           .typeError('Must be a number')
-          .required('Qty is required')
-          .min(0, 'Cannot be negative'),
+          .min(0, 'Cannot be negative')
+          .nullable(),
       })
-    )
-    .min(1, 'At least one component material is required'),
+    ),
 });
 
 const ProcessOrderForm = ({ processONo, onBack, onSaved }) => {
@@ -408,11 +407,13 @@ const ProcessOrderForm = ({ processONo, onBack, onSaved }) => {
         material_code: values.material_code,
         process_qty: processQty,
         balance_qty: processQty, // balance = process_qty on create
-        materials: values.materials.map(m => ({
-          material_code: m.material_code,
-          process_qty: parseFloat(m.process_qty),
-          balance_qty: parseFloat(m.balance_qty || m.process_qty),
-        })),
+        materials: values.materials
+          .filter(m => m.material_code) // Only include rows with a material selected
+          .map(m => ({
+            material_code: m.material_code,
+            process_qty: parseFloat(m.process_qty) || 0,
+            balance_qty: parseFloat(m.balance_qty || m.process_qty) || 0,
+          })),
       };
 
       let res;
