@@ -126,7 +126,7 @@ export const checkPTLength = ({
                 const pos1 = Number(flaw.pos1);
                 const pos2 = Number(flaw.pos2);
 
-                if (pos1 >= done && pos1 <= remainingEnd) {
+                if (pos1 > done && pos1 <= remainingEnd) {
                     const safeLength = Number((pos1 - done).toFixed(3));
 
                     // If safe length before flaw < GOOD_LENGTH, suggest (pos2 + 0.100 - done) as relative cut length
@@ -190,7 +190,7 @@ export const checkPTLength = ({
             const pos1 = Number(flaw.pos1);
             const pos2 = Number(flaw.pos2);
 
-            if (pos1 >= done && pos1 <= runEnd) {
+            if (pos1 > done && pos1 <= runEnd) {
 
                 const safeLength = Number((pos1 - done).toFixed(3));
 

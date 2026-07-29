@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers,
+  Package, Layers, ClipboardList, FileText,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -12,6 +12,8 @@ import axios from 'axios';
 import UserHomeScreen from '../../user_management/user/ui/user_home_screen';
 import MaterialMasterPanel from './MaterialMasterPanel';
 import ProcessTypePanel from './ProcessTypePanel';
+import BomMasterPanel from '../bom_master/ui/BomMasterPanel';
+import ProcessOrderPanel from '../process_order/ui/ProcessOrderPanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -76,6 +78,22 @@ const ADMIN_CARDS = [
     color: 'text-violet-600 bg-violet-100',
     component: 'process_type',
   },
+  {
+    key: 'bom_master',
+    title: 'BOM Master',
+    desc: 'Manage Bill of Materials for products',
+    icon: ClipboardList,
+    color: 'text-indigo-600 bg-indigo-100',
+    component: 'bom_master',
+  },
+  {
+    key: 'process_order',
+    title: 'Process Order',
+    desc: 'Manage production process orders',
+    icon: FileText,
+    color: 'text-amber-600 bg-amber-100',
+    component: 'process_order',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -120,6 +138,14 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'process_type') {
     return <ProcessTypePanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'bom_master') {
+    return <BomMasterPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'process_order') {
+    return <ProcessOrderPanel onBack={() => setActiveCard(null)} />;
   }
 
   return (
