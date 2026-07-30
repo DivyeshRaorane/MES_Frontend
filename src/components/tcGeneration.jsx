@@ -1,316 +1,475 @@
-import React, { useState } from 'react';
-import { FileText, Download, Printer, Package } from 'lucide-react';
-import { ModuleCard, FormikInput } from './common_fields';
+import React, { useState, useEffect } from 'react';
+import { FileText, Download, Printer, Package, Loader2, Search, Plus, Eye, ArrowLeft } from 'lucide-react';
+import { ModuleCard } from './common_fields';
 import { SubmitButton, ResetButton } from './common_buttons';
+import { showSuccess, showError } from '../utils/toastService';
+import { getPackingOrders, loadTCData, saveTC, getAllTCs, getTCById } from '../pages/tc_generation/services/tc_generation.api';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
-/* ── Dummy PO data ── */
-const PO_MASTER = {
-  'PO-2024-001': {
-    product:        'G.652.D Single Mode Fiber',
-    po_date:        '2024-05-01',
-    consignee:      'Precision Optics Ltd, Mumbai',
-    test_report_no: 'TR-2024-0451',
-    dispatch:       '2024-05-15',
-    total_qty_km:   '4500.000',
-    total_bobbin:   10,
-  },
-  'PO-2024-002': {
-    product:        'G.657.A1 Bend Insensitive Fiber',
-    po_date:        '2024-04-20',
-    consignee:      'Fiber Tech Inc, Delhi',
-    test_report_no: 'TR-2024-0388',
-    dispatch:       '2024-05-10',
-    total_qty_km:   '3800.500',
-    total_bobbin:   8,
-  },
-};
-
-/* ── Dummy fiber rows ── */
-const makeFiberRows = (n) => Array.from({ length: n }, (_, i) => ({
-  id:           i,
-  product:      'G.652.D',
-  batch_id:     `B-${2024}${String(i+1).padStart(3,'0')}`,
-  box_no:       `BOX-${String(Math.floor(i/4)+1).padStart(2,'0')}`,
-  charged_len:  (450 + i * 2.5).toFixed(3),
-  actual_len:   (449 + i * 2.5).toFixed(3),
-  attn_1310:    (0.330 + i * 0.001).toFixed(3),
-  attn_1550:    (0.190 + i * 0.001).toFixed(3),
-  attn_1383:    (0.400 + i * 0.002).toFixed(3),
-  attn_1625:    (0.210 + i * 0.001).toFixed(3),
-  mfd_1310:     (9.20  + i * 0.01).toFixed(2),
-  mfd_1550:     (10.40 + i * 0.01).toFixed(2),
-  fiber_cutoff: (1260  + i).toFixed(0),
-  cable_cutoff: (1230  + i).toFixed(0),
-  zdw:          (1313  + i * 0.1).toFixed(1),
-  zds:          (0.086 + i * 0.0001).toFixed(4),
-  disp_1550:    (17.0  + i * 0.05).toFixed(2),
-  disp_1625:    (21.5  + i * 0.05).toFixed(2),
-  pmd:          (0.04  + i * 0.001).toFixed(3),
-  clad_dia:     (125.0 + i * 0.01).toFixed(2),
-  core_clad_conc:(0.30 + i * 0.01).toFixed(2),
-  clad_noncirc: (0.5   + i * 0.01).toFixed(2),
-  coat_noncirc: (0.8   + i * 0.01).toFixed(2),
-  coat_dia_unc: (242   + i * 0.1).toFixed(1),
-  coat_clad_conc:(1.0  + i * 0.01).toFixed(2),
-  fiber_curl:   (4.0   + i * 0.1).toFixed(1),
-}));
-
-/* ── Editable spec sections from screenshots ── */
+/* ── Spec sections ── */
 const SPEC_SECTIONS = [
-  {
-    title: 'Macro Bend Loss',
-    rows: [
-      { label: '1 Turn, 10 mm Radius',  key: 'mb_1turn',  default: '≤0.75 dB at 1550\n≤1.5 dB at 1625' },
-      { label: '10 Turn, 15 mm Radius', key: 'mb_10turn', default: '≤0.25 dB at 1550\n≤1.0 dB at 1625' },
-    ],
-  },
-  {
-    title: 'Mechanical Characteristics',
-    rows: [
-      { label: 'Proof Test Levels',                key: 'mech_proof',    default: '≥ 100 kpsi (0.69 GPa) or 1% strain' },
-      { label: 'Coating strip force',              key: 'mech_coat',     default: '≥ 1.3 N (0.3 lbf) and 5.0 N (1.1 lbf)' },
-      { label: 'Tensile Strength - Aged (Median)', key: 'mech_aged',     default: '≥ 3.03 GPa' },
-      { label: 'Tensile Strength - Un Aged (Median)',key:'mech_unaged',  default: '≥ 3.80 GPa' },
-    ],
-  },
-  {
-    title: 'Environmental Characteristics',
-    rows: [
-      { label: 'Temperature dependence\nInduced attenuation, -60°C to +85°C at 1310,1550,1625 nm',                                          key: 'env_temp',    default: '≤ 0.05 dB/km' },
-      { label: 'Temperature humidity cycling\nInduced attenuation, -10°C to +85°C and 95% relative humidity at 1310, 1550,1625 nm',          key: 'env_thc',     default: '≤ 0.05 dB/km' },
-      { label: 'High temperature and humidity aging 85°C at 85% RH, 30 days\nInduced attenuation at 1310, 1550, 1625 nm due to aging',       key: 'env_htha',    default: '≤ 0.05 dB/km' },
-      { label: 'Water immersion, 30 days\nInduced attenuation due to water immersion at 23 ± 2°C at 1310, 1550, 1625nm',                     key: 'env_water',   default: '≤ 0.05 dB/km' },
-      { label: 'Accelerated aging (Temperature), 30 days\nInduced attenuation due to temperature aging at 85 ± 2°C at 1310, 1550, 1625nm',  key: 'env_accel',   default: '≤ 0.05 dB/km' },
-    ],
-  },
-  {
-    title: 'Other Performance Characteristics',
-    rows: [
-      { label: 'Effective group index of refraction',                                                                                          key: 'opc_egir',    default: '1.4670 at 1310 nm\n1.4675 at 1550 nm\n1.4680 at 1625 nm' },
-      { label: 'Attenuation in the wavelength region from\n1285 - 1330 nm in reference to the attenuation at 1310 nm',                       key: 'opc_attn1',   default: '≤ 0.03 dB/km' },
-      { label: 'Attenuation in the wavelength region from\n1525 - 1575 nm in reference to the attenuation at 1550 nm',                       key: 'opc_attn2',   default: '≤ 0.02 dB/km' },
-      { label: 'Point discontinuities at 1310 nm & 1550 nm',                                                                                  key: 'opc_pd',      default: '≤ 0.05 dB' },
-      { label: 'Dynamic fatigue parameter (Nd)',                                                                                               key: 'opc_nd',      default: '≥ 20' },
-    ],
-  },
+  { title: 'Macro Bend Loss', rows: [
+    { label: '1 Turn, 10 mm Radius', key: 'mb_1turn', default: '≤0.75 dB at 1550\n≤1.5 dB at 1625' },
+    { label: '10 Turn, 15 mm Radius', key: 'mb_10turn', default: '≤0.25 dB at 1550\n≤1.0 dB at 1625' },
+  ]},
+  { title: 'Mechanical Characteristics', rows: [
+    { label: 'Proof Test Levels', key: 'mech_proof', default: '≥ 100 kpsi (0.69 GPa) or 1% strain' },
+    { label: 'Coating strip force', key: 'mech_coat', default: '≥ 1.3 N and 5.0 N' },
+    { label: 'Tensile Strength - Aged (Median)', key: 'mech_aged', default: '≥ 3.03 GPa' },
+    { label: 'Tensile Strength - Un Aged (Median)', key: 'mech_unaged', default: '≥ 3.80 GPa' },
+  ]},
+  { title: 'Environmental Characteristics', rows: [
+    { label: 'Temperature dependence -60°C to +85°C', key: 'env_temp', default: '≤ 0.05 dB/km' },
+    { label: 'Temperature humidity cycling -10°C to +85°C', key: 'env_thc', default: '≤ 0.05 dB/km' },
+    { label: 'High temp humidity aging 85°C/85% RH', key: 'env_htha', default: '≤ 0.05 dB/km' },
+    { label: 'Water immersion 30 days', key: 'env_water', default: '≤ 0.05 dB/km' },
+    { label: 'Accelerated aging 85°C 30 days', key: 'env_accel', default: '≤ 0.05 dB/km' },
+  ]},
+  { title: 'Other Performance Characteristics', rows: [
+    { label: 'Effective group index of refraction', key: 'opc_egir', default: '1.4670 at 1310\n1.4675 at 1550\n1.4680 at 1625' },
+    { label: 'Attenuation 1285-1330 nm ref 1310', key: 'opc_attn1', default: '≤ 0.03 dB/km' },
+    { label: 'Attenuation 1525-1575 nm ref 1550', key: 'opc_attn2', default: '≤ 0.02 dB/km' },
+    { label: 'Point discontinuities at 1310 & 1550', key: 'opc_pd', default: '≤ 0.05 dB' },
+    { label: 'Dynamic fatigue parameter (Nd)', key: 'opc_nd', default: '≥ 20' },
+  ]},
 ];
 
-/* ── Table column definitions ── */
-const COLS = [
-  { key: 'product',      label: 'Product'                          },
-  { key: 'batch_id',     label: 'Batch ID'                         },
-  { key: 'box_no',       label: 'Box No.'                          },
-  { key: 'charged_len',  label: 'Charged Length (km)'              },
-  { key: 'actual_len',   label: 'Actual Length (km)'               },
-  { key: 'attn_1310',    label: 'Attenuation 1310nm (dB/km)'       },
-  { key: 'attn_1550',    label: 'Attenuation 1550nm (dB/km)'       },
-  { key: 'attn_1383',    label: 'Attenuation 1383nm (dB/km)'       },
-  { key: 'attn_1625',    label: 'Attenuation 1625nm (dB/km)'       },
-  { key: 'mfd_1310',     label: 'Mode Field Dia 1310nm (µm)'       },
-  { key: 'mfd_1550',     label: 'Mode Field Dia 1550nm (µm)'       },
-  { key: 'fiber_cutoff', label: 'Fiber Cutoff Wavelength (nm)'     },
-  { key: 'cable_cutoff', label: 'Cable Cutoff Wavelength (nm)'     },
-  { key: 'zdw',          label: 'Zero Dispersion Wavelength (nm)'  },
-  { key: 'zds',          label: 'Zero Dispersion Slope (ps/nm².km)'},
-  { key: 'disp_1550',    label: 'Dispersion at 1550nm (ps/nm.km)'  },
-  { key: 'disp_1625',    label: 'Dispersion at 1625nm (ps/nm.km)'  },
-  { key: 'pmd',          label: 'PMD Coefficient (ps/√km)'         },
-  { key: 'clad_dia',     label: 'Cladding Diameter (µm)'           },
-  { key: 'core_clad_conc',label:'Core-Clad Concentricity Error (µm)'},
-  { key: 'clad_noncirc', label: 'Cladding Non-Circularity (%)'     },
-  { key: 'coat_noncirc', label: 'Coating Non-Circularity (%)'      },
-  { key: 'coat_dia_unc', label: 'Coating Diameter Uncolored (µm)'  },
-  { key: 'coat_clad_conc',label:'Coating-Cladding Concentricity Error (µm)'},
-  { key: 'fiber_curl',   label: 'Fiber Curl (m)'                   },
+const FIBER_COLS = [
+  { key: 'bobbin_no', label: 'Bobbin No' }, { key: 'bobbin_fid', label: 'FID' },
+  { key: 'box_no', label: 'Box' }, { key: 'stack_no', label: 'Stack' },
+  { key: 'length_km', label: 'Length (KM)' }, { key: 'product_type', label: 'Product' },
+  { key: 'avg_lsa_atn_1310', label: 'ATN 1310' }, { key: 'avg_lsa_atn_1550', label: 'ATN 1550' },
+  { key: 'avg_lsa_atn_1625', label: 'ATN 1625' }, { key: 'avg_lsa_atn_1383', label: 'ATN 1383' },
+  { key: 'mfd_1310_top', label: 'MFD 1310' }, { key: 'mfd_1550_top', label: 'MFD 1550' },
+  { key: 'cut_off_top', label: 'Cutoff' }, { key: 'cable_cut_off', label: 'Cable Cutoff' },
+  { key: 'mac_value', label: 'MAC' }, { key: 'zero_disp_wave', label: 'ZDW' },
+  { key: 'disp_1550', label: 'Disp 1550' }, { key: 'pmd_1550', label: 'PMD' },
+  { key: 'clad_dia_top', label: 'Clad Dia' }, { key: 'fiber_curl_top', label: 'Curl' },
+  { key: 'final_grade', label: 'Grade' },
 ];
 
-/* ── CSV export ── */
-const exportCSV = (rows, poNo) => {
-  const header = COLS.map(c => `"${c.label}"`).join(',');
-  const body   = rows.map(r => COLS.map(c => `"${r[c.key]}"`).join(',')).join('\n');
-  const blob   = new Blob([header + '\n' + body], { type: 'text/csv' });
-  const url    = URL.createObjectURL(blob);
-  const a      = document.createElement('a'); a.href = url; a.download = `TC_${poNo}.csv`; a.click();
-  URL.revokeObjectURL(url);
+const exportExcel = (rows, orderNo, header) => {
+  if (!rows || rows.length === 0) return;
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: TC Header + Specs
+  const headerData = [
+    ['TEST CERTIFICATE'],
+    [],
+    ['TC Number', header?.tc_number || ''],
+    ['Packing Order', header?.packing_order || orderNo || ''],
+    ['TC Date', header?.tc_date?.split('T')[0] || ''],
+    ['Customer Reference', header?.customer_ref || ''],
+    ['Inspection Date', header?.inspection_date?.split('T')[0] || ''],
+    ['Inspection By', header?.inspection_by || ''],
+    ['Approved By', header?.approved_by || ''],
+    ['Revision', header?.revision || ''],
+    ['Version', header?.version || ''],
+    ['Total KM', header?.total_km || rows.reduce((s, r) => s + (parseFloat(r.length_km) || 0), 0).toFixed(3)],
+    ['Total Bobbins', header?.total_bobbins || rows.length],
+    ['Remarks', header?.remarks || ''],
+    [],
+    ['SPECIFICATIONS'],
+    [],
+  ];
+  SPEC_SECTIONS.forEach(section => {
+    headerData.push([section.title]);
+    section.rows.forEach(row => {
+      headerData.push([row.label, header?.[row.key] || row.default]);
+    });
+    headerData.push([]);
+  });
+  const wsHeader = XLSX.utils.aoa_to_sheet(headerData);
+  wsHeader['!cols'] = [{ wch: 45 }, { wch: 50 }];
+  XLSX.utils.book_append_sheet(wb, wsHeader, 'TC Info');
+
+  // Sheet 2: Fiber Data
+  const fiberHeaders = FIBER_COLS.map(c => c.label);
+  const fiberData = rows.map(r => FIBER_COLS.map(c => r[c.key] ?? r?.qc_data?.[c.key] ?? ''));
+  const wsFiber = XLSX.utils.aoa_to_sheet([fiberHeaders, ...fiberData]);
+  wsFiber['!cols'] = fiberHeaders.map(h => ({ wch: Math.max(h.length + 2, 12) }));
+  XLSX.utils.book_append_sheet(wb, wsFiber, 'Fiber Data');
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  saveAs(new Blob([wbout]), `TC_${header?.tc_number || orderNo}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
-/* ══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   MAIN COMPONENT — List / Create / View
+   ══════════════════════════════════════════════════════════ */
 const TCGenerationDashboard = () => {
-  const [poInput,   setPoInput]   = useState('');
-  const [poData,    setPoData]    = useState(null);
+  const [view, setView] = useState('list'); // 'list' | 'create' | 'view'
+  const [viewTcId, setViewTcId] = useState(null);
+
+  if (view === 'create') return <TCCreateForm onBack={() => setView('list')} onSaved={() => setView('list')} />;
+  if (view === 'view') return <TCViewDetail tcId={viewTcId} onBack={() => setView('list')} />;
+  return <TCListView onCreate={() => setView('create')} onView={(id) => { setViewTcId(id); setView('view'); }} />;
+};
+
+/* ══════════════════════════════════════════════════════════
+   TC LIST VIEW
+   ══════════════════════════════════════════════════════════ */
+const TCListView = ({ onCreate, onView }) => {
+  const [tcs, setTcs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    (async () => { setLoading(true); try { const r = await getAllTCs(); setTcs(r?.data || []); } catch(e){} setLoading(false); })();
+  }, []);
+
+  const filtered = tcs.filter(t => {
+    const q = search.toLowerCase();
+    return !q || t.tc_number?.toLowerCase().includes(q) || t.packing_order?.toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <div className="px-4 py-2 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-indigo-50/30 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm"><FileText size={16} className="text-white" /></div>
+            <div><h1 className="text-sm font-bold text-slate-800 leading-none">Test Certificates</h1>
+              <p className="text-[9px] text-slate-400 mt-0.5">Generated TCs</p></div>
+            <span className="text-[8px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-bold ml-2">{tcs.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
+                className="pl-7 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500/20 w-44" /></div>
+            <button type="button" onClick={onCreate}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded-lg hover:bg-indigo-700 shadow-sm">
+              <Plus size={11} /> Create TC</button>
+          </div>
+        </div>
+        <div className="overflow-y-auto flex-1">
+          {loading ? <div className="flex items-center justify-center py-16"><Loader2 size={18} className="text-indigo-500 animate-spin" /></div> : (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-slate-800 z-10"><tr>
+              {['#','TC Number','Packing Order','TC Date','Total KM','Total Bobbins','Created','Actions'].map(h=>(<th key={h} className="px-3 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>))}
+            </tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.length === 0 ? <tr><td colSpan={8} className="px-4 py-10 text-center text-xs text-slate-400">No TCs found</td></tr>
+              : filtered.map((tc, idx) => (
+                <tr key={tc.tc_id} className="hover:bg-blue-50/30"><td className="px-3 py-2 text-[10px] font-bold text-slate-400 border-r border-slate-100">{idx+1}</td>
+                  <td className="px-3 py-2 text-xs font-bold text-indigo-700 font-mono border-r border-slate-100">{tc.tc_number}</td>
+                  <td className="px-3 py-2 text-xs text-slate-700 border-r border-slate-100">{tc.packing_order}</td>
+                  <td className="px-3 py-2 text-[10px] text-slate-500 border-r border-slate-100">{tc.tc_date?.split('T')[0] || '—'}</td>
+                  <td className="px-3 py-2 text-xs font-mono text-emerald-700 border-r border-slate-100">{tc.total_km ? parseFloat(tc.total_km).toFixed(3) : '—'}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600 text-center border-r border-slate-100">{tc.total_bobbins || '—'}</td>
+                  <td className="px-3 py-2 text-[10px] text-slate-500 border-r border-slate-100">{tc.created_at?.split('T')[0] || '—'}</td>
+                  <td className="px-3 py-2"><button onClick={() => onView(tc.tc_id)}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-bold rounded hover:bg-blue-100"><Eye size={9} /> View</button></td>
+                </tr>))}
+            </tbody>
+          </table>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   TC VIEW DETAIL
+   ══════════════════════════════════════════════════════════ */
+const TCViewDetail = ({ tcId, onBack }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => { try { const r = await getTCById(tcId); if (r?.success) setData(r.data); } catch(e){} setLoading(false); })();
+  }, [tcId]);
+
+  if (loading) return <div className="h-full flex items-center justify-center"><Loader2 size={20} className="animate-spin text-indigo-500" /></div>;
+  if (!data) return <div className="h-full flex items-center justify-center text-sm text-slate-400">TC not found</div>;
+
+  const header = data.header || {};
+  const bobbins = data.bobbins || [];
+  const totalKm = bobbins.reduce((s, b) => s + (parseFloat(b.length_km) || 0), 0);
+
+  return (
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="flex items-center gap-1 text-[9px] text-blue-600 font-bold hover:underline"><ArrowLeft size={11} /> Back</button>
+            <FileText size={14} className="text-indigo-600" />
+            <span className="text-[11px] font-bold text-slate-700 uppercase">View TC — {header.tc_number}</span>
+          </div>
+          <button onClick={() => exportExcel(bobbins, header.packing_order, header)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded hover:bg-emerald-700"><Download size={10} /> Excel</button>
+        </div>
+
+        {/* TC Header Information - All fields */}
+        <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0 space-y-2">
+          <p className="text-[8px] font-bold text-indigo-700 uppercase tracking-wider">TC Header Information</p>
+          <div className="grid grid-cols-5 gap-3">
+            {[
+              ['TC Number', header.tc_number],
+              ['Packing Order', header.packing_order],
+              ['TC Date', header.tc_date?.split('T')[0]],
+              ['Customer Ref', header.customer_ref],
+              ['Inspection Date', header.inspection_date?.split('T')[0]],
+              ['Inspection By', header.inspection_by],
+              ['Approved By', header.approved_by],
+              ['Revision', header.revision],
+              ['Version', header.version],
+              ['Total KM', totalKm.toFixed(3)],
+              ['Total Bobbins', bobbins.length],
+              ['Remarks', header.remarks],
+              ['Created At', header.created_at?.split('T')[0]],
+            ].map(([l, v]) => (
+              <div key={l} className="flex flex-col gap-0.5">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">{l}</span>
+                <span className="text-[11px] font-bold text-slate-700">{v || '—'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Spec Values */}
+        {(header.mb_1turn || header.mech_proof || header.env_temp || header.opc_egir) && (
+          <div className="px-4 py-2 border-b border-slate-100 flex-shrink-0 overflow-y-auto max-h-[200px]">
+            <p className="text-[8px] font-bold text-blue-700 uppercase tracking-wider mb-2">Specifications</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SPEC_SECTIONS.map(section => (
+                <div key={section.title} className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-blue-600 px-2 py-1"><span className="text-[8px] font-bold text-white uppercase">{section.title}</span></div>
+                  <table className="w-full"><tbody>
+                    {section.rows.map(row => (
+                      <tr key={row.key} className="border-b border-slate-50 last:border-0">
+                        <td className="px-2 py-1 text-[9px] text-slate-600 w-1/2 border-r border-slate-100">{row.label}</td>
+                        <td className="px-2 py-1 text-[9px] text-slate-700 font-medium whitespace-pre-line">{header[row.key] || row.default}</td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bobbins Table */}
+        <div className="flex-1 overflow-auto">
+          <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 sticky top-0 z-5">
+            <Package size={12} className="text-blue-600" />
+            <span className="font-bold text-slate-700 text-[9px] uppercase">Fiber Data</span>
+            <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{bobbins.length}</span>
+          </div>
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-[33px] bg-slate-800 z-10"><tr>
+              {['#',...FIBER_COLS.map(c=>c.label)].map(h=>(<th key={h} className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 last:border-0">{h}</th>))}
+            </tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {bobbins.map((b, i) => {
+                const qc = b.qc_data || {};
+                return (<tr key={i} className="hover:bg-blue-50/20">
+                  <td className="px-2 py-1.5 text-[9px] text-slate-400 font-bold border-r border-slate-100">{i+1}</td>
+                  {FIBER_COLS.map(c => (<td key={c.key} className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100 last:border-0 whitespace-nowrap">{b[c.key] ?? qc[c.key] ?? '—'}</td>))}
+                </tr>);
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   TC CREATE FORM
+   ══════════════════════════════════════════════════════════ */
+const TCCreateForm = ({ onBack, onSaved }) => {
+  const [packingOrders, setPackingOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState('');
+  const [poData, setPoData] = useState(null);
   const [fiberRows, setFiberRows] = useState([]);
-  const [specVals,  setSpecVals]  = useState(() => {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showPoModal, setShowPoModal] = useState(false);
+  const [poSearch, setPoSearch] = useState('');
+  const [tcForm, setTcForm] = useState({
+    tc_number: '', tc_date: new Date().toISOString().split('T')[0],
+    customer_ref: '', inspection_date: '', inspection_by: '',
+    approved_by: '', remarks: '', revision: '0', version: '1.0',
+  });
+  const [specVals, setSpecVals] = useState(() => {
     const init = {};
     SPEC_SECTIONS.forEach(s => s.rows.forEach(r => { init[r.key] = r.default; }));
     return init;
   });
 
-  /* ── Load PO ── */
-  const loadPO = () => {
-    const d = PO_MASTER[poInput.trim()];
-    if (!d) { alert(`PO not found. Try: PO-2024-001 or PO-2024-002`); return; }
-    setPoData(d);
-    setFiberRows(makeFiberRows(d.total_bobbin));
+  const fetchPackingOrders = async () => {
+    try { const res = await getPackingOrders(); setPackingOrders(res?.data || []); } catch(e){ showError('Failed to load orders'); }
   };
 
-  /* ── Reset ── */
-  const handleReset = () => { setPoInput(''); setPoData(null); setFiberRows([]); };
-
-  /* ── Submit ── */
-  const handleSubmit = () => {
-    if (!poData) { alert('Load a PO first.'); return; }
-    console.log('TC Submit:', { poInput, poData, fiberRows, specVals });
-    alert('Test Certificate generated successfully!');
+  const handleLoadPO = async (orderNo) => {
+    if (!orderNo) return;
+    setLoading(true); setShowPoModal(false); setSelectedOrder(orderNo);
+    try {
+      const res = await loadTCData(orderNo);
+      if (res?.success) {
+        const header = res.data?.header || res.data;
+        // Block if TC already generated
+        if (header.tc_generated) { showError('TC already generated for this order. Cannot create again.'); setLoading(false); setSelectedOrder(''); return; }
+        setPoData(header);
+        setFiberRows(res.data?.bobbins || []);
+        showSuccess(`Loaded ${res.data?.bobbins?.length || 0} bobbin(s)`);
+      } else { showError(res?.message || 'Failed'); }
+    } catch(e) { showError(e?.response?.data?.message || 'Failed to load'); }
+    setLoading(false);
   };
 
-  /* ── Edit spec cell ── */
-  const editSpec = (key, val) => setSpecVals(prev => ({ ...prev, [key]: val }));
+  const handleSave = async () => {
+    if (!selectedOrder) { showError('Load a Packing Order first'); return; }
+    if (!tcForm.tc_number) { showError('TC Number is required'); return; }
+    if (fiberRows.length === 0) { showError('No bobbins'); return; }
+    setSaving(true);
+    try {
+      const payload = { packing_order: selectedOrder, ...tcForm, spec_values: specVals,
+        total_km: fiberRows.reduce((s, r) => s + (parseFloat(r.length_km) || 0), 0),
+        total_bobbins: fiberRows.length, bobbins: fiberRows };
+      const res = await saveTC(payload);
+      if (res?.success) { showSuccess('TC saved!'); onSaved(); }
+      else showError(res?.message || 'Save failed');
+    } catch(e) { showError(e?.response?.data?.message || 'Failed'); }
+    setSaving(false);
+  };
+
+  const totalKm = fiberRows.reduce((s, r) => s + (parseFloat(r.length_km) || 0), 0);
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <div className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
- <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">PT Break Analysis</span>
-              <div className="flex gap-1.5">
-                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                <SubmitButton compact type="submit">Generate TC</SubmitButton>
-                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
-              </div>
+          {/* Header */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <button onClick={onBack} className="flex items-center gap-1 text-[9px] text-blue-600 font-bold hover:underline"><ArrowLeft size={11} /> Back</button>
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Create TC</span>
             </div>
-          {/* ── PO Input + Summary ── */}
-          <ModuleCard compact title="TC Generation" icon={<FileText size={13} className="text-blue-600" />}>
-            <div className="flex flex-col gap-2">
-              {/* PO input row */}
-              <div className="flex items-end gap-2">
-                <div className="flex flex-col gap-0.5 w-44">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Purchase Order No.</label>
-                  <input value={poInput} onChange={e => setPoInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && loadPO()}
-                    placeholder="e.g. PO-2024-001"
-                    className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20" />
-                </div>
-                <button type="button" onClick={loadPO}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all h-[28px]">
-                  Load PO
-                </button>
+            <div className="flex gap-1.5">
+              <ResetButton compact type="button" onClick={onBack}>Cancel</ResetButton>
+              <SubmitButton compact type="button" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save TC'}</SubmitButton>
+            </div>
+          </div>
 
-                {/* Export buttons */}
-                {poData && (
-                  <div className="flex gap-1.5 ml-auto">
-                    <button type="button" onClick={() => exportCSV(fiberRows, poInput)}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded hover:bg-emerald-700 transition-all">
-                      <Download size={10} /> CSV
-                    </button>
-                    <button type="button" onClick={() => window.print()}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 transition-all">
-                      <Printer size={10} /> PDF
-                    </button>
-                  </div>
+          {/* PO Selection */}
+          <ModuleCard compact title="Packing Order" icon={<FileText size={13} className="text-blue-600" />}>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-end gap-2">
+                <div className="flex flex-col gap-0.5 w-48">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Order No</label>
+                  <input value={selectedOrder} readOnly placeholder="Click Load PO..."
+                    className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none" />
+                </div>
+                <button type="button" onClick={() => { fetchPackingOrders(); setShowPoModal(true); }}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 h-[28px]">Load PO</button>
+                {fiberRows.length > 0 && (
+                  <button type="button" onClick={() => exportExcel(fiberRows, selectedOrder, { ...tcForm, packing_order: selectedOrder, ...specVals })}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded hover:bg-emerald-700 ml-auto"><Download size={10} /> Excel</button>
                 )}
               </div>
-
-              {/* PO summary fields */}
               {poData && (
                 <div className="grid grid-cols-7 gap-2 pt-1 border-t border-slate-100">
-                  {[
-                    { label: 'Product',        val: poData.product        },
-                    { label: 'PO Date',         val: poData.po_date        },
-                    { label: 'Consignee',       val: poData.consignee      },
-                    { label: 'Test Report No.', val: poData.test_report_no },
-                    { label: 'Dispatch Date',   val: poData.dispatch       },
-                    { label: 'Total Qty (km)',  val: poData.total_qty_km   },
-                    { label: 'Total Bobbins',   val: poData.total_bobbin   },
-                  ].map(({ label, val }) => (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase">{label}</span>
-                      <span className="text-[10px] font-bold text-slate-700 truncate" title={String(val)}>{val}</span>
-                    </div>
-                  ))}
+                  {[['Customer', poData.customer_name],['Required KM', poData.required_km],['Total Packed KM', totalKm.toFixed(3)],
+                    ['Total Bobbins', fiberRows.length],['Box Cap', poData.box_capacity],['Stack Cap', poData.stack_capacity],
+                    ['Created', poData.created_at?.split('T')[0]]
+                  ].map(([l,v])=>(<div key={l}><span className="text-[8px] font-bold text-slate-400 uppercase">{l}</span><span className="text-[10px] font-bold text-slate-700 block truncate">{v||'—'}</span></div>))}
                 </div>
               )}
             </div>
           </ModuleCard>
 
-          {/* ── Main fiber data table ── */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: '35vh' }}>
+          {/* TC Form */}
+          {poData && (
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 flex-shrink-0">
+              <p className="text-[8px] font-bold text-indigo-700 uppercase tracking-wider mb-2">TC Information</p>
+              <div className="grid grid-cols-5 gap-2">
+                {[{l:'TC Number *',k:'tc_number',p:'TR-2024-0001'},{l:'TC Date',k:'tc_date',t:'date'},{l:'Customer Ref',k:'customer_ref',p:'Ref...'},
+                  {l:'Inspection Date',k:'inspection_date',t:'date'},{l:'Inspection By',k:'inspection_by',p:'Name...'},
+                  {l:'Approved By',k:'approved_by',p:'Name...'},{l:'Remarks',k:'remarks',p:'...'},{l:'Revision',k:'revision'},{l:'Version',k:'version'}
+                ].map(({l,k,t,p})=>(<div key={k} className="flex flex-col gap-0.5"><label className="text-[8px] font-bold text-slate-500 uppercase ml-0.5">{l}</label>
+                  <input type={t||'text'} value={tcForm[k]} onChange={e=>setTcForm(f=>({...f,[k]:e.target.value}))} placeholder={p}
+                    className="bg-white border border-slate-200 rounded px-2 py-1 text-[10px] outline-none focus:ring-1 focus:ring-blue-300" /></div>))}
+              </div>
+            </div>
+          )}
+
+          {/* Fiber Table */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: '30vh' }}>
             <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 flex-shrink-0">
               <Package size={12} className="text-blue-600" />
-              <span className="font-bold text-slate-700 text-[9px] uppercase tracking-wider">Fiber Test Data</span>
-              {fiberRows.length > 0 && (
-                <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{fiberRows.length} rows</span>
-              )}
+              <span className="font-bold text-slate-700 text-[9px] uppercase">Fiber Test Data</span>
+              {fiberRows.length > 0 && <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{fiberRows.length}</span>}
             </div>
             <div className="overflow-auto flex-1">
-              <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
-                <thead className="sticky top-0 bg-slate-800 z-10">
-                  <tr>
-                    {COLS.map(c => (
-                      <th key={c.key}
-                        className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 last:border-0 min-w-[90px]">
-                        {c.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
+              {loading ? <div className="flex items-center justify-center py-10"><Loader2 size={18} className="animate-spin text-blue-500" /></div> : (
+              <table className="text-left border-collapse" style={{minWidth:'100%'}}>
+                <thead className="sticky top-0 bg-slate-800 z-10"><tr>
+                  {FIBER_COLS.map(c=>(<th key={c.key} className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 last:border-0 min-w-[75px]">{c.label}</th>))}
+                </tr></thead>
                 <tbody className="divide-y divide-slate-100">
-                  {fiberRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={COLS.length} className="px-4 py-8 text-center text-[10px] text-slate-400">
-                        Load a PO to view fiber test data
-                      </td>
-                    </tr>
-                  ) : fiberRows.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-blue-50/20 transition-colors">
-                      {COLS.map(c => (
-                        <td key={c.key} className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100 last:border-0 whitespace-nowrap">
-                          {row[c.key]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {fiberRows.length===0 ? <tr><td colSpan={FIBER_COLS.length} className="px-4 py-8 text-center text-[10px] text-slate-400">Load a Packing Order</td></tr>
+                  : fiberRows.map((row,idx)=>(<tr key={idx} className="hover:bg-blue-50/20">
+                    {FIBER_COLS.map(c=>(<td key={c.key} className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100 last:border-0 whitespace-nowrap">{row[c.key]??'—'}</td>))}
+                  </tr>))}
                 </tbody>
-              </table>
+              </table>)}
             </div>
           </div>
 
-          {/* ── Editable spec sections ── */}
+          {/* Spec Sections */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="flex flex-col gap-2">
-              {SPEC_SECTIONS.map(section => (
-                <div key={section.title} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  {/* Section header — blue like screenshot */}
-                  <div className="bg-blue-600 px-3 py-1.5">
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">{section.title}</span>
-                  </div>
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      {section.rows.map(row => (
-                        <tr key={row.key} className="border-b border-slate-100 last:border-0">
-                          {/* Label */}
-                          <td className="px-3 py-2 text-xs text-slate-700 font-medium w-1/2 align-top whitespace-pre-line border-r border-slate-200">
-                            {row.label}
-                          </td>
-                          {/* Editable value */}
-                          <td className="px-2 py-1.5 w-1/2">
-                            <textarea
-                              value={specVals[row.key]}
-                              onChange={e => editSpec(row.key, e.target.value)}
-                              rows={specVals[row.key]?.split('\n').length || 1}
-                              className="w-full bg-transparent text-xs text-slate-700 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5 resize-none border border-transparent focus:border-blue-200 transition-all"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
+              {SPEC_SECTIONS.map(section=>(<div key={section.title} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-blue-600 px-3 py-1.5"><span className="text-[10px] font-bold text-white uppercase tracking-wider">{section.title}</span></div>
+                <table className="w-full border-collapse"><tbody>
+                  {section.rows.map(row=>(<tr key={row.key} className="border-b border-slate-100 last:border-0">
+                    <td className="px-3 py-2 text-xs text-slate-700 font-medium w-1/2 align-top whitespace-pre-line border-r border-slate-200">{row.label}</td>
+                    <td className="px-2 py-1.5 w-1/2"><textarea value={specVals[row.key]} onChange={e=>setSpecVals(p=>({...p,[row.key]:e.target.value}))}
+                      rows={specVals[row.key]?.split('\n').length||1}
+                      className="w-full bg-transparent text-xs text-slate-700 outline-none focus:bg-slate-50 focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5 resize-none border border-transparent focus:border-blue-200" /></td>
+                  </tr>))}
+                </tbody></table>
+              </div>))}
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* PO Modal */}
+      {showPoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-xl shadow-2xl w-[500px] max-h-[70vh] flex flex-col overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <span className="text-xs font-bold text-slate-700 uppercase">Select Packing Order</span>
+              <button onClick={()=>setShowPoModal(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+            </div>
+            <div className="px-4 py-2 border-b border-slate-100"><div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={poSearch} onChange={e=>setPoSearch(e.target.value)} placeholder="Search..."
+                className="w-full pl-7 pr-3 py-1.5 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-300" /></div></div>
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-left border-collapse"><thead className="sticky top-0 bg-slate-100"><tr>
+                {['Order No','Customer','Required KM','TC Status','Date'].map(h=>(<th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">{h}</th>))}
+              </tr></thead><tbody className="divide-y divide-slate-100">
+                {packingOrders.filter(p=>!poSearch||p.order_no?.toLowerCase().includes(poSearch.toLowerCase())||p.customer_name?.toLowerCase().includes(poSearch.toLowerCase()))
+                  .map(po=>(<tr key={po.order_no} onClick={()=> !po.tc_generated && handleLoadPO(po.order_no)}
+                    className={`transition-colors ${po.tc_generated ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'hover:bg-blue-50 cursor-pointer'}`}>
+                    <td className="px-3 py-2 text-xs font-bold text-blue-700">{po.order_no}</td>
+                    <td className="px-3 py-2 text-xs text-slate-600">{po.customer_name}</td>
+                    <td className="px-3 py-2 text-xs font-mono">{po.required_km}</td>
+                    <td className="px-3 py-2">{po.tc_generated
+                      ? <span className="text-[8px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Generated</span>
+                      : <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending</span>}</td>
+                    <td className="px-3 py-2 text-[10px] text-slate-400">{po.created_at?.split('T')[0]||'—'}</td>
+                  </tr>))}
+              </tbody></table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

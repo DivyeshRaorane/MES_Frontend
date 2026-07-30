@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { PlayCircle, CheckSquare, Users, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { PlayCircle, CheckSquare, Users, AlertTriangle, CheckCircle2, XCircle, Loader2, Download } from 'lucide-react';
 import { ModuleCard } from '../../../components/common_fields';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getSpecList } from '../../QualityAssurance/SpecCreation/SpecService';
 import { runAllocationEngine } from '../services/allocation.api';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 /* ══════════════════════════════════════════════════════════ */
 const CustomerAllocation = () => {
@@ -45,6 +47,48 @@ const CustomerAllocation = () => {
   };
 
   const handleReset = () => { setSelectedSpecs([]); setResults(null); setActiveResultTab('summary'); };
+
+  /* ── Export allocated bobbins for a specific spec to Excel ── */
+  const handleExportSpecBobbins = (spec) => {
+    if (!results?.allocated || results.allocated.length === 0) {
+      showError('No allocated bobbins to export');
+      return;
+    }
+    // Filter bobbins for this spec
+    const specBobbins = results.allocated.filter(b => 
+      b.assigned_spec === spec.cust_spec_name || b.spec_id === spec.spec_id
+    );
+    if (specBobbins.length === 0) {
+      showError('No bobbins allocated for this spec');
+      return;
+    }
+
+    // Build Excel data
+    const headers = ['Sr No', 'Bobbin No', 'FID', 'Fiber Length (KM)', 'Draw Date', 'PT Strain', 'Product Type', 'Status'];
+    const rows = specBobbins.map((b, i) => [
+      i + 1,
+      b.bobbin_no || '',
+      b.fid || '',
+      b.fiber_length || '',
+      b.draw_date || '',
+      b.pt_strain || '',
+      b.product_type || '',
+      'Allocated',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = (spec.cust_spec_name || 'Allocation').substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const fileName = `Allocation_${spec.cust_spec_name || 'Spec'}_${spec.customer_name || ''}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    saveAs(blob, fileName.replace(/[^a-z0-9_\-\.]/gi, '_'));
+    showSuccess(`Exported ${specBobbins.length} bobbin(s) for ${spec.cust_spec_name}`);
+  };
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -153,6 +197,13 @@ const CustomerAllocation = () => {
                           </div>
                         </div>
                         <p className="text-[9px] text-slate-500 mt-1">Bobbins: <span className="font-bold">{spec.bobbin_count || 0}</span></p>
+                        {/* Export allocated bobbins for this spec */}
+                        {(spec.bobbin_count > 0 || spec.allocated_km > 0) && (
+                          <button type="button" onClick={() => handleExportSpecBobbins(spec)}
+                            className="flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-lg hover:bg-emerald-100 transition-all w-full justify-center">
+                            <Download size={11} /> Export Bobbins (Excel)
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

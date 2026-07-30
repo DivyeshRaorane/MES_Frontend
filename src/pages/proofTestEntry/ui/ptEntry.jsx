@@ -360,7 +360,7 @@ console.log("Pt data:,", response)
           .map(f => {
             const relPos1 = (parseFloat(f.pos1) - currentPtDone).toFixed(3);
             const relPos2 = (parseFloat(f.pos2) - currentPtDone).toFixed(3);
-            return `Flaw missed from ${relPos1} km to ${relPos2} km`;
+            return `Cut from  ${relPos1} km to ${relPos2} ("Flaw Missed")`;
           })
           .join('; ');
 

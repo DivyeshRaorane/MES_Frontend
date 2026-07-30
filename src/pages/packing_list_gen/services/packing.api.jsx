@@ -23,3 +23,15 @@ export const submitPackingList = async (payload) => {
   const res = await axios.post(`${API}/api/packing/submit`, payload, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Get all packing lists (history) ── */
+export const getAllPackingLists = async () => {
+  const res = await axios.get(`${API}/api/packing/list`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── View packing list detail (header + bobbins) ── */
+export const viewPackingList = async (orderNo) => {
+  const res = await axios.get(`${API}/api/packing/view/${orderNo}`, { headers: authHeaders() });
+  return res.data;
+};

@@ -20,7 +20,7 @@ const GridDivider = ({ label }) => (
 );
 const Col = ({ children }) => (
   <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-white border border-slate-200 rounded-lg px-1.5 py-1">
-    <div className="grid grid-cols-2 gap-x-1 gap-y-0.5">{children}</div>
+    <div className="grid grid-cols-2 gap-x-1 text-slate-2000 text-bold gap-y-0.5">{children}</div>
   </div>
 );
 
