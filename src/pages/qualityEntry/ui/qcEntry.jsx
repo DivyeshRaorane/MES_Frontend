@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample } from '../services/qc_entry.api';
+import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample } from '../services/qc_entry.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -151,6 +151,7 @@ const QCEntryScreen = () => {
   const [missingValues, setMissingValues] = useState({});
   const [missingBobbin, setMissingBobbin] = useState('');
   const [savingMissing, setSavingMissing] = useState(false);
+  const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [] });
   const formRef = useRef(null);
   const scanRef = useRef(null);
 
@@ -158,6 +159,7 @@ const QCEntryScreen = () => {
 
   /* ── Fetch ── */
   const handleFetch = async (setValues) => {
+    console.log("What is the value:", setValues)
     const bobbin_no = scanInput.trim();
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
@@ -165,7 +167,30 @@ const QCEntryScreen = () => {
     setExistingTempGrade(''); setExistingFinalGrade('');
     try {
       const res = await fetchBobbinQC(bobbin_no);
-      if (!res?.success) { showError(res?.message || 'Bobbin not found.'); setSource(null); setValues(buildInitialValues()); setLoading(false); return; }
+      console.log("Response:", res)
+      if (!res?.success) {
+        // Bobbin not in QC — check PT Entry table for flags
+        try {
+          const ptRes = await checkBobbinInPtEntry(bobbin_no);
+          console.log("Res:", ptRes)
+          if (ptRes?.success && ptRes?.found) {
+            const msgs = [];
+            if (ptRes.full_check) msgs.push('This is mandatory for Full Check — please do full checking.');
+            if (ptRes.is_sample) msgs.push('This is MBend sample bobbin — please do MBEND for this.');
+            if (ptRes.full_mbend) msgs.push('MBend is mandatory for this bobbin.');
+            if (msgs.length > 0) {
+              setPtCheckPopup({ open: true, messages: msgs });
+            } else {
+              showError('Bobbin found in PT Entry but not yet available in QC.');
+            }
+          } else {
+            showError(res?.message || 'Bobbin not found.');
+          }
+        } catch (ptErr) {
+          showError(res?.message || 'Bobbin not found.');
+        }
+        setSource(null); setValues(buildInitialValues()); setLoading(false); return;
+      }
       setSource(res.source); // 'temp' or 'final'
       const data = res.data || {};
       const newVals = buildInitialValues();
@@ -192,7 +217,34 @@ const QCEntryScreen = () => {
           }
         }
       }
-    } catch (e) { showError(e?.response?.data?.message || 'Fetch failed'); setSource(null); setValues(buildInitialValues()); }
+    } catch (e) {
+      // If 404 or bobbin not found in QC — fallback to PT Entry check
+      const status = e?.response?.status;
+      const errMsg = e?.response?.data?.message || 'Fetch failed';
+      if (status === 404 || errMsg.toLowerCase().includes('not found')) {
+        try {
+          const ptRes = await checkBobbinInPtEntry(bobbin_no);
+          if (ptRes?.success && ptRes?.found) {
+            const msgs = [];
+            if (ptRes.full_check) msgs.push('This is mandatory for Full Check — please do full checking.');
+            if (ptRes.is_sample) msgs.push('This is MBend sample bobbin — please do MBEND for this.');
+            if (ptRes.full_mbend) msgs.push('MBend is mandatory for this bobbin.');
+            if (msgs.length > 0) {
+              setPtCheckPopup({ open: true, messages: msgs });
+            } else {
+              showError('Bobbin found in PT Entry but not yet available in QC.');
+            }
+          } else {
+            showError('Bobbin not found.');
+          }
+        } catch (ptErr) {
+          showError('Bobbin not found.');
+        }
+      } else {
+        showError(errMsg);
+      }
+      setSource(null); setValues(buildInitialValues());
+    }
     setLoading(false);
   };
 
@@ -754,6 +806,32 @@ const QCEntryScreen = () => {
                 }}
                   className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">
                   {savingMissing ? 'Saving...' : 'Save & Re-validate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── PT Entry Check Popup (Bobbin not in QC but found in PT) ── */}
+        {ptCheckPopup.open && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px]">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={18} className="text-amber-500" />
+                <h3 className="text-sm font-bold text-amber-700">Bobbin Not In QC — Action Required</h3>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 space-y-2">
+                {ptCheckPopup.messages.map((msg, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <AlertTriangle size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-slate-700 font-medium">{msg}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setPtCheckPopup({ open: false, messages: [] })}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all">
+                  OK, Understood
                 </button>
               </div>
             </div>

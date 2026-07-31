@@ -12,6 +12,12 @@ export const fetchBobbinQC = async (bobbin_no) => {
   return res.data;
 };
 
+/* ── Check bobbin in PT Entry (fallback when not in QC) ── */
+export const checkBobbinInPtEntry = async (bobbin_no) => {
+  const res = await axios.get(`${API}/api/qcentry/pt-check/${bobbin_no}`, { headers: authHeaders() });
+  return res.data;
+};
+
 /* ── Grade bobbin ── */
 export const gradeBobbin = async (bobbin_no) => {
   const res = await axios.get(`${API}/api/qcentry/grade/${bobbin_no}`, { headers: authHeaders() });
