@@ -150,6 +150,9 @@ const PTEntry = () => {
   const handleBobbinBlur = async (bobbin_no, setFieldValue) => {
     if (!bobbin_no) return;
     console.log('Fetching PT machine log for:', bobbin_no);
+    // Reset break/scrap flags before checking new bobbin
+    setFieldValue("pt_break", false);
+    setFieldValue("pt_scrap", false);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}`);
       console.log('PT machine log response:', res.data);
@@ -181,6 +184,7 @@ const PTEntry = () => {
         ) {
           setFieldValue("pt_break", true);
           // pt_break is informational only — does NOT count as a rejection
+          
         }
 
         // Auto-generate FID if no rejection condition detected
@@ -213,7 +217,7 @@ const PTEntry = () => {
     if (!spool_id) return;
     try {
       const response = await getSpoolDetailsForPT(spool_id);
-console.log("Pt data:,", response)
+
       const data = response.data;
       setFieldValue("preform_id", data.preform_id);
       setFieldValue("drawn_length", data.drawn_length);
@@ -222,6 +226,7 @@ console.log("Pt data:,", response)
       setFieldValue("pt_entry", data.allocation_date?.split("T")[0] || new Date().toISOString().split('T')[0]);
       setFieldValue("pt_machine_no", data.pt_machine_no || '');
       setFieldValue("drawn_remark", data.remark);
+      
       setFieldValue(
   "product_type",
   `${data.product_type?.trim()}-${data.process_type?.trim()}`
@@ -299,7 +304,7 @@ console.log("Pt data:,", response)
       ptFlaws: ptFlawsData
     });
 
-    console.log("result:", result)
+    
     if (result?.hit) {
       showError(result.message);
     }
@@ -310,8 +315,7 @@ console.log("Pt data:,", response)
     });
   }, [ptFlawsData, balanceLength]);
 
-  console.log("alert:,", ptAlert.message, ptAlert.nextFlawMessage)
-
+  
   useEffect(() => {
     if (
       formikRef.current &&
@@ -329,6 +333,7 @@ console.log("Pt data:,", response)
 
   /* ── Actual PT submit logic (extracted for reuse with confirmation) ── */
   const doPtSubmit = async (values, setFieldValue) => {
+    console.log("Pt Break:", values)
     // Validate: PT length should not exceed balance
     const ptLen = parseFloat(values.pt_length) || 0;
     const remaining = balanceLength - ptLen;
@@ -545,7 +550,7 @@ console.log("Pt data:,", response)
       if (response.payload?.success) {
         showSuccess(response.payload.message || "PT Entry saved successfully");
 
-        // Show break scrap alert if pt_break was true
+        // Show break scrap alert if pt_break was true (backend auto-books 180m scrap)
         if (values.pt_break) {
           setShowBreakScrapAlert(true);
         }
@@ -554,7 +559,8 @@ console.log("Pt data:,", response)
         setFieldValue("active_rejection_type", "");
         setFieldValue("fid", "");
         setFieldValue("bobbin_no", "");
-
+        setFieldValue("pt_break", false);
+        setFieldValue("pt_scrap", false);
         const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
         await handleScan(values.spool_id, setFieldValue);
         setBalanceLength(spoolResponse.data.balance_qty);
@@ -629,7 +635,7 @@ console.log("Pt data:,", response)
           }}
         >
           {({ values, setFieldValue, resetForm }) => {
-            const me = (parseFloat(values.multiple_end_weight) || 0) * 37;
+            const me = (parseFloat(values.multiple_end_weight) || 0) * 35.714;
             const flaws = Array.isArray(ptFlawsData) ? ptFlawsData : [];
 
             // True Centralized Radio Controller (Resets alternate fields cleanly)
@@ -861,7 +867,7 @@ console.log("Pt data:,", response)
                               const val = e.target.value;
                               setFieldValue('multiple_end_weight', val);
                               const weightNum = parseFloat(val) || 0;
-                              const computedLength = weightNum * 37;
+                              const computedLength = weightNum * 35.714;
                               setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
                             }}
                           />
@@ -1160,17 +1166,18 @@ console.log("Pt data:,", response)
         {showBreakScrapAlert && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
-              <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">⚠️</span>
+              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">✅</span>
               </div>
-              <h3 className="text-sm font-bold text-rose-700 mb-2">PT Break Detected</h3>
+              <h3 className="text-sm font-bold text-emerald-700 mb-2">PT Break — Scrap Auto-Booked</h3>
               <p className="text-xs text-slate-600 mb-4">
-                This entry has a <strong className="text-rose-600">PT Break</strong>.<br/>
-                Please book <strong className="text-rose-700 text-sm">180M</strong> scrap for this break.
+                PT Break was detected.<br/>
+                <strong className="text-emerald-700">180m (0.180 KM)</strong> PT Scrap has been <strong>automatically booked</strong>.
               </p>
+              <p className="text-[10px] text-slate-400 mb-4">No manual scrap entry is required.</p>
               <button type="button" onClick={() => setShowBreakScrapAlert(false)}
-                className="px-6 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all">
-                OK, Understood
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all">
+                OK
               </button>
             </div>
           </div>

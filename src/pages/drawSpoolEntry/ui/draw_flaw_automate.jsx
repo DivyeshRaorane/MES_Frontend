@@ -94,6 +94,8 @@ export const drawFlawAutomation = (rows) => {
  let reason = "";
 
  let totalKm = null;
+ let goodFiberKm = []; // stores every "Good Fiber @xx.x" value found, in order
+
 
  for (const row of rows) {
 
@@ -106,6 +108,31 @@ export const drawFlawAutomation = (rows) => {
  ) {
  continue;
  }
+
+
+ // ----------------------------
+    // Good Fiber
+    // ----------------------------
+    if (msg.includes("Good fibre start")) {
+
+      const match = msg.match(/@\s*([\d.]+)/);
+
+      if (match) {
+        const goodValue = parseFloat(match[1]);
+        goodFiberKm.push(goodValue);
+
+        results.push({
+          pos1: 0,
+          pos2: goodValue,
+          defect_length: (goodValue - 0),
+          actual_cutting: (goodValue - 0) + 0.100,
+          reason: "BE"
+        });
+      }
+
+      continue;
+    }
+
 
  // ----------------------------
  // Tower Fibre Break
@@ -197,7 +224,8 @@ export const drawFlawAutomation = (rows) => {
 
  return {
  results,
- totalKm
+ totalKm,
+ goodFiberKm
  };
  };
 

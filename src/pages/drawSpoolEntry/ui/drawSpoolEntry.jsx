@@ -77,45 +77,45 @@ const CONSUMPTION_TABS = ['Coating'];
 
 /* ── Yup Validation Schema ── */
 const validationSchema = Yup.object({
-  tower_no:              Yup.string().required('Tower No is required'),
-  preform_id:            Yup.string().required('Preform ID is required'),
-  spool_id:              Yup.string().required('Spool ID is required'),
-  start_date:            Yup.string().required('Start Date is required'),
-  start_time:            Yup.string().required('Start Time is required'),
-  end_date:              Yup.string().required('End Date is required'),
-  end_time:              Yup.string().required('End Time is required'),
-  drawn_weight:          Yup.number().typeError('Drawn Weight must be a number').required('Drawn Weight is required').min(0, 'Cannot be negative'),
-  drawn_length:          Yup.number().typeError('Drawn Length must be a number').required('Drawn Length is required').min(0, 'Cannot be negative'),
-  shift:                 Yup.string().required('Shift is required'),
-  drawn_line_speed:      Yup.string().required('Draw Line Speed is required'),
-  draw_tension:          Yup.string().required('Draw Tension is required'),
-  furnace_power:         Yup.string().required('Furnace Power is required'),
-  furnace_argon:         Yup.string().required('Furnace Argon is required'),
-  furnace_he:            Yup.string().required('Furnace HE is required'),
-  tube_he:               Yup.string().required('Tube HE is required'),
-  co2_flow:              Yup.string().required('CO2 Flow is required'),
-  n2_flow:               Yup.string().required('N2 Flow is required'),
-  uv_air:                Yup.string().required('UV Air is required'),
-  winding_observation:   Yup.string().required('Winding Observation is required'),
-  scr_observation:       Yup.string().required('Scr Observation is required'),
-  top_end_scrap:         Yup.string().required('Top End Scrap is required'),
-  bottom_end_scrap:      Yup.string().required('Bottom End Scrap is required'),
-  die_clean:             Yup.string().required('Die Clean is required'),
-  spool_status:          Yup.string().required('Spool Status is required'),
-  indication_fiber_cut:  Yup.string().required('Indication Fiber Cut is required'),
-  indication_reason:     Yup.string().when('indication_fiber_cut', { is: 'cut', then: (s) => s.required('Fiber Cut Reason is required'), otherwise: (s) => s.notRequired() }),
-  remark:                Yup.string().required('Remarks is required'),
-  primary_coating:       Yup.string().required('Primary Coating is required'),
-  secondary_coating:     Yup.string().required('Secondary Coating is required'),
-  coating_type:          Yup.string().required('Coating Type is required'),
-  primary_pressure:      Yup.string().required('Primary Pressure is required'),
-  secondary_pressure:    Yup.string().required('Secondary Pressure is required'),
-  primary_batch:         Yup.string().required('Primary Batch is required'),
-  secondary_batch:       Yup.string().required('Secondary Batch is required'),
-  shift_incharge:        Yup.string().required('Shift Incharge is required'),
-  furnace_operator:      Yup.string().required('Furnace Operator is required'),
-  die_operator:          Yup.string().required('Die Operator is required'),
-  ground_operator:       Yup.string().required('Ground Operator is required'),
+  tower_no: Yup.string().required('Tower No is required'),
+  preform_id: Yup.string().required('Preform ID is required'),
+  spool_id: Yup.string().required('Spool ID is required'),
+  start_date: Yup.string().required('Start Date is required'),
+  start_time: Yup.string().required('Start Time is required'),
+  end_date: Yup.string().required('End Date is required'),
+  end_time: Yup.string().required('End Time is required'),
+  drawn_weight: Yup.number().typeError('Drawn Weight must be a number').required('Drawn Weight is required').min(0, 'Cannot be negative'),
+  drawn_length: Yup.number().typeError('Drawn Length must be a number').required('Drawn Length is required').min(0, 'Cannot be negative'),
+  shift: Yup.string().required('Shift is required'),
+  drawn_line_speed: Yup.string().required('Draw Line Speed is required'),
+  draw_tension: Yup.string().required('Draw Tension is required'),
+  furnace_power: Yup.string().required('Furnace Power is required'),
+  furnace_argon: Yup.string().required('Furnace Argon is required'),
+  furnace_he: Yup.string().required('Furnace HE is required'),
+  tube_he: Yup.string().required('Tube HE is required'),
+  co2_flow: Yup.string().required('CO2 Flow is required'),
+  n2_flow: Yup.string().required('N2 Flow is required'),
+  uv_air: Yup.string().required('UV Air is required'),
+  winding_observation: Yup.string().required('Winding Observation is required'),
+  scr_observation: Yup.string().required('Scr Observation is required'),
+  top_end_scrap: Yup.string().required('Top End Scrap is required'),
+  bottom_end_scrap: Yup.string().required('Bottom End Scrap is required'),
+  die_clean: Yup.string().required('Die Clean is required'),
+  spool_status: Yup.string().required('Spool Status is required'),
+  indication_fiber_cut: Yup.string().required('Indication Fiber Cut is required'),
+  indication_reason: Yup.string().when('indication_fiber_cut', { is: 'cut', then: (s) => s.required('Fiber Cut Reason is required'), otherwise: (s) => s.notRequired() }),
+  remark: Yup.string().required('Remarks is required'),
+  primary_coating: Yup.string().required('Primary Coating is required'),
+  secondary_coating: Yup.string().required('Secondary Coating is required'),
+  coating_type: Yup.string().required('Coating Type is required'),
+  primary_pressure: Yup.string().required('Primary Pressure is required'),
+  secondary_pressure: Yup.string().required('Secondary Pressure is required'),
+  primary_batch: Yup.string().required('Primary Batch is required'),
+  secondary_batch: Yup.string().required('Secondary Batch is required'),
+  shift_incharge: Yup.string().required('Shift Incharge is required'),
+  furnace_operator: Yup.string().required('Furnace Operator is required'),
+  die_operator: Yup.string().required('Die Operator is required'),
+  ground_operator: Yup.string().required('Ground Operator is required'),
 });
 {/*['Coating', 'Furnace Gas', 'Nitrogen Gas', 'Helium Gas', 'CO2 Gas'];*/ }
 
@@ -208,73 +208,74 @@ const DrawSpoolEntry = () => {
     value: reasons.dfcr_name,
   }))
 
- const rows = [
-  { Message: "Message not defined for language English (United Kingdom), en" },
+  const rows = [
+    { Message: "Message not defined for language English (United Kingdom), en" },
 
-  { Message: "Bare fibre diameter High @ 2.315 Diameter = 125.612" },
-  { Message: "Coated fibre diameter Low @ 4.981" },
+    { Message: "Good fibre start @ 2.00" },
+    { Message: "Bare fibre diameter High @ 2.315 Diameter = 125.612" },
+    { Message: "Coated fibre diameter Low @ 4.981" },
 
-  // Fast Layer 1
-  { Message: "Fast Layer Start @ 12.457" },
-  { Message: "Fast Layer Start @ 12.458" },
-  { Message: "Coated fibre diameter High @ 12.463" },
-  { Message: "Lump at length= @ 12.512" },
-  { Message: "Bare fibre diameter Low @ 12.640 Diameter = 123.948" },
-  { Message: "Fast Layer Stop @ 13.106" },
-  { Message: "Fast Layer Stop @ 13.107" },
+    // Fast Layer 1
+    { Message: "Fast Layer Start @ 12.457" },
+    { Message: "Fast Layer Start @ 12.458" },
+    { Message: "Coated fibre diameter High @ 12.463" },
+    { Message: "Lump at length= @ 12.512" },
+    { Message: "Bare fibre diameter Low @ 12.640 Diameter = 123.948" },
+    { Message: "Fast Layer Stop @ 13.106" },
+    { Message: "Fast Layer Stop @ 13.107" },
 
-  { Message: "Coated fibre diameter High @ 55.341" },
+    { Message: "Coated fibre diameter High @ 55.341" },
 
-  // Fast Layer 2
-  { Message: "Fast Layer Start @ 88.750" },
-  { Message: "Fast Layer Start @ 88.751" },
-  { Message: "Coated fibre diameter Low @ 88.760" },
-  { Message: "Lump at length= @ 88.799" },
-  { Message: "Fast Layer Stop @ 89.260" },
-  { Message: "Fast Layer Stop @ 89.261" },
+    // Fast Layer 2
+    { Message: "Fast Layer Start @ 88.750" },
+    { Message: "Fast Layer Start @ 88.751" },
+    { Message: "Coated fibre diameter Low @ 88.760" },
+    { Message: "Lump at length= @ 88.799" },
+    { Message: "Fast Layer Stop @ 89.260" },
+    { Message: "Fast Layer Stop @ 89.261" },
 
-  { Message: "Bare fibre diameter High @ 125.620 Diameter = 125.831" },
-  { Message: "Lump at length= @ 181.215" },
+    { Message: "Bare fibre diameter High @ 125.620 Diameter = 125.831" },
+    { Message: "Lump at length= @ 181.215" },
 
-  // Fast Layer 3
-  { Message: "Fast Layer Start @ 205.812" },
-  { Message: "Fast Layer Start @ 205.813" },
-  { Message: "Coated fibre diameter High @ 205.822" },
-  { Message: "Coated fibre diameter High @ 205.860" },
-  { Message: "Fast Layer Stop @ 206.455" },
-  { Message: "Fast Layer Stop @ 206.456" },
+    // Fast Layer 3
+    { Message: "Fast Layer Start @ 205.812" },
+    { Message: "Fast Layer Start @ 205.813" },
+    { Message: "Coated fibre diameter High @ 205.822" },
+    { Message: "Coated fibre diameter High @ 205.860" },
+    { Message: "Fast Layer Stop @ 206.455" },
+    { Message: "Fast Layer Stop @ 206.456" },
 
-  { Message: "Bare fibre diameter Low @ 260.115 Diameter = 124.015" },
+    { Message: "Bare fibre diameter Low @ 260.115 Diameter = 124.015" },
 
-  // Fast Layer 4
-  { Message: "Fast Layer Start @ 320.501" },
-  { Message: "Fast Layer Start @ 320.502" },
-  { Message: "Lump at length= @ 320.520" },
-  { Message: "Bare fibre diameter High @ 320.571 Diameter = 126.002" },
-  { Message: "Fast Layer Stop @ 321.190" },
-  { Message: "Fast Layer Stop @ 321.191" },
-{ Message: "TowerFibre Break @ 332.37" },
+    // Fast Layer 4
+    { Message: "Fast Layer Start @ 320.501" },
+    { Message: "Fast Layer Start @ 320.502" },
+    { Message: "Lump at length= @ 320.520" },
+    { Message: "Bare fibre diameter High @ 320.571 Diameter = 126.002" },
+    { Message: "Fast Layer Stop @ 321.190" },
+    { Message: "Fast Layer Stop @ 321.191" },
+    { Message: "TowerFibre Break @ 332.37" },
+
+
+    /*{ Message: "Coated fibre diameter High @ 412.880" },
+    { Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
   
+    // Fast Layer 5
+    { Message: "Fast Layer Start @ 520.110" },
+    { Message: "Fast Layer Start @ 520.111" },
+    { Message: "Coated fibre diameter Low @ 520.140" },
+    { Message: "Lump at length= @ 520.165" },
+    { Message: "Fast Layer Stop @ 520.790" },
+    { Message: "Fast Layer Stop @ 520.791" },
+  
+    { Message: "Bare fibre diameter High @ 601.442 Diameter = 125.910" },
+    { Message: "Coated fibre diameter Low @ 622.181" },
+  
+    // Fibre Break around 640 km
+    { Message: "TowerFibre Break @ 650.37" },*/
 
-  /*{ Message: "Coated fibre diameter High @ 412.880" },
-  { Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
-
-  // Fast Layer 5
-  { Message: "Fast Layer Start @ 520.110" },
-  { Message: "Fast Layer Start @ 520.111" },
-  { Message: "Coated fibre diameter Low @ 520.140" },
-  { Message: "Lump at length= @ 520.165" },
-  { Message: "Fast Layer Stop @ 520.790" },
-  { Message: "Fast Layer Stop @ 520.791" },
-
-  { Message: "Bare fibre diameter High @ 601.442 Diameter = 125.910" },
-  { Message: "Coated fibre diameter Low @ 622.181" },
-
-  // Fibre Break around 640 km
-  { Message: "TowerFibre Break @ 650.37" },*/
-
-  { Message: "Message not defined for language English (United Kingdom), en" }
-];
+    { Message: "Message not defined for language English (United Kingdom), en" }
+  ];
 
 
   useEffect(() => {
@@ -297,36 +298,37 @@ const DrawSpoolEntry = () => {
       const events = res.payload?.data || [];
       console.log("WHat is the events:", events)
 
-      const mappedFlaws = drawFlawAutomation(events);
+      const mappedFlaws = drawFlawAutomation(rows);
       console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
       setFieldValue("drawn_length", mappedFlaws?.totalKm)
-      setFieldValue("drawn_weight", mappedFlaws?.totalKm / 37)
-      const flawBalance = values.preform_weight - (mappedFlaws?.totalKm / 37);
+      setFieldValue("bottom_end_scrap", mappedFlaws?.goodFiberKm)
+      setFieldValue("drawn_weight", mappedFlaws?.totalKm / 35.714)
+      const flawBalance = values.preform_weight - (mappedFlaws?.totalKm / 35.714);
       setFieldValue("balance_weight", flawBalance < 0 ? 0 : flawBalance)
-      console.log("What is the mapped flaws:", mappedFlaws)
+      
 
     } catch (err) {
       console.log("Error fetching flaws:", err);
     }
   };
 
- 
 
-const DrawWeightWatcher = () => {
-  const { values, setFieldValue } = useFormikContext();
 
-  useEffect(() => {
-    const drawnWeight = Number(values.drawn_length || 0) / 37;
+  const DrawWeightWatcher = () => {
+    const { values, setFieldValue } = useFormikContext();
 
-    setFieldValue("drawn_weight", drawnWeight);
-    const calcBalance = Number(values.preform_weight || 0) - drawnWeight;
-    setFieldValue("balance_weight", calcBalance < 0 ? 0 : calcBalance);
-  }, [values.drawn_length, values.preform_weight]);
+    useEffect(() => {
+      const drawnWeight = Number(values.drawn_length || 0) / 35.714;
 
-  return null;
-};
+      setFieldValue("drawn_weight", drawnWeight);
+      const calcBalance = Number(values.preform_weight || 0) - drawnWeight;
+      setFieldValue("balance_weight", calcBalance < 0 ? 0 : calcBalance);
+    }, [values.drawn_length, values.preform_weight]);
+
+    return null;
+  };
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -336,70 +338,70 @@ const DrawWeightWatcher = () => {
           validationSchema={validationSchema}
           onSubmit={async (values, { resetForm }) => {
 
-          console.log('Submit:', values)
+            
 
-          // Calculate pt_flaws from current draw_flaws at submit time (not from initial fetch)
-          const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
-          const submitValues = { ...values, pt_flaws: ptFlaws };
+            // Calculate pt_flaws from current draw_flaws at submit time (not from initial fetch)
+            const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
+            const submitValues = { ...values, pt_flaws: ptFlaws };
 
-          // Scenario 3: Fiber Cut with reason = "Preform Remove" — deallocation only, NOT preform end
-          if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
-            const reason = values.indication_reason.toLowerCase();
-            if (reason.includes('preform') && reason.includes('remove')) {
-              if (!values.tower_no) {
-                showError("Please select a tower before performing Preform Remove.");
+            // Scenario 3: Fiber Cut with reason = "Preform Remove" — deallocation only, NOT preform end
+            if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+              const reason = values.indication_reason.toLowerCase();
+              if (reason.includes('preform') && reason.includes('remove')) {
+                if (!values.tower_no) {
+                  showError("Please select a tower before performing Preform Remove.");
+                  return;
+                }
+                setPendingSubmitValues(submitValues);
+                setPendingResetForm(() => resetForm);
+                setPreformEndScenario('preform_remove');
+                setShowPreformEndPopup(true);
                 return;
               }
-              setPendingSubmitValues(submitValues);
-              setPendingResetForm(() => resetForm);
-              setPreformEndScenario('preform_remove');
-              setShowPreformEndPopup(true);
-              return;
             }
-          }
 
-          // Scenario 2: Fiber Cut with reason containing "preform end" — mark preform as completed
-          if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
-            const reason = values.indication_reason.toLowerCase();
-            if (reason.includes('preform') && reason.includes('end')) {
+            // Scenario 2: Fiber Cut with reason containing "preform end" — mark preform as completed
+            if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+              const reason = values.indication_reason.toLowerCase();
+              if (reason.includes('preform') && reason.includes('end')) {
+                submitValues.balance_weight = 0;
+                setPendingSubmitValues(submitValues);
+                setPendingResetForm(() => resetForm);
+                setPreformEndScenario('fiber_cut');
+                setShowPreformEndPopup(true);
+                return;
+              }
+            }
+
+            // Scenario 1: Balance weight exhausted — show confirmation
+            const actualBalance = Number(values.preform_weight || 0) - Number(submitValues.drawn_weight || 0);
+            if (actualBalance <= 0) {
               submitValues.balance_weight = 0;
               setPendingSubmitValues(submitValues);
               setPendingResetForm(() => resetForm);
-              setPreformEndScenario('fiber_cut');
+              setPreformEndScenario('balance');
               setShowPreformEndPopup(true);
               return;
             }
-          }
 
-          // Scenario 1: Balance weight exhausted — show confirmation
-          const actualBalance = Number(values.preform_weight || 0) - Number(submitValues.drawn_weight || 0);
-          if (actualBalance <= 0) {
-            submitValues.balance_weight = 0;
-            setPendingSubmitValues(submitValues);
-            setPendingResetForm(() => resetForm);
-            setPreformEndScenario('balance');
-            setShowPreformEndPopup(true);
-            return;
-          }
+            // Normal save — no preform end
+            try {
+              const response = await dispatch(createDrawEntry(submitValues));
 
-          // Normal save — no preform end
-          try {
-            const response = await dispatch(createDrawEntry(submitValues));
-
-            if (response.payload?.success) {
-              showSuccess("Saved Successfully")
-              resetForm()
-            } else {
-              showError(response?.payload?.message || "Save Failed")
+              if (response.payload?.success) {
+                showSuccess("Saved Successfully")
+                resetForm()
+              } else {
+                showError(response?.payload?.message || "Save Failed")
+              }
+            } catch (error) {
+              console.error("Submit Error", error);
+              showError(error?.message || "Something went wrong")
             }
-          } catch (error) {
-            console.error("Submit Error", error);
-            showError(error?.message || "Something went wrong")
-          }
-        }}>
+          }}>
           {({ values, resetForm, setFieldValue, errors, submitCount, validateForm, setTouched, handleSubmit }) => (
             <Form className="flex flex-col flex-1 overflow-hidden" noValidate>
-<DrawWeightWatcher/>
+              <DrawWeightWatcher />
               {/* ── Top action bar ── */}
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
@@ -490,7 +492,7 @@ const DrawWeightWatcher = () => {
                           // fetch allocated preform for this tower
                           const res = await dispatch(getPreformByTower(towerId));
                           const data = res.payload?.data[0];
-                          console.log("allocated preform:", data)
+                          
 
                           if (data) {
                             setFieldValue("preform_id", data.preform_id || '');
@@ -498,6 +500,15 @@ const DrawWeightWatcher = () => {
                             setFieldValue("preform_type", data.preform_type || '');
                             setFieldValue("process_type", data.process_type || '');
                             setFieldValue("product_type", data.product_type || '');
+                            setFieldValue("drawn_line_speed", 2700 || '');
+                            setFieldValue("draw_tension", 150 || '');
+                            setFieldValue("furnace_power", 50  || '');
+                            setFieldValue("furnace_argon", 5 || '');
+                            setFieldValue("furnace_he", 5 || '');
+                            setFieldValue("tube_he", 4 || '');
+                            setFieldValue("co2_flow", 5 || '');
+                            setFieldValue("n2_flow", 5 || '');
+                            setFieldValue("uv_air", 10 || '');
 
                             // Generate spool_fid: strip any existing trailing letter from last_fid, then append new suffix
                             // p_count 0=A, 1=B, 2=C...
@@ -546,7 +557,7 @@ const DrawWeightWatcher = () => {
                           const endTime = e.target.value;
                           // If same date and end time is before start time, show error
                           if (values.start_date && values.end_date && values.start_date === values.end_date
-                              && values.start_time && endTime && endTime < values.start_time) {
+                            && values.start_time && endTime && endTime < values.start_time) {
                             showError("End Time cannot be before Start Time on the same date");
                             setFieldValue("end_time", '');
                           } else {
@@ -579,7 +590,7 @@ const DrawWeightWatcher = () => {
                     <SL title="Draw Parameters" />
                     <div className="grid grid-cols-8 gap-x-2 gap-y-1">
                       <FormikInput compact label="Draw Line Speed" name="drawn_line_speed" type="number" />
-                      <FormikInput compact label="Draw Tension" name="draw_tension" type="number"/>
+                      <FormikInput compact label="Draw Tension" name="draw_tension" type="number" />
                       <FormikInput compact label="Furnace Power" name="furnace_power" type="number" />
                       <FormikInput compact label="Furnace Argon" name="furnace_argon" type="number" />
                       <FormikInput compact label="Furnace HE" name="furnace_he" type="number" />
@@ -591,7 +602,7 @@ const DrawWeightWatcher = () => {
                       <FormikSelect compact label="Winding Observation" name="winding_observation" options={drawWindingObsOptions} />
                       <FormikSelect compact label="Scr Observation" name="scr_observation" options={['Yes', 'No']} />
 
-                      <FormikInput compact label="Top End Scrap" name="top_end_scrap" type="number"/>
+                      <FormikInput compact label="Top End Scrap" name="top_end_scrap" type="number" />
                       <FormikInput compact label="Bottom End Scrap" name="bottom_end_scrap" type='number' />
 
                       <FormikSelect compact label="Die Clean" name="die_clean" options={['Yes', 'No']} />
@@ -662,7 +673,7 @@ const DrawWeightWatcher = () => {
                           { label: "P-BATCH-V1", value: "P-BATCH-V1" },
                           { label: "P-BATCH-V2", value: "P-BATCH-V2" }
                         ]} />
-                        
+
                       </div>
                     )}
                     {activeConsTab !== 'Coating' && (
@@ -765,20 +776,20 @@ const DrawWeightWatcher = () => {
 
               {preformEndScenario === 'balance' && (
                 <p className="text-xs text-slate-500 mb-2">
-                  The remaining preform weight is below the configured threshold (<strong>{PRE_END_THRESHOLD} KG</strong>).<br/>
+                  The remaining preform weight is below the configured threshold (<strong>{PRE_END_THRESHOLD} KG</strong>).<br />
                   Do you want to mark this preform as completed and free the tower?
                 </p>
               )}
               {preformEndScenario === 'fiber_cut' && (
                 <p className="text-xs text-slate-500 mb-2">
-                  The selected cut reason is <strong className="text-rose-600">"Preform End"</strong>.<br/>
+                  The selected cut reason is <strong className="text-rose-600">"Preform End"</strong>.<br />
                   Do you want to mark this preform as completed and free the tower?
                 </p>
               )}
               {preformEndScenario === 'preform_remove' && (
                 <p className="text-xs text-slate-500 mb-2">
-                  You have selected <strong className="text-rose-600">Preform Remove</strong>.<br/>
-                  This will <strong>deallocate</strong> the preform and <strong>free the tower</strong>.<br/>
+                  You have selected <strong className="text-rose-600">Preform Remove</strong>.<br />
+                  This will <strong>deallocate</strong> the preform and <strong>free the tower</strong>.<br />
                   This is <strong>NOT</strong> a preform end — the preform can be re-allocated later.
                 </p>
               )}
