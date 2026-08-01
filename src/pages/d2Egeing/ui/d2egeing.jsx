@@ -118,11 +118,9 @@ const D2Issue = () => {
 
         // Step 3: temp_grade is valid (A+, A, B, C etc.) — now check PV
         if (data.pv_completed === false) {
-          const proceed = await askConfirm(
-            'PV Not Completed',
-            'PV is not completed for this bobbin.\n\nDo you still want to issue this bobbin for D2?'
-          );
-          if (!proceed) { refocus(); return; }
+          showError('This bobbin has not completed PV. Cannot issue for D2.');
+          refocus();
+          return;
         }
 
         // Add with d2_type = 'restricted'

@@ -13,7 +13,8 @@ import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getCurrentShift } from '../../../utils/shiftHelper';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { getAllDrawWindingObservations } from '../../Admin_Folder/draw_management/winding_observation/service/winding_observation.api';
-import { getAllDrawFiberCutReason } from '../../Admin_Folder/draw_management/fiber_cut_reason/service/draw_fiber_cut_reason.api';
+import { getAllDrawFiberCutReason, getFiberCutReasonsByIndication } from '../../Admin_Folder/draw_management/fiber_cut_reason/service/draw_fiber_cut_reason.api';
+import { getAllFiberCutIndications } from '../../Admin_Folder/draw_management/fiber_cut_indication/service/fiber_cut_indication.api';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { useFormikContext } from 'formik';
 
@@ -103,7 +104,11 @@ const validationSchema = Yup.object({
   die_clean: Yup.string().required('Die Clean is required'),
   spool_status: Yup.string().required('Spool Status is required'),
   indication_fiber_cut: Yup.string().required('Indication Fiber Cut is required'),
-  indication_reason: Yup.string().when('indication_fiber_cut', { is: 'cut', then: (s) => s.required('Fiber Cut Reason is required'), otherwise: (s) => s.notRequired() }),
+  indication_reason: Yup.string().when('indication_fiber_cut', {
+    is: (val) => !!val,
+    then: (s) => s.notRequired(),
+    otherwise: (s) => s.notRequired(),
+  }),
   remark: Yup.string().required('Remarks is required'),
   primary_coating: Yup.string().required('Primary Coating is required'),
   secondary_coating: Yup.string().required('Secondary Coating is required'),
@@ -127,6 +132,7 @@ const DrawSpoolEntry = () => {
   const [drawUsers, setDrawUsers] = useState([]);
   const [drawWindingObs, setDrawWindingObs] = useState([]);
   const [drawFiberCutReasons, setDrawFiberCutReasons] = useState([]);
+  const [fiberCutIndications, setFiberCutIndications] = useState([]);
   const [showPreformEndPopup, setShowPreformEndPopup] = useState(false);
   const [preformEndScenario, setPreformEndScenario] = useState(null); // 'balance' | 'fiber_cut' | 'preform_remove'
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
@@ -174,15 +180,15 @@ const DrawSpoolEntry = () => {
   }, [])
 
   useEffect(() => {
-    const fetchDrawFiberCutReason = async () => {
+    const fetchFiberCutIndications = async () => {
       try {
-        const data = await getAllDrawFiberCutReason();
-        setDrawFiberCutReasons(data.data);
+        const data = await getAllFiberCutIndications();
+        setFiberCutIndications(data.data || []);
       } catch (error) {
-        console.error("Error Fetching Draw Users:", error)
+        console.error("Error Fetching Fiber Cut Indications:", error);
       }
     };
-    fetchDrawFiberCutReason();
+    fetchFiberCutIndications();
   }, [])
 
 
@@ -206,7 +212,26 @@ const DrawSpoolEntry = () => {
   const drawFiberCutReasonOptions = drawFiberCutReasons.map((reasons) => ({
     label: `${reasons.dfcr_name}`,
     value: reasons.dfcr_name,
-  }))
+  }));
+
+  const fiberCutIndicationOptions = fiberCutIndications.map((ind) => ({
+    label: ind.indication_name,
+    value: String(ind.indication_fiber_cut_id),
+  }));
+
+  /* ── Fetch reasons dynamically when indication changes ── */
+  const handleIndicationChange = async (indicationId, setFieldValue) => {
+    setFieldValue('indication_fiber_cut', indicationId);
+    setFieldValue('indication_reason', '');
+    setDrawFiberCutReasons([]);
+    if (!indicationId) return;
+    try {
+      const data = await getFiberCutReasonsByIndication(indicationId);
+      setDrawFiberCutReasons(data.data || []);
+    } catch (error) {
+      console.error("Error fetching reasons for indication:", error);
+    }
+  };
 
   const rows = [
     { Message: "Message not defined for language English (United Kingdom), en" },
@@ -344,8 +369,17 @@ const DrawSpoolEntry = () => {
             const ptFlaws = reverseFlawPositions(values.drawn_length, values.draw_flaws);
             const submitValues = { ...values, pt_flaws: ptFlaws };
 
+            // Resolve indication name from ID for backend storage
+            const selectedIndication = fiberCutIndications.find(
+              ind => String(ind.indication_fiber_cut_id) === String(values.indication_fiber_cut)
+            );
+            if (selectedIndication) {
+              submitValues.indication_fiber_cut = selectedIndication.indication_name;
+              submitValues.indication_fiber_cut_id = selectedIndication.indication_fiber_cut_id;
+            }
+
             // Scenario 3: Fiber Cut with reason = "Preform Remove" — deallocation only, NOT preform end
-            if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+            if (values.indication_fiber_cut && values.indication_reason) {
               const reason = values.indication_reason.toLowerCase();
               if (reason.includes('preform') && reason.includes('remove')) {
                 if (!values.tower_no) {
@@ -361,7 +395,7 @@ const DrawSpoolEntry = () => {
             }
 
             // Scenario 2: Fiber Cut with reason containing "preform end" — mark preform as completed
-            if (values.indication_fiber_cut === 'cut' && values.indication_reason) {
+            if (values.indication_fiber_cut && values.indication_reason) {
               const reason = values.indication_reason.toLowerCase();
               if (reason.includes('preform') && reason.includes('end')) {
                 submitValues.balance_weight = 0;
@@ -619,11 +653,12 @@ const DrawSpoolEntry = () => {
                         compact
                         label="Indication Fiber Cut"
                         name="indication_fiber_cut"
-                        options={['cut', 'sample', 'break', 'trial']}
+                        options={fiberCutIndicationOptions}
+                        onChange={(e) => handleIndicationChange(e.target.value, setFieldValue)}
                       />
 
-                      {/* Fiber Cut Reason — only when indication is 'cut' */}
-                      {values.indication_fiber_cut === 'cut' && (
+                      {/* Fiber Cut Reason — shown when selected indication has active reasons */}
+                      {drawFiberCutReasons.length > 0 && values.indication_fiber_cut && (
                         <FormikSelect
                           compact
                           label="Fiber Cut Reason *"
