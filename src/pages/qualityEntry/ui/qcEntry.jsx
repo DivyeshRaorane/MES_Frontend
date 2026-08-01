@@ -756,8 +756,8 @@ const QCEntryScreen = () => {
           </div>
         )}
 
-        {/* ── Missing QC Parameters Popup ── */}
-        {missingPopup && (
+        {/* ── Missing QC Parameters Popup (OLD - COMMENTED OUT) ── */}
+        {/* {missingPopup && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
               <h3 className="text-sm font-bold text-slate-800 mb-1">Missing QC Parameters</h3>
@@ -780,16 +780,13 @@ const QCEntryScreen = () => {
                 <button type="button" onClick={() => { setMissingPopup(false); setMissingParams([]); setMissingValues({}); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" disabled={savingMissing} onClick={async () => {
-                  // Only save fields that have values (not mandatory to fill all)
                   const filledValues = {};
                   missingParams.forEach(p => {
                     if (missingValues[p] && missingValues[p].trim() !== '') {
                       filledValues[p.toLowerCase()] = Number(missingValues[p]);
                     }
                   });
-
                   if (Object.keys(filledValues).length === 0) { showError('Please fill at least one value'); return; }
-
                   setSavingMissing(true);
                   try {
                     const res = await updateMissingValues({ bobbin_no: missingBobbin, values: filledValues });
@@ -798,7 +795,6 @@ const QCEntryScreen = () => {
                       setMissingPopup(false);
                       setMissingParams([]);
                       setMissingValues({});
-                      // Auto re-run grade validation
                       setTimeout(() => handleGrade({ bobbin_no: missingBobbin, bobbin_fid: '', matcode: '' }), 500);
                     } else { showError(res?.message || 'Save failed'); }
                   } catch (e) { showError(e?.response?.data?.message || 'Failed to save missing values'); }
@@ -810,7 +806,14 @@ const QCEntryScreen = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
+
+        {/* ── NEW Missing QC Parameters Popup ── */}
+        <MissingFieldsPopup
+          isOpen={missingPopup}
+          missingParams={missingParams}
+          onClose={() => { setMissingPopup(false); setMissingParams([]); setMissingValues({}); }}
+        />
 
         {/* ── PT Entry Check Popup (Bobbin not in QC but found in PT) ── */}
         {ptCheckPopup.open && (
@@ -837,6 +840,89 @@ const QCEntryScreen = () => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   NEW Attractive Missing Fields Popup Component
+   ══════════════════════════════════════════════════════════ */
+const MissingFieldsPopup = ({ isOpen, missingParams, onClose }) => {
+  if (!isOpen) return null;
+
+  const totalCount = missingParams.length;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
+      <div className="bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] w-[480px] max-h-[80vh] flex flex-col overflow-hidden border border-slate-100">
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-6 py-4 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-white rounded-full"></div>
+            <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white rounded-full"></div>
+          </div>
+          <div className="relative flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2.5">
+              <AlertTriangle size={20} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white tracking-tight">Missing QC Parameters</h3>
+              <p className="text-[11px] text-white/80 mt-0.5">{totalCount} parameter{totalCount > 1 ? 's' : ''} required before grading can continue</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Count Badge */}
+        <div className="px-6 pt-4 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 rounded-full">
+              <XCircle size={12} className="text-red-500" />
+              <span className="text-[11px] font-bold text-red-600">{totalCount} Missing Field{totalCount > 1 ? 's' : ''}</span>
+            </span>
+            <span className="text-[10px] text-slate-400">Please fill these values in the form</span>
+          </div>
+        </div>
+
+        {/* Missing Fields List */}
+        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-2">
+          {missingParams.map((param, idx) => (
+            <div
+              key={param}
+              className="flex items-center gap-3 p-3 rounded-xl border border-red-100 bg-red-50/40 hover:bg-red-50 transition-all duration-200"
+            >
+              {/* Number Badge */}
+              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-red-100 text-red-600">
+                {idx + 1}
+              </div>
+
+              {/* Field Name */}
+              <div className="flex-1 min-w-0">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block truncate">
+                  {param.replace(/_/g, ' ')}
+                </span>
+              </div>
+
+              {/* Missing indicator */}
+              <span className="flex-shrink-0 text-[9px] font-bold text-red-400 bg-red-100 px-2 py-0.5 rounded-full">
+                EMPTY
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-8 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-xs font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-md shadow-amber-200/50"
+          >
+            OK, Understood
+          </button>
+        </div>
+
       </div>
     </div>
   );

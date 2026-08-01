@@ -154,7 +154,7 @@ const PTEntry = () => {
     setFieldValue("pt_break", false);
     setFieldValue("pt_scrap", false);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
       console.log('PT machine log response:', res.data);
       const data = res.data;
       if (data?.success && data.data) {
@@ -720,7 +720,7 @@ const PTEntry = () => {
                         <FormikInput compact label="Product Type" name="product_type" readOnly/>
                         <FormikInput compact label="Drawn Date" name="drawn_date" type="date" />
                         <FormikInput compact label="PT Entry Date" name="pt_entry" type="date" />
-                        <FormikInput compact label="PT Bobbin No" name="bobbin_no" placeholder="Scan bobbin..."
+                        <FormikInput compact label="PT Barcode" name="bobbin_no" placeholder="Scan bobbin..."
                           onChange={(e) => {
                             const val = e.target.value;
                             setFieldValue('bobbin_no', val);

@@ -66,6 +66,7 @@ const SpecForm = ({ specId, onBack }) => {
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState(buildInitialValues());
   const [grades, setGrades] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [mandatoryFields, setMandatoryFields] = useState({});
   const isEdit = !!specId;
 
@@ -75,6 +76,15 @@ const SpecForm = ({ specId, onBack }) => {
       try {
         const res = await getGradeList();
         if (res?.success) setGrades(res.data || []);
+      } catch (_) {}
+    })();
+
+    // Load customers for dropdown
+    (async () => {
+      try {
+        const axios = (await import('axios')).default;
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/customers`);
+        setCustomers((res.data?.data || []).filter(c => !c.disable));
       } catch (_) {}
     })();
 
@@ -142,6 +152,8 @@ const SpecForm = ({ specId, onBack }) => {
     setSubmitting(false);
   };
 
+  const customerOptions = customers.map(c => ({ label: c.customer_name, value: c.customer_name }));
+
   if (loading) return <div className="flex items-center justify-center h-full"><span className="text-xs text-slate-400">Loading...</span></div>;
 
   return (
@@ -167,7 +179,7 @@ const SpecForm = ({ specId, onBack }) => {
                   <span className="text-[8px] font-bold text-indigo-700 uppercase tracking-wider">Basic Information</span>
                 </div>
                 <div className="grid grid-cols-5 gap-2">
-                  <FormikInput compact label="Customer Name *" name="customer_name" />
+                  <FormikSelect compact label="Customer Name *" name="customer_name" options={customerOptions} />
                   <FormikInput compact label="PO Number" name="po_number" />
                   <FormikSelect compact label="PT Strain" name="pt_strain" options={[{ label: '1%', value: 1 }, { label: '2%', value: 2 }]} />
                   <FormikInput compact label="Spec Name *" name="cust_spec_name" />

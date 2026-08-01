@@ -549,6 +549,7 @@ const CustomerPanel = ({ onBack }) => {
     try {
       const res = await axios.put(`${API}/api/admin/customers/${item.customer_id}`, {
         customer_name: item.customer_name,
+        cust_address: item.cust_address || null,
         customer_since: item.customer_since,
         disable: !item.disable,
       }, { headers: authHeaders() });
@@ -587,18 +588,19 @@ const CustomerPanel = ({ onBack }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 z-10">
               <tr>
-                {['ID', 'Customer Name', 'Customer Since', 'Status', 'Created At', 'Actions'].map(h => (
+                {['ID', 'Customer Name', 'Customer Address', 'Customer Since', 'Status', 'Created At', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-xs text-slate-400">No customers found</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-400">No customers found</td></tr>
               ) : filtered.map(c => (
                 <tr key={c.customer_id} className="hover:bg-blue-50/30 transition-colors">
                   <td className="px-4 py-2.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{c.customer_id}</td>
                   <td className="px-4 py-2.5 text-xs font-bold text-slate-700 border-r border-slate-100">{c.customer_name}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-500 border-r border-slate-100">{c.cust_address || '—'}</td>
                   <td className="px-4 py-2.5 text-xs text-slate-500 border-r border-slate-100">{c.customer_since ? new Date(c.customer_since).toLocaleDateString('en-IN') : '—'}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${c.disable ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -643,9 +645,11 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
 
   const schema = Yup.object({
     customer_name: Yup.string().required('Customer name is required'),
+    cust_address: Yup.string(),
   });
   const initVals = {
     customer_name: item?.customer_name || '',
+    cust_address: item?.cust_address || '',
     customer_since: item?.customer_since ? item.customer_since.substring(0, 10) : '',
   };
 
@@ -656,12 +660,14 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
       if (isEdit) {
         res = await axios.put(`${API}/api/admin/customers/${item.customer_id}`, {
           customer_name: values.customer_name,
+          cust_address: values.cust_address || null,
           customer_since: values.customer_since || null,
           disable: item.disable ?? false,
         }, { headers: authHeaders() });
       } else {
         res = await axios.post(`${API}/api/admin/customers`, {
           customer_name: values.customer_name,
+          cust_address: values.cust_address || null,
           customer_since: values.customer_since || null,
         }, { headers: authHeaders() });
       }
@@ -682,6 +688,7 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
           <Formik initialValues={initVals} validationSchema={schema} onSubmit={handleSubmit} enableReinitialize>
             <Form className="flex flex-col gap-3">
               <FormikInput compact label="Customer Name *" name="customer_name" placeholder="Enter customer name" />
+              <FormikInput compact label="Customer Address" name="cust_address" placeholder="Enter customer address" />
               <FormikInput compact label="Customer Since" name="customer_since" type="date" />
               <div className="flex justify-between gap-3 pt-2 border-t border-slate-100">
                 <ResetButton compact type="button" onClick={onClose}>Cancel</ResetButton>

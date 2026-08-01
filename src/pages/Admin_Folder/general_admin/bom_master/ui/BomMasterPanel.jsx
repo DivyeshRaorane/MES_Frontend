@@ -240,9 +240,12 @@ const BomForm = ({ materialCode, onBack, onSaved }) => {
         const prodList = prodRes?.data || [];
         setProductMaterials(prodList);
 
-        // Fetch consumable materials
-        const consRes = await getMaterialsByCategory('CONSUMABLE');
-        const consList = consRes?.data || [];
+        // Fetch consumable + semi-finished materials
+        const [consRes, semiRes] = await Promise.all([
+          getMaterialsByCategory('CONSUMABLE'),
+          getMaterialsByCategory('SEMI_FINISHED'),
+        ]);
+        const consList = [...(consRes?.data || []), ...(semiRes?.data || [])];
         setConsumableMaterials(consList);
 
         // If editing, load existing BOM data
