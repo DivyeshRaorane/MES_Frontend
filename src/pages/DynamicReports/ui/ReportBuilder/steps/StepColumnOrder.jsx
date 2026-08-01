@@ -44,29 +44,29 @@ const SortableColumnItem = ({ id, displayName, index, totalCount }) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border-2 transition-all
         ${isDragging
-          ? 'bg-blue-900/30 border-blue-500 shadow-lg shadow-blue-900/20'
-          : 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600'
+          ? 'bg-blue-50 border-blue-400 shadow-lg shadow-blue-100/60 ring-1 ring-blue-200'
+          : 'bg-white border-slate-300 hover:border-blue-300 hover:shadow-sm'
         }`}
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 rounded text-slate-500 hover:text-slate-300"
+        className="cursor-grab active:cursor-grabbing p-1 rounded text-slate-400 hover:text-blue-600"
       >
         <GripVertical size={14} />
       </button>
 
       {/* Position number */}
-      <span className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-700 text-[10px] font-bold text-slate-300">
+      <span className="w-6 h-6 flex items-center justify-center rounded-md bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-300 text-[10px] font-extrabold text-blue-800">
         {index + 1}
       </span>
 
       {/* Column info */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white truncate">{displayName}</p>
+        <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
         <p className="text-[10px] text-slate-500 font-mono truncate">{id}</p>
       </div>
     </div>
@@ -103,12 +103,12 @@ const StepColumnOrder = () => {
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cyan-600/20 flex items-center justify-center">
-          <GripVertical size={20} className="text-cyan-400" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-200 border-2 border-cyan-300 flex items-center justify-center shadow-sm">
+          <GripVertical size={20} className="text-cyan-700" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Column Order</h2>
-          <p className="text-[11px] text-slate-400">
+          <h2 className="text-sm font-extrabold text-slate-900">Column Order</h2>
+          <p className="text-[11px] text-slate-600 font-medium">
             Drag and drop to reorder columns. The report will display columns in this order.
           </p>
         </div>
@@ -140,14 +140,14 @@ const StepColumnOrder = () => {
                   <button
                     onClick={() => moveItem(index, -1)}
                     disabled={index === 0}
-                    className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed"
+                    className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                   >
                     <MoveUp size={11} />
                   </button>
                   <button
                     onClick={() => moveItem(index, 1)}
                     disabled={index === wizard.columnOrder.length - 1}
-                    className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed"
+                    className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                   >
                     <MoveDown size={11} />
                   </button>
@@ -160,7 +160,7 @@ const StepColumnOrder = () => {
 
       {wizard.columnOrder.length === 0 && (
         <div className="text-center py-8">
-          <GripVertical size={32} className="mx-auto text-slate-600 mb-2" />
+          <GripVertical size={32} className="mx-auto text-slate-300 mb-2" />
           <p className="text-xs text-slate-500">No columns selected yet. Go back to Step 3 to select columns.</p>
         </div>
       )}

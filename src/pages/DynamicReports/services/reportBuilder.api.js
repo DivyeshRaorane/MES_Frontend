@@ -204,6 +204,169 @@ export const fetchUsersForPermission = async () => {
   return res.data;
 };
 
+// ─── Multi-Sheet Report CRUD ────────────────────────────────────────────────
+
+/** Create a multi-sheet report (uses same endpoint, backend detects is_multi_sheet) */
+export const createMultiSheetReport = async (reportData) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports`, { ...reportData, is_multi_sheet: true }, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Update a multi-sheet report (uses same endpoint, backend detects is_multi_sheet) */
+export const updateMultiSheetReport = async (reportId, reportData) => {
+  const res = await axios.put(`${API_URL}/api/report-builder/reports/${reportId}`, { ...reportData, is_multi_sheet: true }, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Get full multi-sheet report structure (sheets + tables) - uses same endpoint */
+export const fetchMultiSheetReport = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Report Sheets CRUD ─────────────────────────────────────────────────────
+
+/** Get all sheets for a report */
+export const fetchReportSheets = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/sheets`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Create a sheet in a report */
+export const createReportSheet = async (reportId, sheetData) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/sheets`, sheetData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Update a sheet */
+export const updateReportSheet = async (reportId, sheetId, sheetData) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}`,
+    sheetData,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Delete a sheet */
+export const deleteReportSheet = async (reportId, sheetId) => {
+  const res = await axios.delete(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}`,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Reorder sheets */
+export const reorderReportSheets = async (reportId, sheetOrder) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/reorder`,
+    { sheetOrder },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+// ─── Report Tables CRUD (within a sheet) ────────────────────────────────────
+
+/** Get all tables for a sheet */
+export const fetchSheetTables = async (reportId, sheetId) => {
+  const res = await axios.get(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Create a table in a sheet */
+export const createSheetTable = async (reportId, sheetId, tableData) => {
+  const res = await axios.post(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
+    tableData,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Update a table */
+export const updateSheetTable = async (reportId, sheetId, tableId, tableData) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
+    tableData,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Delete a table */
+export const deleteSheetTable = async (reportId, sheetId, tableId) => {
+  const res = await axios.delete(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Duplicate a table within the same sheet */
+export const duplicateSheetTable = async (reportId, sheetId, tableId) => {
+  const res = await axios.post(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}/duplicate`,
+    {},
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Reorder tables within a sheet */
+export const reorderSheetTables = async (reportId, sheetId, tableOrder) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/reorder`,
+    { tableOrder },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Preview a single table's query */
+export const previewTableQuery = async (tableConfig) => {
+  const res = await axios.post(`${API_URL}/api/report-builder/reports/preview-table`, tableConfig, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// ─── Multi-Sheet Report Execution ───────────────────────────────────────────
+
+/** Execute a multi-sheet report (uses same execute endpoint - backend detects is_multi_sheet) */
+export const executeMultiSheetReport = async (reportId, params) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/execute`,
+    params,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Export multi-sheet report as Excel workbook */
+export const exportMultiSheetExcel = async (reportId, params) => {
+  const res = await axios.post(
+    `${API_URL}/api/dynamic-reports/${reportId}/export/multi-excel`,
+    params,
+    { headers: getAuthHeaders(), responseType: 'blob' }
+  );
+  return res.data;
+};
+
 // ─── Saved Filters ──────────────────────────────────────────────────────────
 
 /** Get saved filters for a report */

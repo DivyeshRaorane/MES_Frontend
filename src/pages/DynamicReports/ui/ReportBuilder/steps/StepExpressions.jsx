@@ -67,12 +67,12 @@ const FUNCTION_CATEGORIES = {
 };
 
 const CATEGORY_COLORS = {
-  Aggregate: 'text-cyan-300 bg-cyan-900/30 border-cyan-700/50',
-  Math: 'text-blue-300 bg-blue-900/30 border-blue-700/50',
-  Date: 'text-rose-300 bg-rose-900/30 border-rose-700/50',
-  Text: 'text-emerald-300 bg-emerald-900/30 border-emerald-700/50',
-  Conditional: 'text-amber-300 bg-amber-900/30 border-amber-700/50',
-  Window: 'text-violet-300 bg-violet-900/30 border-violet-700/50',
+  Aggregate: 'text-cyan-700 bg-cyan-50 border-cyan-200',
+  Math: 'text-blue-700 bg-blue-50 border-blue-200',
+  Date: 'text-rose-700 bg-rose-50 border-rose-200',
+  Text: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  Conditional: 'text-amber-700 bg-amber-50 border-amber-200',
+  Window: 'text-violet-700 bg-violet-50 border-violet-200',
 };
 
 const StepExpressions = () => {
@@ -115,16 +115,16 @@ const StepExpressions = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-600/20 flex items-center justify-center">
-            <Calculator size={20} className="text-orange-400" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-100 to-red-200 border-2 border-orange-300 flex items-center justify-center shadow-sm">
+            <Calculator size={20} className="text-orange-700" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white">Calculated Columns & Expressions</h2>
-            <p className="text-[11px] text-slate-400">Build aggregate, calculated, and window function expressions.</p>
+            <h2 className="text-sm font-extrabold text-slate-900">Calculated Columns & Expressions</h2>
+            <p className="text-[11px] text-slate-600 font-medium">Build aggregate, calculated, and window function expressions.</p>
           </div>
         </div>
         {!showForm && (
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-orange-600 hover:bg-orange-500 transition-colors">
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 transition-all shadow-md shadow-orange-200">
             <Plus size={12} /> Add Expression
           </button>
         )}
@@ -134,17 +134,17 @@ const StepExpressions = () => {
       {wizard.expressions.length > 0 && (
         <div className="space-y-2">
           {wizard.expressions.map((expr, idx) => (
-            <div key={idx} className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 flex items-center justify-between">
+            <div key={idx} className="rounded-xl border-2 border-slate-300 bg-white p-3.5 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold text-white">{expr.displayName}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-900/30 text-orange-300 font-mono">{expr.alias}</span>
+                  <span className="text-xs font-extrabold text-slate-900">{expr.displayName}</span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-800 font-mono font-bold border-2 border-orange-300">{expr.alias}</span>
                 </div>
-                <code className="text-[10px] text-slate-400 font-mono block truncate">{expr.expression}</code>
+                <code className="text-[10px] text-slate-500 font-mono block truncate">{expr.expression}</code>
               </div>
               <div className="flex items-center gap-1 ml-3">
-                <button onClick={() => handleEdit(idx)} className="p-1.5 rounded text-slate-400 hover:text-blue-400 hover:bg-blue-900/20 transition-colors"><Edit3 size={12} /></button>
-                <button onClick={() => dispatch(removeExpression(idx))} className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-900/20 transition-colors"><Trash2 size={12} /></button>
+                <button onClick={() => handleEdit(idx)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Edit3 size={12} /></button>
+                <button onClick={() => dispatch(removeExpression(idx))} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 size={12} /></button>
               </div>
             </div>
           ))}
@@ -153,8 +153,8 @@ const StepExpressions = () => {
 
       {/* Expression Builder Form */}
       {showForm && (
-        <div className="rounded-lg border border-orange-700/50 bg-orange-900/5 p-4 space-y-4">
-          <p className="text-[11px] font-bold text-orange-300 uppercase tracking-wider">
+        <div className="rounded-xl border-2 border-orange-300 bg-orange-50/30 p-4 space-y-4 shadow-sm">
+          <p className="text-[11px] font-extrabold text-orange-800 uppercase tracking-wider">
             {editIndex !== null ? 'Edit Expression' : 'New Expression'}
           </p>
 
@@ -163,17 +163,17 @@ const StepExpressions = () => {
             <div className="space-y-1">
               <label className="text-[9px] text-slate-500 font-semibold uppercase">Name *</label>
               <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Total Production"
-                className="w-full px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] text-slate-500 font-semibold uppercase">Display Name</label>
               <input type="text" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} placeholder="Total Production (KM)"
-                className="w-full px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] text-slate-500 font-semibold uppercase">Alias</label>
               <input type="text" value={form.alias} onChange={(e) => setForm({ ...form, alias: e.target.value })} placeholder="total_production"
-                className="w-full px-2.5 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
             </div>
           </div>
 
@@ -182,7 +182,7 @@ const StepExpressions = () => {
             <label className="text-[9px] text-slate-500 font-semibold uppercase">Expression *</label>
             <textarea value={form.expression} onChange={(e) => setForm({ ...form, expression: e.target.value })}
               placeholder="Build your expression using functions and columns below..." rows={3}
-              className="w-full px-3 py-2 rounded-md bg-slate-900 border border-slate-700 text-xs text-emerald-300 font-mono placeholder-slate-600 focus:outline-none focus:border-orange-500 resize-none" />
+              className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs text-emerald-700 font-mono placeholder-slate-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 resize-none" />
           </div>
 
           {/* Operators */}
@@ -191,7 +191,7 @@ const StepExpressions = () => {
             <div className="flex flex-wrap gap-1">
               {OPERATORS.map((op) => (
                 <button key={op} onClick={() => handleInsertOperator(op)}
-                  className="w-8 h-7 rounded bg-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-600 transition-colors">{op}</button>
+                  className="w-8 h-7 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors shadow-sm">{op}</button>
               ))}
             </div>
           </div>
@@ -203,8 +203,8 @@ const StepExpressions = () => {
             <div className="flex flex-wrap gap-1">
               {Object.keys(FUNCTION_CATEGORIES).map((cat) => (
                 <button key={cat} onClick={() => setActiveCategory(cat)}
-                  className={`px-2 py-1 rounded text-[9px] font-semibold border transition-colors
-                    ${activeCategory === cat ? CATEGORY_COLORS[cat] : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300'}`}>
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-semibold border transition-colors
+                    ${activeCategory === cat ? CATEGORY_COLORS[cat] : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
                   {cat}
                 </button>
               ))}
@@ -213,7 +213,7 @@ const StepExpressions = () => {
             <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
               {FUNCTION_CATEGORIES[activeCategory]?.map((fn) => (
                 <button key={fn.value} onClick={() => handleInsertFunction(fn.value)} title={fn.desc}
-                  className="px-2 py-1 rounded bg-slate-700 text-[10px] text-cyan-300 font-mono font-medium hover:bg-slate-600 transition-colors">
+                  className="px-2 py-1 rounded-md bg-white border border-slate-200 text-[10px] text-indigo-700 font-mono font-medium hover:bg-indigo-50 hover:border-indigo-200 transition-colors shadow-sm">
                   {fn.label}
                 </button>
               ))}
@@ -226,18 +226,18 @@ const StepExpressions = () => {
             <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
               {allColumns.map((col) => (
                 <button key={col} onClick={() => handleInsertColumn(col)}
-                  className="px-2 py-1 rounded bg-slate-700 text-[10px] text-blue-300 font-mono hover:bg-slate-600 transition-colors">{col}</button>
+                  className="px-2 py-1 rounded-md bg-white border border-slate-200 text-[10px] text-blue-700 font-mono hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm">{col}</button>
               ))}
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 border-t border-slate-700/50">
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
             <button onClick={handleSave} disabled={!form.name || !form.expression}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm">
               <Check size={12} /> {editIndex !== null ? 'Update' : 'Add'}
             </button>
-            <button onClick={resetForm} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 bg-slate-700 hover:bg-slate-600 transition-colors">
+            <button onClick={resetForm} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
               <X size={12} /> Cancel
             </button>
           </div>
@@ -246,22 +246,22 @@ const StepExpressions = () => {
 
       {/* Empty state */}
       {wizard.expressions.length === 0 && !showForm && (
-        <div className="text-center py-8 rounded-lg border border-dashed border-slate-700">
-          <Calculator size={32} className="mx-auto text-slate-600 mb-2" />
+        <div className="text-center py-8 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
+          <Calculator size={32} className="mx-auto text-slate-300 mb-2" />
           <p className="text-xs text-slate-500 mb-1">No calculated columns yet</p>
-          <p className="text-[10px] text-slate-600">Use for aggregates, calculations, window functions, and derived values.</p>
+          <p className="text-[10px] text-slate-400">Use for aggregates, calculations, window functions, and derived values.</p>
         </div>
       )}
 
       {/* Examples */}
-      <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-        <p className="text-[10px] text-slate-500 font-semibold mb-2">Examples:</p>
-        <div className="space-y-1 text-[10px] text-slate-400 font-mono">
-          <p>• Total Production: <span className="text-emerald-400">SUM(draw_entry.drawn_length)</span></p>
-          <p>• Avg Weight: <span className="text-emerald-400">ROUND(AVG(draw_entry.drawn_weight), 2)</span></p>
-          <p>• Net Length: <span className="text-emerald-400">SUM(drawn_length) - SUM(scrap_length)</span></p>
-          <p>• Efficiency: <span className="text-emerald-400">ROUND((COUNT(DISTINCT spool_id)::numeric / COUNT(*)) * 100, 1)</span></p>
-          <p>• Running Total: <span className="text-emerald-400">SUM(drawn_length) OVER(ORDER BY created_at)</span></p>
+      <div className="p-3 rounded-lg bg-gradient-to-r from-slate-50 to-orange-50/30 border border-slate-200">
+        <p className="text-[10px] text-slate-600 font-semibold mb-2">Examples:</p>
+        <div className="space-y-1 text-[10px] text-slate-500 font-mono">
+          <p>• Total Production: <span className="text-emerald-600">SUM(draw_entry.drawn_length)</span></p>
+          <p>• Avg Weight: <span className="text-emerald-600">ROUND(AVG(draw_entry.drawn_weight), 2)</span></p>
+          <p>• Net Length: <span className="text-emerald-600">SUM(drawn_length) - SUM(scrap_length)</span></p>
+          <p>• Efficiency: <span className="text-emerald-600">ROUND((COUNT(DISTINCT spool_id)::numeric / COUNT(*)) * 100, 1)</span></p>
+          <p>• Running Total: <span className="text-emerald-600">SUM(drawn_length) OVER(ORDER BY created_at)</span></p>
         </div>
       </div>
     </div>

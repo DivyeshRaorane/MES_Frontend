@@ -53,8 +53,8 @@ const DynamicReportsList = () => {
               <FileBarChart2 size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-800">Dynamic Reports</h1>
-              <p className="text-[10px] text-slate-500">{filtered.length} report(s) available</p>
+              <h1 className="text-sm font-extrabold text-slate-900">Dynamic Reports</h1>
+              <p className="text-[10px] text-slate-600 font-medium">{filtered.length} report(s) available</p>
             </div>
           </div>
           <button
@@ -148,29 +148,29 @@ const ReportCard = ({ report, onOpen }) => {
   return (
     <button
       onClick={() => onOpen(report)}
-      className="text-left p-4 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 hover:border-slate-600
-        hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group"
+      className="text-left p-4 rounded-xl bg-white border-2 border-slate-300 hover:border-blue-400
+        hover:shadow-xl hover:shadow-blue-100/60 hover:-translate-y-0.5 transition-all duration-200 group"
     >
       <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold bg-slate-700 text-slate-300 border border-slate-600">
+        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-300">
           {report.module || 'Common'}
         </span>
-        <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center group-hover:bg-blue-500 transition-all">
+        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-500 transition-all">
           <Play size={10} className="text-slate-400 group-hover:text-white transition-colors" />
         </div>
       </div>
-      <h3 className="text-[11px] font-bold text-white mb-1 line-clamp-2 group-hover:text-blue-300 transition-colors">
+      <h3 className="text-[12px] font-extrabold text-slate-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
         {report.report_name}
       </h3>
       {report.description && (
-        <p className="text-[10px] text-slate-400 line-clamp-2 mb-2.5">{report.description}</p>
+        <p className="text-[11px] text-slate-600 line-clamp-2 mb-2.5">{report.description}</p>
       )}
-      <div className="flex items-center gap-3 text-[9px] text-slate-500 pt-2 border-t border-slate-700">
+      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-medium pt-2.5 border-t-2 border-slate-200">
         {report.created_at && (
-          <div className="flex items-center gap-1"><Clock size={9} /><span>{new Date(report.created_at).toLocaleDateString()}</span></div>
+          <div className="flex items-center gap-1"><Clock size={10} className="text-slate-400" /><span>{new Date(report.created_at).toLocaleDateString()}</span></div>
         )}
         {report.main_table && (
-          <div className="flex items-center gap-1"><Tag size={9} /><span>{report.main_table}</span></div>
+          <div className="flex items-center gap-1"><Tag size={10} className="text-slate-400" /><span>{report.main_table}</span></div>
         )}
       </div>
     </button>
@@ -181,22 +181,22 @@ const ReportListItem = ({ report, onOpen }) => {
   return (
     <button
       onClick={() => onOpen(report)}
-      className="w-full text-left flex items-center gap-4 p-3 rounded-xl bg-slate-800 border border-slate-700
-        hover:bg-slate-750 hover:border-slate-600 hover:shadow-md transition-all duration-200 group"
+      className="w-full text-left flex items-center gap-4 p-3.5 rounded-xl bg-white border-2 border-slate-300
+        hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-200 group"
     >
-      <div className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-        <FileBarChart2 size={14} className="text-blue-400" />
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-300 flex items-center justify-center flex-shrink-0">
+        <FileBarChart2 size={14} className="text-blue-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-[11px] font-bold text-white group-hover:text-blue-300 transition-colors truncate">
+        <h3 className="text-[12px] font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
           {report.report_name}
         </h3>
-        <p className="text-[10px] text-slate-400 truncate">{report.description || report.main_table}</p>
+        <p className="text-[11px] text-slate-600 truncate">{report.description || report.main_table}</p>
       </div>
-      <span className="text-[9px] px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 font-semibold flex-shrink-0">
+      <span className="text-[10px] px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold border-2 border-indigo-300 flex-shrink-0">
         {report.module || 'Common'}
       </span>
-      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 transition-all">
+      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 transition-all">
         <Play size={10} className="text-slate-400 group-hover:text-white transition-colors" />
       </div>
     </button>

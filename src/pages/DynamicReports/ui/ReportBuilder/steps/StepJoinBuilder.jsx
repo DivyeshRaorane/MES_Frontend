@@ -36,7 +36,7 @@ const StepJoinBuilder = () => {
     if (tables.length === 0) dispatch(getTables());
   }, [dispatch, tables.length]);
 
-  // Fetch columns for all tables referenced in joins (debounced via fetchedTables set)
+  // Fetch columns for all tables referenced in joins
   useEffect(() => {
     const needed = new Set();
     if (wizard.mainTable) needed.add(wizard.mainTable);
@@ -95,7 +95,7 @@ const StepJoinBuilder = () => {
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2 py-1.5 rounded-md bg-slate-700 border border-slate-600 text-[11px] text-white focus:outline-none focus:border-blue-500"
+        className="w-full px-2.5 py-1.5 rounded-lg bg-white border-2 border-slate-300 text-[11px] text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
       >
         <option value="">Select column...</option>
         {hasValue && <option value={value}>{value} (saved)</option>}
@@ -111,12 +111,12 @@ const StepJoinBuilder = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center">
-            <Link2 size={20} className="text-indigo-400" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-200 border-2 border-indigo-300 flex items-center justify-center shadow-sm">
+            <Link2 size={20} className="text-indigo-700" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white">Join Builder</h2>
-            <p className="text-[11px] text-slate-400">
+            <h2 className="text-sm font-extrabold text-slate-900">Join Builder</h2>
+            <p className="text-[11px] text-slate-600 font-medium">
               Connect tables together. Add unlimited joins to build complex reports.
             </p>
           </div>
@@ -127,7 +127,7 @@ const StepJoinBuilder = () => {
             setShowAddForm(true);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold
-            text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
+            text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-md shadow-indigo-200"
         >
           <Plus size={12} />
           Add Join
@@ -135,17 +135,17 @@ const StepJoinBuilder = () => {
       </div>
 
       {/* Tables in report */}
-      <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-        <p className="text-[10px] text-slate-400 mb-2 font-semibold uppercase tracking-wider">Tables in this report:</p>
+      <div className="p-3 rounded-lg bg-gradient-to-r from-slate-50 to-indigo-50/50 border-2 border-slate-300">
+        <p className="text-[10px] text-slate-500 mb-2 font-semibold uppercase tracking-wider">Tables in this report:</p>
         <div className="flex flex-wrap gap-1.5">
           {reportTables.map((table, idx) => (
             <span key={table} className="flex items-center gap-1">
-              <span className={`text-[11px] px-2 py-0.5 rounded font-medium
-                ${idx === 0 ? 'bg-blue-600/20 text-blue-300 border border-blue-600/30' : 'bg-slate-700 text-slate-300 border border-slate-600'}`}>
+              <span className={`text-[11px] px-2.5 py-0.5 rounded-md font-medium
+                ${idx === 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
                 {table}
-                {idx === 0 && <span className="ml-1 text-[9px] opacity-60">(primary)</span>}
+                {idx === 0 && <span className="ml-1 text-[9px] text-blue-500">(primary)</span>}
               </span>
-              {idx < reportTables.length - 1 && <ArrowRight size={10} className="text-slate-600" />}
+              {idx < reportTables.length - 1 && <ArrowRight size={10} className="text-slate-300" />}
             </span>
           ))}
         </div>
@@ -153,24 +153,24 @@ const StepJoinBuilder = () => {
 
       {/* Existing joins */}
       {wizard.joins.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {wizard.joins.map((join, idx) => (
-            <div key={idx} className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-4">
+            <div key={idx} className="rounded-xl border-2 border-slate-300 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Join #{idx + 1}</span>
-                <button onClick={() => handleRemoveJoin(idx)} className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-900/20 transition-colors">
+                <span className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider">Join #{idx + 1}</span>
+                <button onClick={() => handleRemoveJoin(idx)} className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
                   <Trash2 size={12} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                 {/* Left table */}
                 <div className="space-y-1">
                   <label className="text-[9px] text-slate-500 font-semibold uppercase">Left Table</label>
                   <select
                     value={join.leftTable || ''}
                     onChange={(e) => handleUpdateJoinField(idx, 'leftTable', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded-md bg-slate-700 border border-slate-600 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   >
                     <option value="">Select...</option>
                     {reportTables.map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -192,7 +192,7 @@ const StepJoinBuilder = () => {
                   <select
                     value={join.joinType || 'INNER'}
                     onChange={(e) => handleUpdateJoinField(idx, 'joinType', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded-md bg-slate-700 border border-slate-600 text-[11px] font-semibold text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-[11px] font-semibold text-indigo-700 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   >
                     {JOIN_TYPES.map((jt) => (<option key={jt.value} value={jt.value}>{jt.label}</option>))}
                   </select>
@@ -204,7 +204,7 @@ const StepJoinBuilder = () => {
                   <select
                     value={join.rightTable || ''}
                     onChange={(e) => handleUpdateJoinField(idx, 'rightTable', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded-md bg-slate-700 border border-slate-600 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   >
                     <option value="">Select...</option>
                     {availableTables.map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -219,14 +219,14 @@ const StepJoinBuilder = () => {
               </div>
 
               {/* SQL Preview */}
-              <div className="mt-3 pt-3 border-t border-slate-700/50">
-                <code className="text-[10px] text-slate-400 font-mono">
-                  <span className="text-indigo-400">{join.joinType || 'INNER'} JOIN</span>{' '}
-                  <span className="text-emerald-400">{join.rightTable || '?'}</span>{' '}
-                  <span className="text-slate-500">ON</span>{' '}
-                  <span className="text-blue-300">{join.leftTable || '?'}.{join.leftColumn || '?'}</span>{' '}
-                  <span className="text-slate-500">=</span>{' '}
-                  <span className="text-emerald-300">{join.rightTable || '?'}.{join.rightColumn || '?'}</span>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <code className="text-[10px] text-slate-500 font-mono">
+                  <span className="text-indigo-600 font-semibold">{join.joinType || 'INNER'} JOIN</span>{' '}
+                  <span className="text-emerald-600">{join.rightTable || '?'}</span>{' '}
+                  <span className="text-slate-400">ON</span>{' '}
+                  <span className="text-blue-600">{join.leftTable || '?'}.{join.leftColumn || '?'}</span>{' '}
+                  <span className="text-slate-400">=</span>{' '}
+                  <span className="text-emerald-600">{join.rightTable || '?'}.{join.rightColumn || '?'}</span>
                 </code>
               </div>
             </div>
@@ -236,16 +236,16 @@ const StepJoinBuilder = () => {
 
       {/* Add join form */}
       {showAddForm && (
-        <div className="rounded-lg border border-indigo-700/50 bg-indigo-900/10 p-4 space-y-3">
-          <p className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">New Join</p>
+        <div className="rounded-xl border-2 border-indigo-300 bg-indigo-50/30 p-4 space-y-3 shadow-sm">
+          <p className="text-[11px] font-extrabold text-indigo-700 uppercase tracking-wider">New Join</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
             <div className="space-y-1">
               <label className="text-[9px] text-slate-500 font-semibold uppercase">Left Table</label>
               <select
                 value={newJoin.leftTable}
                 onChange={(e) => setNewJoin({ ...newJoin, leftTable: e.target.value, leftColumn: '' })}
-                className="w-full px-2 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 <option value="">Select...</option>
                 {reportTables.map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -262,7 +262,7 @@ const StepJoinBuilder = () => {
               <select
                 value={newJoin.joinType}
                 onChange={(e) => setNewJoin({ ...newJoin, joinType: e.target.value })}
-                className="w-full px-2 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-[11px] font-semibold text-indigo-700 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 {JOIN_TYPES.map((jt) => (<option key={jt.value} value={jt.value}>{jt.label}</option>))}
               </select>
@@ -273,7 +273,7 @@ const StepJoinBuilder = () => {
               <select
                 value={newJoin.rightTable}
                 onChange={(e) => setNewJoin({ ...newJoin, rightTable: e.target.value, rightColumn: '' })}
-                className="w-full px-2 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 <option value="">Select...</option>
                 {availableTables.map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -288,14 +288,14 @@ const StepJoinBuilder = () => {
 
           {/* SQL Preview */}
           {newJoin.leftTable && newJoin.rightTable && (
-            <div className="p-2 rounded bg-slate-900 border border-slate-700">
-              <code className="text-[10px] text-slate-400 font-mono">
-                <span className="text-indigo-400">{newJoin.joinType} JOIN</span>{' '}
-                <span className="text-emerald-400">{newJoin.rightTable}</span>{' '}
-                <span className="text-slate-500">ON</span>{' '}
-                <span className="text-blue-300">{newJoin.leftTable}.{newJoin.leftColumn || '?'}</span>{' '}
-                <span className="text-slate-500">=</span>{' '}
-                <span className="text-emerald-300">{newJoin.rightTable}.{newJoin.rightColumn || '?'}</span>
+            <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+              <code className="text-[10px] text-slate-500 font-mono">
+                <span className="text-indigo-600 font-semibold">{newJoin.joinType} JOIN</span>{' '}
+                <span className="text-emerald-600">{newJoin.rightTable}</span>{' '}
+                <span className="text-slate-400">ON</span>{' '}
+                <span className="text-blue-600">{newJoin.leftTable}.{newJoin.leftColumn || '?'}</span>{' '}
+                <span className="text-slate-400">=</span>{' '}
+                <span className="text-emerald-600">{newJoin.rightTable}.{newJoin.rightColumn || '?'}</span>
               </code>
             </div>
           )}
@@ -306,13 +306,13 @@ const StepJoinBuilder = () => {
               onClick={handleAddJoin}
               disabled={!newJoin.leftTable || !newJoin.leftColumn || !newJoin.rightTable || !newJoin.rightColumn}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <Plus size={12} /> Add Join
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 transition-colors"
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
@@ -322,17 +322,17 @@ const StepJoinBuilder = () => {
 
       {/* Empty state */}
       {wizard.joins.length === 0 && !showAddForm && (
-        <div className="text-center py-8 rounded-lg border border-dashed border-slate-700">
-          <Link2 size={32} className="mx-auto text-slate-600 mb-2" />
+        <div className="text-center py-8 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
+          <Link2 size={32} className="mx-auto text-slate-300 mb-2" />
           <p className="text-xs text-slate-500 mb-1">No joins configured yet</p>
-          <p className="text-[10px] text-slate-600">
+          <p className="text-[10px] text-slate-400">
             Joins are optional. Add them if your report needs data from multiple tables.
           </p>
         </div>
       )}
 
       {/* Info */}
-      <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+      <div className="p-3 rounded-lg bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200">
         <p className="text-[10px] text-slate-500 leading-relaxed">
           After adding a join, go back to Step 3 (Columns) to select columns from the joined table.
           You can chain unlimited joins: main → table2 → table3 → etc.

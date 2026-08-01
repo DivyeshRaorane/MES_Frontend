@@ -14,8 +14,8 @@ import {
   runReport, setActiveReport, setCurrentPage, setPageSize,
   setFilters, clearFilters, setSorting, setSearchQuery, clearReportData,
 } from '../controller/dynamicReports.slice';
-import { fetchReportById } from '../services/reportBuilder.api';
-import { exportToExcel, exportToCSV, exportToPDF, printReport } from '../utils/exportUtils';
+import { fetchReportById, executeMultiSheetReport } from '../services/reportBuilder.api';
+import { exportToExcel, exportToCSV, exportToPDF, printReport, exportMultiSheetToExcel } from '../utils/exportUtils';
 
 function parseJsonField(val, fallback = []) {
   if (Array.isArray(val)) return val;
@@ -132,6 +132,11 @@ const ReportViewer = () => {
 
   if (!activeReport && !reportLoaded) {
     return (<div className="h-full flex items-center justify-center bg-slate-50"><RefreshCw size={20} className="animate-spin text-blue-500" /><span className="ml-2 text-sm text-slate-500">Loading report...</span></div>);
+  }
+
+  // ── Multi-Sheet Report Detection ──────────────────────────────────────
+  if (activeReport?.is_multi_sheet) {
+    return <MultiSheetView report={activeReport} navigate={navigate} dispatch={dispatch} />;
   }
 
   const reportFilters = parseJsonField(activeReport?.filters, []);
@@ -309,6 +314,147 @@ const FilterInput = ({ filter, value, onChange }) => {
     default:
       return (<div className="space-y-1"><label className="text-[9px] text-slate-500 font-semibold uppercase">{filter.label}</label><input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={filter.label} className={`${base} w-36`} /></div>);
   }
+};
+
+// ─── Multi-Sheet View (inline within ReportViewer) ──────────────────────────
+
+const MultiSheetView = ({ report, navigate, dispatch }) => {
+  const [executionResult, setExecutionResult] = useState(null);
+  const [activeSheetTab, setActiveSheetTab] = useState(0);
+  const [msLoading, setMsLoading] = useState(false);
+  const [msError, setMsError] = useState(null);
+
+  useEffect(() => {
+    if (report?.id) {
+      setMsLoading(true);
+      executeMultiSheetReport(report.id, {})
+        .then((data) => { setExecutionResult(data); setMsLoading(false); })
+        .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
+    }
+  }, [report?.id]);
+
+  const handleRefresh = () => {
+    setMsLoading(true);
+    setMsError(null);
+    executeMultiSheetReport(report.id, {})
+      .then((data) => { setExecutionResult(data); setMsLoading(false); })
+      .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
+  };
+
+  const handleExport = () => {
+    if (executionResult) exportMultiSheetToExcel(executionResult, report.report_name || 'Report');
+  };
+
+  const sheetTabs = executionResult?.sheets?.map(s => s.sheetName || s.sheet_name || 'Sheet') || [];
+  const currentSheet = executionResult?.sheets?.[activeSheetTab] || null;
+
+  return (
+    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-indigo-50 via-white to-purple-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => { dispatch(clearReportData()); navigate('/dynamicreports'); }}
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 className="text-xs font-bold text-slate-800">{report.report_name}</h1>
+            <p className="text-[9px] text-slate-500">{report.module} • Multi-Sheet Report</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleRefresh} disabled={msLoading}
+            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors">
+            <RefreshCw size={14} className={msLoading ? 'animate-spin' : ''} />
+          </button>
+          <button onClick={handleExport} disabled={!executionResult}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm disabled:opacity-50">
+            <Download size={12} /> Export Excel
+          </button>
+        </div>
+      </div>
+
+      {/* Sheet Tabs */}
+      {sheetTabs.length > 1 && (
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 py-1 overflow-x-auto">
+          <div className="flex items-center gap-1">
+            {sheetTabs.map((tabName, idx) => (
+              <button key={idx} onClick={() => setActiveSheetTab(idx)}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-all
+                  ${idx === activeSheetTab ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>
+                {tabName}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {msError && (
+        <div className="flex-shrink-0 bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2">
+          <AlertCircle size={14} className="text-red-500" /><span className="text-[11px] text-red-600">{msError}</span>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {msLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <RefreshCw size={20} className="animate-spin text-blue-500" />
+            <span className="ml-3 text-sm text-slate-500">Executing report...</span>
+          </div>
+        ) : !currentSheet ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <FileText size={36} className="mx-auto text-slate-300 mb-3" />
+              <p className="text-sm text-slate-500">No data available</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {(currentSheet.tables || []).map((table, tIdx) => (
+              <div key={tIdx} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-[11px] font-bold text-slate-700">{table.title || table.table_name || `Table ${tIdx + 1}`}</h3>
+                  <span className="text-[9px] text-slate-400">{(table.data || []).length} record(s)</span>
+                </div>
+                {(!table.data || table.data.length === 0) ? (
+                  <div className="px-4 py-6 text-center"><p className="text-xs text-slate-400">No records</p></div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead className="bg-slate-100 border-b border-slate-200">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-[9px] text-slate-500 font-bold uppercase w-10">#</th>
+                          {(table.columns || []).map(col => (
+                            <th key={col.field} className="px-3 py-2 text-left text-[9px] text-slate-500 font-bold uppercase whitespace-nowrap">
+                              {col.header || col.field}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {table.data.map((row, rIdx) => (
+                          <tr key={rIdx} className={`border-b border-slate-50 hover:bg-blue-50/30 ${rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                            <td className="px-3 py-1.5 text-slate-400 font-mono text-[10px]">{rIdx + 1}</td>
+                            {(table.columns || []).map(col => (
+                              <td key={col.field} className="px-3 py-1.5 text-slate-600 whitespace-nowrap">
+                                {row[col.field] === null || row[col.field] === undefined ? <span className="text-slate-300">—</span> : String(row[col.field])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ReportViewer;

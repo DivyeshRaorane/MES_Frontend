@@ -40,36 +40,36 @@ const StepSortGroup = () => {
     <div className="max-w-4xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center">
-          <ArrowUpDown size={20} className="text-violet-400" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-purple-200 border-2 border-violet-300 flex items-center justify-center shadow-sm">
+          <ArrowUpDown size={20} className="text-violet-700" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Sorting, Grouping & Aggregates</h2>
-          <p className="text-[11px] text-slate-400">
+          <h2 className="text-sm font-extrabold text-slate-900">Sorting, Grouping & Aggregates</h2>
+          <p className="text-[11px] text-slate-600 font-medium">
             Configure how data is sorted, grouped, and aggregated.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1">
+      <div className="flex gap-1 bg-white border-2 border-slate-300 rounded-xl p-1 shadow-sm">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[11px] font-semibold transition-all
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all
                 ${activeTab === tab.key
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md shadow-violet-200'
+                  : 'text-slate-500 hover:text-violet-700 hover:bg-violet-50'
                 }`}
             >
               <Icon size={12} />
               {tab.label}
               {tab.count > 0 && (
-                <span className={`ml-1 text-[9px] px-1 py-0.5 rounded-full
-                  ${activeTab === tab.key ? 'bg-white/20' : 'bg-slate-700'}`}>
+                <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full
+                  ${activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'}`}>
                   {tab.count}
                 </span>
               )}
@@ -106,12 +106,12 @@ const SortingPanel = ({ allColumns }) => {
     <div className="space-y-3">
       {/* Existing sorts */}
       {wizard.sorting.map((sort, idx) => (
-        <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
-          <span className="text-[10px] text-slate-500 font-bold w-4">{idx + 1}.</span>
+        <div key={idx} className="flex items-center gap-2 p-3 rounded-xl bg-white border-2 border-slate-300 shadow-sm">
+          <span className="text-[10px] text-slate-500 font-extrabold w-5">{idx + 1}.</span>
           <select
             value={sort.column}
             onChange={(e) => dispatch(updateSort({ index: idx, sort: { ...sort, column: e.target.value } }))}
-            className="flex-1 px-2 py-1 rounded bg-slate-700 border border-slate-600 text-[11px] text-white focus:outline-none focus:border-violet-500"
+            className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {allColumns.map((col) => (
               <option key={col.key} value={col.key}>{col.label}</option>
@@ -119,10 +119,10 @@ const SortingPanel = ({ allColumns }) => {
           </select>
           <button
             onClick={() => dispatch(updateSort({ index: idx, sort: { ...sort, direction: sort.direction === 'ASC' ? 'DESC' : 'ASC' } }))}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border transition-colors
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border-2 transition-colors
               ${sort.direction === 'ASC'
-                ? 'bg-emerald-900/20 border-emerald-700/50 text-emerald-400'
-                : 'bg-orange-900/20 border-orange-700/50 text-orange-400'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                : 'bg-orange-50 border-orange-300 text-orange-800'
               }`}
           >
             {sort.direction === 'ASC' ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
@@ -130,7 +130,7 @@ const SortingPanel = ({ allColumns }) => {
           </button>
           <button
             onClick={() => dispatch(removeSort(idx))}
-            className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -138,11 +138,11 @@ const SortingPanel = ({ allColumns }) => {
       ))}
 
       {/* Add new sort */}
-      <div className="flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-slate-700">
+      <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
         <select
           value={newSort.column}
           onChange={(e) => setNewSort({ ...newSort, column: e.target.value })}
-          className="flex-1 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-violet-500"
+          className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
         >
           <option value="">Select column...</option>
           {allColumns.map((col) => (
@@ -152,7 +152,7 @@ const SortingPanel = ({ allColumns }) => {
         <select
           value={newSort.direction}
           onChange={(e) => setNewSort({ ...newSort, direction: e.target.value })}
-          className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-violet-500"
+          className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
         >
           <option value="ASC">ASC</option>
           <option value="DESC">DESC</option>
@@ -160,7 +160,7 @@ const SortingPanel = ({ allColumns }) => {
         <button
           onClick={handleAdd}
           disabled={!newSort.column}
-          className="p-1.5 rounded bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-30 transition-colors"
+          className="p-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 disabled:opacity-30 transition-all shadow-sm"
         >
           <Plus size={12} />
         </button>
@@ -185,21 +185,21 @@ const GroupByPanel = ({ allColumns }) => {
             <button
               key={col.key}
               onClick={() => dispatch(toggleGroupByColumn(col.key))}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all border
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-left transition-all border-2
                 ${isGrouped
-                  ? 'bg-violet-600/15 border-violet-600/40 text-white'
-                  : 'bg-slate-800/40 border-slate-700/50 text-slate-300 hover:bg-slate-700/50'
+                  ? 'bg-violet-50 border-violet-400 text-slate-900 shadow-sm ring-1 ring-violet-200'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-violet-50/50 hover:border-violet-300'
                 }`}
             >
-              {isGrouped ? <CheckSquare size={13} className="text-violet-400" /> : <Square size={13} className="text-slate-600" />}
+              {isGrouped ? <CheckSquare size={13} className="text-violet-600" /> : <Square size={13} className="text-slate-300" />}
               <span className="text-[11px] font-medium truncate">{col.label}</span>
             </button>
           );
         })}
       </div>
       {wizard.groupBy.length > 0 && (
-        <div className="p-2 rounded bg-slate-800 border border-slate-700">
-          <code className="text-[10px] text-slate-400 font-mono">
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <code className="text-[10px] text-slate-600 font-mono">
             GROUP BY {wizard.groupBy.join(', ')}
           </code>
         </div>
@@ -226,15 +226,15 @@ const AggregatePanel = ({ allColumns }) => {
     <div className="space-y-3">
       {/* Existing aggregates */}
       {wizard.aggregates.map((agg, idx) => (
-        <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
-          <span className="text-[11px] text-cyan-400 font-bold font-mono">{agg.function}</span>
-          <span className="text-[11px] text-slate-300">({agg.column})</span>
-          <span className="text-[10px] text-slate-500">AS</span>
-          <span className="text-[11px] text-emerald-400 font-mono">{agg.alias}</span>
+        <div key={idx} className="flex items-center gap-2 p-3 rounded-xl bg-white border-2 border-slate-300 shadow-sm">
+          <span className="text-[11px] text-indigo-800 font-extrabold font-mono bg-indigo-50 px-2 py-0.5 rounded-md border-2 border-indigo-300">{agg.function}</span>
+          <span className="text-[11px] text-slate-700 font-semibold">({agg.column})</span>
+          <span className="text-[10px] text-slate-500 font-bold">AS</span>
+          <span className="text-[11px] text-emerald-800 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded-md border-2 border-emerald-300">{agg.alias}</span>
           <div className="flex-1" />
           <button
             onClick={() => dispatch(removeAggregate(idx))}
-            className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -242,13 +242,13 @@ const AggregatePanel = ({ allColumns }) => {
       ))}
 
       {/* Add form */}
-      <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg border border-dashed border-slate-700">
+      <div className="flex flex-wrap items-end gap-2 p-3.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
         <div className="space-y-1">
           <label className="text-[9px] text-slate-500 font-semibold uppercase">Function</label>
           <select
             value={newAgg.function}
             onChange={(e) => setNewAgg({ ...newAgg, function: e.target.value })}
-            className="px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-violet-500"
+            className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {AGGREGATE_FUNCTIONS.map((fn) => (
               <option key={fn} value={fn}>{fn}</option>
@@ -260,7 +260,7 @@ const AggregatePanel = ({ allColumns }) => {
           <select
             value={newAgg.column}
             onChange={(e) => setNewAgg({ ...newAgg, column: e.target.value })}
-            className="w-full px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-violet-500"
+            className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             <option value="">Select...</option>
             <option value="*">* (all rows)</option>
@@ -276,14 +276,14 @@ const AggregatePanel = ({ allColumns }) => {
             value={newAgg.alias}
             onChange={(e) => setNewAgg({ ...newAgg, alias: e.target.value })}
             placeholder="Auto-generated"
-            className="px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white font-mono
-              placeholder-slate-600 focus:outline-none focus:border-violet-500 w-32"
+            className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 font-mono
+              placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 w-32"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={!newAgg.column}
-          className="p-1.5 rounded bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-30 transition-colors"
+          className="p-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 disabled:opacity-30 transition-all shadow-sm"
         >
           <Plus size={12} />
         </button>
@@ -313,13 +313,13 @@ const HavingPanel = () => {
 
       {/* Existing */}
       {wizard.having.map((h, idx) => (
-        <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
-          <code className="text-[11px] text-slate-300 font-mono flex-1">
+        <div key={idx} className="flex items-center gap-2 p-3 rounded-xl bg-white border border-slate-200 shadow-sm">
+          <code className="text-[11px] text-slate-700 font-mono flex-1">
             {h.expression} {h.operator} {h.value}
           </code>
           <button
             onClick={() => dispatch(removeHaving(idx))}
-            className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -327,7 +327,7 @@ const HavingPanel = () => {
       ))}
 
       {/* Add form */}
-      <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg border border-dashed border-slate-700">
+      <div className="flex flex-wrap items-end gap-2 p-3.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
         <div className="space-y-1 flex-1 min-w-[150px]">
           <label className="text-[9px] text-slate-500 font-semibold uppercase">Expression</label>
           <input
@@ -335,8 +335,8 @@ const HavingPanel = () => {
             value={newHaving.expression}
             onChange={(e) => setNewHaving({ ...newHaving, expression: e.target.value })}
             placeholder="e.g., SUM(length)"
-            className="w-full px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white font-mono
-              placeholder-slate-600 focus:outline-none focus:border-violet-500"
+            className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 font-mono
+              placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           />
         </div>
         <div className="space-y-1">
@@ -344,7 +344,7 @@ const HavingPanel = () => {
           <select
             value={newHaving.operator}
             onChange={(e) => setNewHaving({ ...newHaving, operator: e.target.value })}
-            className="px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white focus:outline-none focus:border-violet-500"
+            className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {HAVING_OPERATORS.map((op) => (
               <option key={op} value={op}>{op}</option>
@@ -358,22 +358,22 @@ const HavingPanel = () => {
             value={newHaving.value}
             onChange={(e) => setNewHaving({ ...newHaving, value: e.target.value })}
             placeholder="100"
-            className="px-2 py-1.5 rounded bg-slate-800 border border-slate-700 text-[11px] text-white
-              placeholder-slate-600 focus:outline-none focus:border-violet-500 w-24"
+            className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-800
+              placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 w-24"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={!newHaving.expression || !newHaving.value}
-          className="p-1.5 rounded bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-30 transition-colors"
+          className="p-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 disabled:opacity-30 transition-all shadow-sm"
         >
           <Plus size={12} />
         </button>
       </div>
 
       {wizard.having.length > 0 && (
-        <div className="p-2 rounded bg-slate-800 border border-slate-700">
-          <code className="text-[10px] text-slate-400 font-mono">
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+          <code className="text-[10px] text-slate-600 font-mono">
             HAVING {wizard.having.map((h) => `${h.expression} ${h.operator} ${h.value}`).join(' AND ')}
           </code>
         </div>

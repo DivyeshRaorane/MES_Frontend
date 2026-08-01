@@ -188,6 +188,13 @@ const initialWizardState = {
 
   // Permissions
   permissions: [], // [{ type: 'role'|'user', id, view, create, update, delete, export }]
+
+  // Multi-Sheet mode (when true, steps 2-9 become sheet/table management)
+  isMultiSheet: false,
+  sheets: [],             // [{ id, sheetName, displayOrder, tables: [] }]
+  activeSheetIndex: 0,
+  activeTableIndex: null, // null = not editing a table
+  editingTableConfig: null, // Deep copy of table being edited in modal
 };
 
 const initialState = {
@@ -436,6 +443,243 @@ const reportBuilderSlice = createSlice({
       state.wizard.permissions.splice(action.payload, 1);
     },
 
+    // ── Multi-Sheet Mode Toggle ─────────────────────────────────────────
+    setMultiSheetMode: (state, action) => {
+      state.wizard.isMultiSheet = action.payload;
+      if (action.payload && state.wizard.sheets.length === 0) {
+        // Initialize with one sheet when switching to multi-sheet mode
+        state.wizard.sheets = [{
+          id: `temp_${Date.now()}_0`,
+          sheetName: 'Sheet 1',
+          displayOrder: 1,
+          tables: [],
+        }];
+        state.wizard.activeSheetIndex = 0;
+      }
+    },
+
+    // ── Sheet Management ─────────────────────────────────────────────────
+    msAddSheet: (state) => {
+      const newOrder = state.wizard.sheets.length + 1;
+      state.wizard.sheets.push({
+        id: `temp_${Date.now()}_${newOrder}`,
+        sheetName: `Sheet ${newOrder}`,
+        displayOrder: newOrder,
+        tables: [],
+      });
+      state.wizard.activeSheetIndex = state.wizard.sheets.length - 1;
+    },
+    msRemoveSheet: (state, action) => {
+      const idx = action.payload;
+      if (state.wizard.sheets.length <= 1) return;
+      state.wizard.sheets.splice(idx, 1);
+      state.wizard.sheets.forEach((s, i) => { s.displayOrder = i + 1; });
+      if (state.wizard.activeSheetIndex >= state.wizard.sheets.length) {
+        state.wizard.activeSheetIndex = state.wizard.sheets.length - 1;
+      }
+    },
+    msRenameSheet: (state, action) => {
+      const { index, name } = action.payload;
+      if (state.wizard.sheets[index]) {
+        state.wizard.sheets[index].sheetName = name.replace(/[\\/*?[\]:]/g, '').substring(0, 31);
+      }
+    },
+    msReorderSheets: (state, action) => {
+      const { fromIndex, toIndex } = action.payload;
+      const [moved] = state.wizard.sheets.splice(fromIndex, 1);
+      state.wizard.sheets.splice(toIndex, 0, moved);
+      state.wizard.sheets.forEach((s, i) => { s.displayOrder = i + 1; });
+      if (state.wizard.activeSheetIndex === fromIndex) state.wizard.activeSheetIndex = toIndex;
+      else if (fromIndex < state.wizard.activeSheetIndex && toIndex >= state.wizard.activeSheetIndex) state.wizard.activeSheetIndex--;
+      else if (fromIndex > state.wizard.activeSheetIndex && toIndex <= state.wizard.activeSheetIndex) state.wizard.activeSheetIndex++;
+    },
+    msSetActiveSheet: (state, action) => {
+      state.wizard.activeSheetIndex = action.payload;
+      state.wizard.activeTableIndex = null;
+      state.wizard.editingTableConfig = null;
+    },
+
+    // ── Table Management ─────────────────────────────────────────────────
+    msAddTable: (state) => {
+      const sheet = state.wizard.sheets[state.wizard.activeSheetIndex];
+      if (!sheet) return;
+      const newOrder = sheet.tables.length + 1;
+      sheet.tables.push({
+        id: `temp_${Date.now()}_t${newOrder}`,
+        tableName: `Table ${newOrder}`,
+        mainTable: '',
+        selectedColumns: [],
+        columnDisplayNames: {},
+        columnOrder: [],
+        joins: [],
+        expressions: [],
+        filters: [],
+        sorting: [],
+        groupBy: [],
+        aggregates: [],
+        having: [],
+        displayOrder: newOrder,
+        spacing: 2,
+        formatting: { headerBold: true, headerBgColor: '#1e293b', headerTextColor: '#ffffff', borderEnabled: true, autoWidth: true },
+      });
+    },
+    msRemoveTable: (state, action) => {
+      const { sheetIndex, tableIndex } = action.payload;
+      const si = sheetIndex ?? state.wizard.activeSheetIndex;
+      const sheet = state.wizard.sheets[si];
+      if (!sheet) return;
+      sheet.tables.splice(tableIndex, 1);
+      sheet.tables.forEach((t, i) => { t.displayOrder = i + 1; });
+      if (state.wizard.activeTableIndex === tableIndex) {
+        state.wizard.activeTableIndex = null;
+        state.wizard.editingTableConfig = null;
+      }
+    },
+    msDuplicateTable: (state, action) => {
+      const { sheetIndex, tableIndex } = action.payload;
+      const si = sheetIndex ?? state.wizard.activeSheetIndex;
+      const sheet = state.wizard.sheets[si];
+      if (!sheet || !sheet.tables[tableIndex]) return;
+      const orig = sheet.tables[tableIndex];
+      sheet.tables.push({
+        ...JSON.parse(JSON.stringify(orig)),
+        id: `temp_${Date.now()}_dup`,
+        tableName: `${orig.tableName} (Copy)`,
+        displayOrder: sheet.tables.length + 1,
+      });
+    },
+    msReorderTables: (state, action) => {
+      const { sheetIndex, fromIndex, toIndex } = action.payload;
+      const si = sheetIndex ?? state.wizard.activeSheetIndex;
+      const sheet = state.wizard.sheets[si];
+      if (!sheet) return;
+      const [moved] = sheet.tables.splice(fromIndex, 1);
+      sheet.tables.splice(toIndex, 0, moved);
+      sheet.tables.forEach((t, i) => { t.displayOrder = i + 1; });
+    },
+
+    // ── Table Editing ────────────────────────────────────────────────────
+    msStartEditingTable: (state, action) => {
+      const { sheetIndex, tableIndex } = action.payload;
+      const si = sheetIndex ?? state.wizard.activeSheetIndex;
+      const sheet = state.wizard.sheets[si];
+      if (!sheet || !sheet.tables[tableIndex]) return;
+      state.wizard.activeTableIndex = tableIndex;
+      state.wizard.editingTableConfig = JSON.parse(JSON.stringify(sheet.tables[tableIndex]));
+    },
+    msCancelEditingTable: (state) => {
+      state.wizard.activeTableIndex = null;
+      state.wizard.editingTableConfig = null;
+    },
+    msSaveEditingTable: (state) => {
+      if (state.wizard.editingTableConfig === null || state.wizard.activeTableIndex === null) return;
+      const sheet = state.wizard.sheets[state.wizard.activeSheetIndex];
+      if (!sheet) return;
+      sheet.tables[state.wizard.activeTableIndex] = { ...state.wizard.editingTableConfig };
+      state.wizard.activeTableIndex = null;
+      state.wizard.editingTableConfig = null;
+    },
+
+    // ── Table Config Field Updates (on editingTableConfig) ───────────────
+    msUpdateTableField: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const { field, value } = action.payload;
+      state.wizard.editingTableConfig[field] = value;
+    },
+    msSetTableMainTable: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const newTable = action.payload;
+      if (state.wizard.editingTableConfig.mainTable && state.wizard.editingTableConfig.mainTable !== newTable) {
+        state.wizard.editingTableConfig.selectedColumns = [];
+        state.wizard.editingTableConfig.columnDisplayNames = {};
+        state.wizard.editingTableConfig.columnOrder = [];
+        state.wizard.editingTableConfig.joins = [];
+        state.wizard.editingTableConfig.expressions = [];
+        state.wizard.editingTableConfig.filters = [];
+        state.wizard.editingTableConfig.sorting = [];
+        state.wizard.editingTableConfig.groupBy = [];
+        state.wizard.editingTableConfig.aggregates = [];
+        state.wizard.editingTableConfig.having = [];
+      }
+      state.wizard.editingTableConfig.mainTable = newTable;
+    },
+    msToggleColumn: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const { table, column, dataType } = action.payload;
+      const key = `${table}.${column}`;
+      const tc = state.wizard.editingTableConfig;
+      const idx = tc.selectedColumns.findIndex(c => c.table === table && c.column === column);
+      if (idx >= 0) {
+        tc.selectedColumns.splice(idx, 1);
+        delete tc.columnDisplayNames[key];
+        tc.columnOrder = tc.columnOrder.filter(k => k !== key);
+      } else {
+        tc.selectedColumns.push({ table, column, dataType });
+        tc.columnDisplayNames[key] = column.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        tc.columnOrder.push(key);
+      }
+    },
+    msSelectAllColumns: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const { table, columns } = action.payload;
+      const tc = state.wizard.editingTableConfig;
+      columns.forEach(col => {
+        const key = `${table}.${col.column_name}`;
+        if (!tc.selectedColumns.find(c => c.table === table && c.column === col.column_name)) {
+          tc.selectedColumns.push({ table, column: col.column_name, dataType: col.data_type });
+          tc.columnDisplayNames[key] = col.column_name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          tc.columnOrder.push(key);
+        }
+      });
+    },
+    msDeselectAllColumns: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const { table } = action.payload;
+      const tc = state.wizard.editingTableConfig;
+      tc.selectedColumns = tc.selectedColumns.filter(c => c.table !== table);
+      Object.keys(tc.columnDisplayNames).forEach(key => { if (key.startsWith(`${table}.`)) delete tc.columnDisplayNames[key]; });
+      tc.columnOrder = tc.columnOrder.filter(k => !k.startsWith(`${table}.`));
+    },
+    msSetColumnDisplayName: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      state.wizard.editingTableConfig.columnDisplayNames[action.payload.key] = action.payload.displayName;
+    },
+    msSetColumnOrder: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      state.wizard.editingTableConfig.columnOrder = action.payload;
+    },
+    msAddJoin: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.joins.push(action.payload); },
+    msUpdateJoin: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.joins[action.payload.index] = action.payload.join; },
+    msRemoveJoin: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.joins.splice(action.payload, 1); },
+    msAddExpression: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.expressions.push(action.payload); },
+    msUpdateExpression: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.expressions[action.payload.index] = action.payload.expression; },
+    msRemoveExpression: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.expressions.splice(action.payload, 1); },
+    msAddFilter: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.filters.push(action.payload); },
+    msUpdateFilter: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.filters[action.payload.index] = action.payload.filter; },
+    msRemoveFilter: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.filters.splice(action.payload, 1); },
+    msAddSort: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.sorting.push(action.payload); },
+    msUpdateSort: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.sorting[action.payload.index] = action.payload.sort; },
+    msRemoveSort: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.sorting.splice(action.payload, 1); },
+    msSetGroupBy: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.groupBy = action.payload; },
+    msToggleGroupByColumn: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      const col = action.payload;
+      const idx = state.wizard.editingTableConfig.groupBy.indexOf(col);
+      if (idx >= 0) state.wizard.editingTableConfig.groupBy.splice(idx, 1);
+      else state.wizard.editingTableConfig.groupBy.push(col);
+    },
+    msAddAggregate: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.aggregates.push(action.payload); },
+    msUpdateAggregate: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.aggregates[action.payload.index] = action.payload.aggregate; },
+    msRemoveAggregate: (state, action) => { if (state.wizard.editingTableConfig) state.wizard.editingTableConfig.aggregates.splice(action.payload, 1); },
+    msUpdateTableFormatting: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      state.wizard.editingTableConfig.formatting = { ...state.wizard.editingTableConfig.formatting, ...action.payload };
+    },
+    msSetTableSpacing: (state, action) => {
+      if (!state.wizard.editingTableConfig) return;
+      state.wizard.editingTableConfig.spacing = action.payload;
+    },
+
     // Reset wizard
     resetWizard: (state) => {
       state.wizard = { ...initialWizardState };
@@ -483,6 +727,34 @@ const reportBuilderSlice = createSlice({
         aggregates: parseJson(report.aggregates, []),
         having: parseJson(report.having, []),
         permissions: parseJson(report.permissions, []),
+        // Multi-sheet fields
+        isMultiSheet: report.is_multi_sheet || false,
+        sheets: parseJson(report.sheets, []).map((sheet, idx) => ({
+          id: sheet.id || `temp_${Date.now()}_${idx}`,
+          sheetName: sheet.sheet_name || sheet.sheetName || `Sheet ${idx + 1}`,
+          displayOrder: sheet.display_order || sheet.displayOrder || idx + 1,
+          tables: parseJson(sheet.tables, []).map((table, tIdx) => ({
+            id: table.id || `temp_${Date.now()}_${idx}_${tIdx}`,
+            tableName: table.table_name || table.tableName || `Table ${tIdx + 1}`,
+            mainTable: table.main_table || table.mainTable || '',
+            selectedColumns: parseJson(table.columns || table.selectedColumns, []),
+            columnDisplayNames: parseJson(table.column_display_names || table.columnDisplayNames, {}),
+            columnOrder: parseJson(table.column_order || table.columnOrder, []),
+            joins: parseJson(table.joins, []),
+            expressions: parseJson(table.expressions, []),
+            filters: parseJson(table.filters, []),
+            sorting: parseJson(table.sorting, []),
+            groupBy: parseJson(table.group_by || table.groupBy, []),
+            aggregates: parseJson(table.aggregates, []),
+            having: parseJson(table.having, []),
+            displayOrder: table.display_order || table.displayOrder || tIdx + 1,
+            spacing: table.spacing ?? 2,
+            formatting: parseJson(table.formatting, { headerBold: true, headerBgColor: '#1e293b', headerTextColor: '#ffffff', borderEnabled: true, autoWidth: true }),
+          })),
+        })),
+        activeSheetIndex: 0,
+        activeTableIndex: null,
+        editingTableConfig: null,
       };
       state.editingReportId = report.id != null ? String(report.id) : null;
       state.currentStep = 0;
@@ -610,6 +882,21 @@ export const {
   setPermissions, addPermission, updatePermission, removePermission,
   resetWizard, setEditingReport, loadReportIntoWizard,
   clearError, clearPreview,
+  // Multi-sheet actions
+  setMultiSheetMode,
+  msAddSheet, msRemoveSheet, msRenameSheet, msReorderSheets, msSetActiveSheet,
+  msAddTable, msRemoveTable, msDuplicateTable, msReorderTables,
+  msStartEditingTable, msCancelEditingTable, msSaveEditingTable,
+  msUpdateTableField, msSetTableMainTable,
+  msToggleColumn, msSelectAllColumns, msDeselectAllColumns,
+  msSetColumnDisplayName, msSetColumnOrder,
+  msAddJoin, msUpdateJoin, msRemoveJoin,
+  msAddExpression, msUpdateExpression, msRemoveExpression,
+  msAddFilter, msUpdateFilter, msRemoveFilter,
+  msAddSort, msUpdateSort, msRemoveSort,
+  msSetGroupBy, msToggleGroupByColumn,
+  msAddAggregate, msUpdateAggregate, msRemoveAggregate,
+  msUpdateTableFormatting, msSetTableSpacing,
 } = reportBuilderSlice.actions;
 
 export default reportBuilderSlice.reducer;

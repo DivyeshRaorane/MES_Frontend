@@ -154,3 +154,158 @@ function escapeHTML(str) {
 function formatDate(date) {
   return date.toISOString().slice(0, 10).replace(/-/g, '');
 }
+
+// ─── Multi-Sheet/Multi-Table Excel Export ───────────────────────────────────
+
+/**
+ * Export a multi-sheet report to Excel (.xlsx)
+ * Each sheet contains multiple tables, placed sequentially with configurable spacing.
+ *
+ * @param {Object} reportData - The execution result from the backend
+ *   Shape: { sheets: [{ sheetName, tables: [{ title, columns: [{field, header}], data: [], spacing }] }] }
+ * @param {string} reportTitle - Report name for the file name
+ */
+export const exportMultiSheetToExcel = (reportData, reportTitle = 'Report') => {
+  if (!reportData || !reportData.sheets || reportData.sheets.length === 0) return;
+
+  const wb = XLSX.utils.book_new();
+
+  reportData.sheets.forEach((sheet) => {
+    // Sanitize sheet name for Excel (max 31 chars, no invalid chars)
+    const sheetName = sanitizeSheetName(sheet.sheetName || 'Sheet');
+
+    // Build the sheet content: multiple tables stacked vertically
+    const aoa = []; // Array of arrays for the entire sheet
+
+    sheet.tables.forEach((table, tableIdx) => {
+      const { title, columns, data, spacing = 2 } = table;
+
+      // Write table title row (if provided)
+      if (title) {
+        aoa.push([title]);
+        // Empty row after title
+      }
+
+      // Write column headers
+      if (columns && columns.length > 0) {
+        const headerRow = columns.map((col) => col.header || col.label || col.field);
+        aoa.push(headerRow);
+
+        // Write data rows
+        if (data && data.length > 0) {
+          data.forEach((row) => {
+            const dataRow = columns.map((col) => {
+              const val = row[col.field] !== undefined ? row[col.field] : row[col.key] || '';
+              return val === null || val === undefined ? '' : val;
+            });
+            aoa.push(dataRow);
+          });
+        }
+      }
+
+      // Add blank spacing rows between tables (except after the last table)
+      if (tableIdx < sheet.tables.length - 1) {
+        const blankRows = Math.max(0, Math.min(spacing || 2, 10));
+        for (let i = 0; i < blankRows; i++) {
+          aoa.push([]);
+        }
+      }
+    });
+
+    // Create worksheet from array of arrays
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Apply column widths based on the widest table in this sheet
+    const maxCols = Math.max(...sheet.tables.map(t => (t.columns || []).length), 1);
+    ws['!cols'] = Array.from({ length: maxCols }, () => ({ wch: 18 }));
+
+    // Apply basic styling: bold title rows and header rows
+    applyMultiTableStyles(ws, sheet.tables);
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  // Generate and download
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const fileName = `${reportTitle.replace(/[^a-z0-9]/gi, '_')}_${formatDate(new Date())}.xlsx`;
+  saveAs(blob, fileName);
+};
+
+/**
+ * Client-side multi-sheet export from local execution results.
+ * Used when the backend returns all tables' data in one response.
+ *
+ * @param {Array} sheets - Array of sheet configs from Redux state
+ *   Each sheet: { sheetName, tables: [{ tableName, columnOrder, columnDisplayNames, data }] }
+ * @param {Object} executionResult - Backend response with data per sheet/table
+ * @param {string} reportTitle - Report name
+ */
+export const exportMultiSheetFromState = (sheets, executionResult, reportTitle = 'Report') => {
+  if (!executionResult || !executionResult.sheets) return;
+
+  // Map execution results to the format expected by exportMultiSheetToExcel
+  const reportData = {
+    sheets: executionResult.sheets.map((exSheet) => ({
+      sheetName: exSheet.sheetName || exSheet.sheet_name || 'Sheet',
+      tables: (exSheet.tables || []).map((exTable) => ({
+        title: exTable.title || exTable.table_name || '',
+        columns: exTable.columns || [],
+        data: exTable.data || exTable.rows || [],
+        spacing: exTable.spacing ?? 2,
+      })),
+    })),
+  };
+
+  exportMultiSheetToExcel(reportData, reportTitle);
+};
+
+// ─── Multi-Sheet Helpers ────────────────────────────────────────────────────
+
+/**
+ * Sanitize sheet name for Excel compatibility
+ * - Max 31 characters
+ * - No: \ / * ? [ ] :
+ * - Not blank
+ */
+function sanitizeSheetName(name) {
+  let sanitized = String(name).replace(/[\\/*?[\]:]/g, '').trim();
+  if (!sanitized) sanitized = 'Sheet';
+  return sanitized.substring(0, 31);
+}
+
+/**
+ * Apply basic cell styles to a worksheet with multiple tables.
+ * Since xlsx (SheetJS community edition) doesn't support full styling,
+ * this sets column widths intelligently based on content.
+ */
+function applyMultiTableStyles(ws, tables) {
+  // Calculate maximum column width from all tables
+  let maxCols = 0;
+  const colWidths = [];
+
+  tables.forEach((table) => {
+    if (!table.columns) return;
+    maxCols = Math.max(maxCols, table.columns.length);
+    table.columns.forEach((col, idx) => {
+      const headerLen = (col.header || col.label || col.field || '').length;
+      const currentMax = colWidths[idx] || 10;
+      colWidths[idx] = Math.max(currentMax, headerLen + 2, 12);
+    });
+
+    // Check data widths (sample first 20 rows)
+    if (table.data) {
+      table.data.slice(0, 20).forEach((row) => {
+        table.columns.forEach((col, idx) => {
+          const val = row[col.field] !== undefined ? row[col.field] : '';
+          const len = String(val).length;
+          colWidths[idx] = Math.min(Math.max(colWidths[idx] || 10, len + 1), 40);
+        });
+      });
+    }
+  });
+
+  ws['!cols'] = colWidths.map((w) => ({ wch: w }));
+}

@@ -78,8 +78,8 @@ const ReportBuilderList = () => {
               <FileBarChart2 size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-800">Report Builder</h1>
-              <p className="text-[10px] text-slate-500">{displayReports.length} report(s) configured</p>
+              <h1 className="text-sm font-extrabold text-slate-900">Report Builder</h1>
+              <p className="text-[10px] text-slate-600 font-medium">{displayReports.length} report(s) configured</p>
             </div>
           </div>
           <button
@@ -127,35 +127,35 @@ const ReportBuilderList = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {filtered.map((report) => (
               <div key={report.id}
-                className="flex items-center gap-4 p-3 rounded-xl bg-slate-800 border border-slate-700
-                  hover:bg-slate-750 hover:border-slate-600 hover:shadow-md transition-all duration-200 group">
-                <div className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-                  <FileBarChart2 size={16} className="text-blue-400" />
+                className="flex items-center gap-4 p-4 rounded-xl bg-white border-2 border-slate-300
+                  hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-200 group">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-300 flex items-center justify-center flex-shrink-0">
+                  <FileBarChart2 size={16} className="text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="text-xs font-bold text-white truncate">{report.report_name}</h3>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold
-                      ${report.status === 'active' ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700' : 'bg-slate-700 text-slate-400 border border-slate-600'}`}>
+                    <h3 className="text-sm font-extrabold text-slate-900 truncate">{report.report_name}</h3>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold
+                      ${report.status === 'active' ? 'bg-emerald-50 text-emerald-800 border-2 border-emerald-300' : 'bg-slate-100 text-slate-600 border-2 border-slate-300'}`}>
                       {report.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                    {report.module && <span className="flex items-center gap-1"><Tag size={9} />{report.module}</span>}
-                    {report.main_table && <span className="flex items-center gap-1"><Eye size={9} />{report.main_table}</span>}
-                    {report.created_at && <span className="flex items-center gap-1"><Clock size={9} />{new Date(report.created_at).toLocaleDateString()}</span>}
+                  <div className="flex items-center gap-3 text-[11px] text-slate-600 font-medium">
+                    {report.module && <span className="flex items-center gap-1"><Tag size={10} className="text-indigo-400" />{report.module}</span>}
+                    {report.main_table && <span className="flex items-center gap-1"><Eye size={10} className="text-blue-400" />{report.main_table}</span>}
+                    {report.created_at && <span className="flex items-center gap-1"><Clock size={10} className="text-slate-400" />{new Date(report.created_at).toLocaleDateString()}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => handleEdit(report)} title="Edit"
-                    className="p-2 rounded-md text-slate-400 hover:text-blue-300 hover:bg-slate-700 transition-colors"><Edit3 size={14} /></button>
+                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Edit3 size={14} /></button>
                   <button onClick={() => handleDuplicate(report)} title="Duplicate"
-                    className="p-2 rounded-md text-slate-400 hover:text-amber-300 hover:bg-slate-700 transition-colors"><Copy size={14} /></button>
+                    className="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"><Copy size={14} /></button>
                   <button onClick={() => setDeleteConfirm(report.id)} title="Delete"
-                    className="p-2 rounded-md text-slate-400 hover:text-rose-300 hover:bg-slate-700 transition-colors"><Trash2 size={14} /></button>
+                    className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}
