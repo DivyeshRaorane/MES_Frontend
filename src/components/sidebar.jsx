@@ -78,6 +78,7 @@ const MENU = [
       { label: 'Short Term Entry', path: '/qa/shorttermentry'},
       { label: 'Spec Creation', path: '/qa/speccreation'},
       { label: 'Customer Complaint',  path: '/qa/customer' },
+      { label: 'Reports', path: '/qa/reports' },
     ],
   },
   {
@@ -92,6 +93,7 @@ const MENU = [
       { label: 'FG Fiber Rejection',    path: '/fg/fiberrejection' },
       { label: 'Packing List',          path: '/fg/packinglist' },
       { label: 'Customer Allocation', path: '/fg/customerallocation' },
+      { label: 'Reports', path: '/fg/reports' },
     ],
   },
  

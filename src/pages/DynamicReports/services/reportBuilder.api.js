@@ -395,3 +395,40 @@ export const deleteSavedFilter = async (reportId, filterId) => {
   );
   return res.data;
 };
+
+// ─── Report Sections (Visibility) ───────────────────────────────────────────
+
+/** Get all active report sections for multi-select */
+export const fetchReportSections = async () => {
+  const res = await axios.get(`${API_URL}/api/report-builder/sections`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Get sections assigned to a specific report */
+export const fetchReportSectionMappings = async (reportId) => {
+  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/sections`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/** Update section mappings for a report */
+export const updateReportSectionMappings = async (reportId, sectionIds) => {
+  const res = await axios.put(
+    `${API_URL}/api/report-builder/reports/${reportId}/sections`,
+    { section_ids: sectionIds },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/** Fetch user reports filtered by section */
+export const fetchUserReportsBySection = async (sectionKey) => {
+  const res = await axios.get(`${API_URL}/api/dynamic-reports`, {
+    headers: getAuthHeaders(),
+    params: sectionKey ? { section: sectionKey } : {},
+  });
+  return res.data;
+};

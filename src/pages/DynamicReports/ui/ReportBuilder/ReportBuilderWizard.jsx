@@ -145,6 +145,7 @@ const ReportBuilderWizard = () => {
         status: wizard.status,
         is_multi_sheet: true,
         permissions: wizard.permissions,
+        section_ids: wizard.selectedSections || [],
         sheets: wizard.sheets.map(sheet => ({
           id: sheet.id?.startsWith?.('temp_') ? null : sheet.id,
           sheet_name: sheet.sheetName,
@@ -201,6 +202,7 @@ const ReportBuilderWizard = () => {
         aggregates: wizard.aggregates,
         having: wizard.having,
         permissions: wizard.permissions,
+        section_ids: wizard.selectedSections || [],
       };
 
       const result = await dispatch(
@@ -247,13 +249,13 @@ const ReportBuilderWizard = () => {
   const canGoNext = () => {
     if (wizard.isMultiSheet) {
       switch (currentStep) {
-        case 0: return wizard.reportName && wizard.module;
+        case 0: return wizard.reportName && wizard.module && (wizard.selectedSections || []).length > 0;
         case 1: return wizard.sheets.length > 0 && wizard.sheets.every(s => s.tables.length > 0);
         default: return true;
       }
     } else {
       switch (currentStep) {
-        case 0: return wizard.reportName && wizard.module;
+        case 0: return wizard.reportName && wizard.module && (wizard.selectedSections || []).length > 0;
         case 1: return wizard.mainTable;
         case 2: return wizard.selectedColumns.length > 0;
         default: return true;

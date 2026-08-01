@@ -1,11 +1,12 @@
 /**
  * Step 1 - Report Information
- * Report name, description, module, status
+ * Report name, description, module, status, display sections, report type
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateWizardField, setMultiSheetMode } from '../../../controller/reportBuilder.slice';
-import { FileText, Layers, Table2 } from 'lucide-react';
+import { updateWizardField, setMultiSheetMode, getReportSections } from '../../../controller/reportBuilder.slice';
+import { fetchReportSectionMappings } from '../../../services/reportBuilder.api';
+import { FileText, Layers, Table2, LayoutGrid } from 'lucide-react';
 
 const MODULES = [
   'Draw Management',
@@ -20,12 +21,56 @@ const MODULES = [
 
 const StepReportInfo = () => {
   const dispatch = useDispatch();
-  const { reportName, description, module, status, isMultiSheet } = useSelector(
+  const { reportName, description, module, status, isMultiSheet, selectedSections } = useSelector(
     (state) => state.reportBuilder.wizard
   );
+  const sections = useSelector((state) => state.reportBuilder.sections);
+  const editingReportId = useSelector((state) => state.reportBuilder.editingReportId);
+
+  // Fetch sections on mount if not already loaded
+  useEffect(() => {
+    if (!sections || sections.length === 0) {
+      dispatch(getReportSections());
+    }
+  }, [dispatch, sections]);
+
+  // Fetch section mappings for the report being edited (if not already loaded)
+  useEffect(() => {
+    if (editingReportId && (!selectedSections || selectedSections.length === 0)) {
+      fetchReportSectionMappings(editingReportId)
+        .then((data) => {
+          const mappings = Array.isArray(data) ? data : (data?.sections || data?.data || []);
+          if (mappings.length > 0) {
+            const ids = mappings.map((s) => s.section_id);
+            dispatch(updateWizardField({ field: 'selectedSections', value: ids }));
+          }
+        })
+        .catch(() => {
+          // Backend may not support this endpoint yet - ignore
+        });
+    }
+  }, [editingReportId, selectedSections, dispatch]);
 
   const handleChange = (field, value) => {
     dispatch(updateWizardField({ field, value }));
+  };
+
+  const handleSectionToggle = (sectionId) => {
+    const current = selectedSections || [];
+    const exists = current.includes(sectionId);
+    const updated = exists
+      ? current.filter((id) => id !== sectionId)
+      : [...current, sectionId];
+    handleChange('selectedSections', updated);
+  };
+
+  const handleSelectAllSections = () => {
+    const allIds = sections.map((s) => s.section_id);
+    handleChange('selectedSections', allIds);
+  };
+
+  const handleClearSections = () => {
+    handleChange('selectedSections', []);
   };
 
   return (
@@ -87,6 +132,82 @@ const StepReportInfo = () => {
             <option key={mod} value={mod}>{mod}</option>
           ))}
         </select>
+      </div>
+
+      {/* Display In - Multi-Select Sections */}
+      <div className="space-y-1.5">
+        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <LayoutGrid size={12} className="text-indigo-500" />
+            Display In <span className="text-red-500">*</span>
+          </span>
+        </label>
+        <p className="text-[10px] text-slate-500 font-medium">
+          Select one or more sections where this report should appear in the sidebar
+        </p>
+
+        {/* Select All / Clear buttons */}
+        <div className="flex items-center gap-2 mb-1">
+          <button
+            type="button"
+            onClick={handleSelectAllSections}
+            className="text-[9px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wider"
+          >
+            Select All
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            type="button"
+            onClick={handleClearSections}
+            className="text-[9px] font-bold text-slate-500 hover:text-slate-700 uppercase tracking-wider"
+          >
+            Clear
+          </button>
+          {(selectedSections || []).length > 0 && (
+            <span className="ml-auto text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              {(selectedSections || []).length} selected
+            </span>
+          )}
+        </div>
+
+        {/* Section checkboxes */}
+        <div className="grid grid-cols-2 gap-2">
+          {sections && sections.length > 0 ? (
+            sections.map((section) => {
+              const isChecked = (selectedSections || []).includes(section.section_id);
+              return (
+                <label
+                  key={section.section_id}
+                  className={`flex items-center gap-2.5 p-2.5 rounded-lg border-2 cursor-pointer transition-all
+                    ${isChecked
+                      ? 'bg-indigo-50 border-indigo-400 text-indigo-800'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleSectionToggle(section.section_id)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 
+                      focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold">{section.section_name}</span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="col-span-2 text-center py-4">
+              <p className="text-[10px] text-slate-400">Loading sections...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Validation: at least one section */}
+        {(selectedSections || []).length === 0 && sections && sections.length > 0 && (
+          <p className="text-[10px] text-amber-600 font-semibold mt-1">
+            At least one section must be selected
+          </p>
+        )}
       </div>
 
       {/* Status */}

@@ -3,7 +3,7 @@
  * Manages state for the user-facing Dynamic Reports viewer
  */
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchUserReports, executeUserReport } from '../services/reportBuilder.api';
+import { fetchUserReports, executeUserReport, fetchUserReportsBySection } from '../services/reportBuilder.api';
 
 // ─── Async Thunks ───────────────────────────────────────────────────────────
 
@@ -12,6 +12,18 @@ export const getUserReports = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const data = await fetchUserReports();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+export const getUserReportsBySection = createAsyncThunk(
+  'dynamicReports/getUserReportsBySection',
+  async (sectionKey, { rejectWithValue }) => {
+    try {
+      const data = await fetchUserReportsBySection(sectionKey);
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -125,6 +137,19 @@ const dynamicReportsSlice = createSlice({
         state.reports = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || payload?.reports || []);
       })
       .addCase(getUserReports.rejected, (state, action) => {
+        state.loading.list = false;
+        state.error = action.payload;
+      })
+      .addCase(getUserReportsBySection.pending, (state) => {
+        state.loading.list = true;
+        state.error = null;
+      })
+      .addCase(getUserReportsBySection.fulfilled, (state, action) => {
+        state.loading.list = false;
+        const payload = action.payload;
+        state.reports = Array.isArray(payload) ? payload : (payload?.data || payload?.rows || payload?.reports || []);
+      })
+      .addCase(getUserReportsBySection.rejected, (state, action) => {
         state.loading.list = false;
         state.error = action.payload;
       })

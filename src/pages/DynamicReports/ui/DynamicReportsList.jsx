@@ -9,7 +9,7 @@ import {
   FileBarChart2, Search, RefreshCw, Play, Clock, Tag,
   LayoutGrid, List, Filter,
 } from 'lucide-react';
-import { getUserReports, setActiveReport } from '../controller/dynamicReports.slice';
+import { getUserReportsBySection, setActiveReport } from '../controller/dynamicReports.slice';
 
 const DynamicReportsList = () => {
   const dispatch = useDispatch();
@@ -21,7 +21,7 @@ const DynamicReportsList = () => {
   const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
-    dispatch(getUserReports());
+    dispatch(getUserReportsBySection('DYNAMIC_REPORTS'));
   }, [dispatch]);
 
   const modules = [...new Set(reports.map((r) => r.module).filter(Boolean))];
@@ -40,7 +40,7 @@ const DynamicReportsList = () => {
   };
 
   const handleRefresh = () => {
-    dispatch(getUserReports());
+    dispatch(getUserReportsBySection('DYNAMIC_REPORTS'));
   };
 
   return (

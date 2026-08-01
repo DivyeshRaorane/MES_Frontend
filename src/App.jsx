@@ -68,6 +68,8 @@ import DynamicFatigue from './pages/dynamic_fatigue/ui/DFList'
 import DrawReports from './pages/Reports/DrawManagement/ui/DrawReports'
 import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
 import QualityReports from './pages/Reports/QualityReports/ui/QualityReports'
+import QAReports from './pages/Reports/QAReports/ui/QAReports'
+import FGReports from './pages/Reports/FGReports/ui/FGReports'
 
 // Dynamic Reports Module
 import DynamicReportsList from './pages/DynamicReports/ui/DynamicReportsList'
@@ -118,6 +120,7 @@ function App() {
         <Route path='fg/fiberrejection' element={<FGFiberRejection/>}/>
         <Route path='fg/packinglist' element={<PackingListGeneration/>}/>
         <Route path='fg/modulainout' element={<ModulaInOut/>}/>
+        <Route path='fg/reports' element={<FGReports/>}/>
         <Route path='order/customerenquiry' element={<CustomerEnquiry/>}/>
         <Route path='order/enquirylist' element={<CustomerEnquiryList/>}/>
         <Route path='order/enquiryform' element={<CustomerEnquiryFormPage/>}/>
@@ -134,6 +137,7 @@ function App() {
         <Route path='qa/speccreation' element={<SpecCreation/>}/>
         <Route path='qa/splicing' element={<Splicing/>}/>
         <Route path='qa/customer' element={<CustomerComplaint/>}/>
+        <Route path='qa/reports' element={<QAReports/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>
         <Route path='admin/users' element={<UserHomeScreen/>}/>
         <Route path='admin/general' element={<GeneralAdmin/>}/>

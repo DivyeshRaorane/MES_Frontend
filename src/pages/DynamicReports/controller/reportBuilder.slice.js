@@ -15,6 +15,7 @@ import {
   previewReport,
   fetchRoles,
   fetchUsersForPermission,
+  fetchReportSections,
 } from '../services/reportBuilder.api';
 
 // ─── Async Thunks ───────────────────────────────────────────────────────────
@@ -144,6 +145,18 @@ export const getUsersForPermission = createAsyncThunk(
   }
 );
 
+export const getReportSections = createAsyncThunk(
+  'reportBuilder/getReportSections',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await fetchReportSections();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 // ─── Initial State ──────────────────────────────────────────────────────────
 
 const initialWizardState = {
@@ -152,6 +165,9 @@ const initialWizardState = {
   description: '',
   module: '',
   status: 'active',
+
+  // Section visibility (Display In)
+  selectedSections: [], // [section_id, ...]
 
   // Step 2: Main Table
   mainTable: '',
@@ -211,6 +227,9 @@ const initialState = {
   // Report list
   reports: [],
   currentReport: null,
+
+  // Report sections (for Display In multi-select)
+  sections: [],
 
   // Preview
   previewData: null,
@@ -727,6 +746,12 @@ const reportBuilderSlice = createSlice({
         aggregates: parseJson(report.aggregates, []),
         having: parseJson(report.having, []),
         permissions: parseJson(report.permissions, []),
+        // Section visibility (Display In)
+        selectedSections: report.sections 
+          ? report.sections.map(s => s.section_id) 
+          : (report.section_ids && Array.isArray(report.section_ids) 
+              ? report.section_ids 
+              : []),
         // Multi-sheet fields
         isMultiSheet: report.is_multi_sheet || false,
         sheets: parseJson(report.sheets, []).map((sheet, idx) => ({
@@ -863,7 +888,13 @@ const reportBuilderSlice = createSlice({
         state.loading.users = false;
         state.users = action.payload;
       })
-      .addCase(getUsersForPermission.rejected, (state) => { state.loading.users = false; });
+      .addCase(getUsersForPermission.rejected, (state) => { state.loading.users = false; })
+
+      // Get Report Sections
+      .addCase(getReportSections.fulfilled, (state, action) => {
+        const payload = action.payload;
+        state.sections = Array.isArray(payload) ? payload : (payload?.data || []);
+      });
   },
 });
 

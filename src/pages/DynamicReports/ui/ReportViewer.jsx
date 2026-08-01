@@ -45,7 +45,7 @@ const ReportViewer = () => {
       fetchReportById(reportId).then((res) => {
         const data = res?.data || res;
         if (data) { dispatch(setActiveReport(data)); setReportLoaded(true); }
-      }).catch(() => navigate('/dynamicreports'));
+      }).catch(() => navigate(-1));
     } else if (activeReport) { setReportLoaded(true); }
   }, [reportId, activeReport, dispatch, navigate]);
 
@@ -146,7 +146,7 @@ const ReportViewer = () => {
       {/* Top Bar */}
       <div className="flex-shrink-0 bg-gradient-to-r from-indigo-50 via-white to-blue-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => { dispatch(clearReportData()); navigate('/dynamicreports'); }}
+          <button onClick={() => { dispatch(clearReportData()); navigate(-1); }}
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"><ArrowLeft size={16} /></button>
           <div>
             <h1 className="text-xs font-bold text-slate-800">{activeReport?.report_name || 'Report'}</h1>
@@ -353,7 +353,7 @@ const MultiSheetView = ({ report, navigate, dispatch }) => {
       {/* Header */}
       <div className="flex-shrink-0 bg-gradient-to-r from-indigo-50 via-white to-purple-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => { dispatch(clearReportData()); navigate('/dynamicreports'); }}
+          <button onClick={() => { dispatch(clearReportData()); navigate(-1); }}
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
             <ArrowLeft size={16} />
           </button>
