@@ -87,9 +87,6 @@ const MENU = [
     color: 'text-orange-400',
     children: [
       { label: 'Modula IN/OUT', path: '/fg/modulainout'},
-      {/*{ label: 'Dispatch Checking',   path: '/dispatch/dispatchchecking' },
-      { label: 'Fiber Make Checking', path: '/dispatch/fibermakingcheck' },
-      { label: 'Box Scanning Entry',  path: '/dispatch/boxscanningentry' },*/},
       { label: 'TC Generation',         path: '/fg/tcgeneration' },
       { label: 'Order Register',        path: '/fg/orderregister' },
       { label: 'FG Fiber Rejection',    path: '/fg/fiberrejection' },
