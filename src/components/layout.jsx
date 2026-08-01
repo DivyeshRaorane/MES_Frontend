@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Clock } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import Sidebar from './sidebar';
@@ -91,16 +91,29 @@ const TopBar = () => {
 };
 
 /* ── Layout ──────────────────────────────────────────────── */
-const Layout = () => (
-  <div className="flex h-screen bg-slate-100 overflow-hidden">
-    <Sidebar />
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <TopBar />
-      <main className="flex-1 overflow-hidden">
-        <Outlet />
-      </main>
+const Layout = () => {
+  const navigate = useNavigate();
+  const token = useSelector(state => state.auth?.token);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/', { replace: true });
+    }
+  }, [token, navigate]);
+
+  if (!token) return null;
+
+  return (
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <TopBar />
+        <main className="flex-1 overflow-hidden">
+          <Outlet />
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Layout;
