@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Scan, ClipboardList, FlaskConical, Trash2, ShieldAlert, ShieldOff } from 'lucide-react';
+import { Scan, ClipboardList, FlaskConical, Trash2, ShieldAlert, ShieldOff, FileText } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { getD2Chambers, getQCUsers, validateBobbinForD2, submitD2Issue } from '../services/d2_issue.api';
+import { getD2Chambers, getQCUsers, validateBobbinForD2, submitD2Issue, getDraftList, getDraftDetails, saveDraftBobbin, removeDraftBobbin, deleteDraft } from '../services/d2_issue.api';
 
 const today = new Date().toISOString().split('T')[0];
 const nowTime = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -46,6 +46,9 @@ const D2Issue = () => {
   const [rows, setRows] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', onYes: null, onNo: null });
+  const [drafts, setDrafts] = useState([]);
+  const [selectedDraft, setSelectedDraft] = useState('');
+  const [draftLoading, setDraftLoading] = useState(false);
   const scanRef = useRef(null);
 
   /* ── Fetch master data ── */
@@ -57,7 +60,48 @@ const D2Issue = () => {
         setQcUsers(uRes?.data || []);
       } catch (e) { console.error('Master data error:', e); }
     })();
+    loadDrafts();
   }, []);
+
+  /* ── Load draft list ── */
+  const loadDrafts = async () => {
+    try {
+      const res = await getDraftList();
+      if (res?.success) setDrafts(res.data || []);
+    } catch (e) { console.error('Draft load error:', e); }
+  };
+
+  /* ── Load a specific draft ── */
+  const handleLoadDraft = async (draftBatchId) => {
+    if (!draftBatchId) { setSelectedDraft(''); return; }
+    setDraftLoading(true);
+    try {
+      const res = await getDraftDetails(draftBatchId);
+      if (res?.success && res.data) {
+        const draft = res.data;
+        // Restore header fields
+        if (draft.chamber) setChamber(String(draft.chamber));
+        if (draft.d2_type) setRestricted(draft.d2_type === 'restricted');
+        setBatchId(draftBatchId);
+        setSelectedDraft(draftBatchId);
+        // Restore bobbins
+        const bobbins = (draft.bobbins || []).map((b, i) => ({
+          id: Date.now() + i,
+          bobbin_no: b.bobbin_no,
+          bobbin_fid: b.bobbin_fid || '',
+          fiber_type: b.fiber_type || '',
+          fiber_color: b.fiber_color || '',
+          temp_grade: b.temp_grade || '',
+          final_grade: b.final_grade || '',
+          d2_type: b.d2_type || (restricted ? 'restricted' : 'not-restricted'),
+        }));
+        setRows(bobbins);
+      }
+    } catch (e) {
+      showError('Failed to load draft');
+    }
+    setDraftLoading(false);
+  };
 
   const refocus = () => { setScanInput(''); setTimeout(() => scanRef.current?.focus(), 50); };
 
@@ -124,7 +168,7 @@ const D2Issue = () => {
         }
 
         // Add with d2_type = 'restricted'
-        setRows(prev => [...prev, {
+        const newRow = {
           id: Date.now(),
           bobbin_no: data.bobbin_no,
           bobbin_fid: data.bobbin_fid || '',
@@ -133,7 +177,11 @@ const D2Issue = () => {
           temp_grade: data.temp_grade || '',
           final_grade: data.final_grade || '',
           d2_type: 'restricted',
-        }]);
+        };
+        setRows(prev => [...prev, newRow]);
+
+        // Auto-save to draft
+        autoSaveDraft(newRow);
       } else {
         // Not-restricted mode: check temp_grade
         const tg = (data.temp_grade || '').toUpperCase();
@@ -142,7 +190,7 @@ const D2Issue = () => {
           refocus(); return;
         }
         // Add with d2_type = 'not-restricted'
-        setRows(prev => [...prev, {
+        const newRow = {
           id: Date.now(),
           bobbin_no: data.bobbin_no,
           bobbin_fid: data.bobbin_fid || '',
@@ -151,7 +199,11 @@ const D2Issue = () => {
           temp_grade: data.temp_grade || '',
           final_grade: data.final_grade || '',
           d2_type: 'not-restricted',
-        }]);
+        };
+        setRows(prev => [...prev, newRow]);
+
+        // Auto-save to draft
+        autoSaveDraft(newRow);
       }
       refocus();
     } catch (err) {
@@ -160,8 +212,37 @@ const D2Issue = () => {
     }
   };
 
+  /* ── Auto-save bobbin to draft ── */
+  const autoSaveDraft = async (row) => {
+    if (!batchId) return;
+    try {
+      await saveDraftBobbin({
+        d2_batch_id: batchId,
+        bobbin_fid: row.bobbin_fid,
+        bobbin_no: row.bobbin_no,
+        chamber: Number(chamber),
+        d2_type: row.d2_type,
+      });
+      // Refresh draft list so the new batch appears
+      loadDrafts();
+    } catch (e) {
+      // If duplicate in another draft, show error and remove from grid
+      if (e?.response?.data?.message) {
+        showError(e.response.data.message);
+        setRows(prev => prev.filter(r => r.bobbin_no !== row.bobbin_no));
+      }
+    }
+  };
+
   /* ── Remove ── */
-  const removeRow = (id) => setRows(prev => prev.filter(r => r.id !== id));
+  const removeRow = async (id) => {
+    const row = rows.find(r => r.id === id);
+    setRows(prev => prev.filter(r => r.id !== id));
+    // Also remove from draft
+    if (row && batchId) {
+      try { await removeDraftBobbin(batchId, row.bobbin_no); } catch (e) { /* silent */ }
+    }
+  };
 
   /* ── Submit ── */
   const handleSubmit = async () => {
@@ -186,8 +267,13 @@ const D2Issue = () => {
 
       const res = await submitD2Issue(payload);
       if (res?.success) {
+        // Delete draft after successful submission
+        if (batchId) {
+          try { await deleteDraft(batchId); } catch (e) { /* silent */ }
+        }
         showSuccess(`${rows.length} bobbin(s) issued to D2 Chamber ${chamber} successfully!`);
         handleReset();
+        loadDrafts(); // Refresh draft list
       } else {
         showError(res?.message || 'Submit failed');
       }
@@ -202,6 +288,7 @@ const D2Issue = () => {
     setChamber(''); setStartOperator('');
     setD2StartDate(today); setD2StartTime(nowTime());
     setBatchId(''); setScanInput(''); setRows([]);
+    setSelectedDraft('');
   };
 
   return (
@@ -220,6 +307,23 @@ const D2Issue = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Draft dropdown */}
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+              <FileText size={12} className="text-amber-500" />
+              <select
+                value={selectedDraft}
+                onChange={(e) => handleLoadDraft(e.target.value)}
+                disabled={draftLoading}
+                className="bg-transparent text-[10px] font-bold text-slate-700 outline-none cursor-pointer pr-1"
+              >
+                <option value="">Load Draft</option>
+                {drafts.map(d => (
+                  <option key={d.d2_batch_id} value={d.d2_batch_id}>
+                    {d.d2_batch_id} ({d.bobbin_count || 0} bobbins)
+                  </option>
+                ))}
+              </select>
+            </div>
             {/* Restricted toggle */}
             <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
               <button type="button"
@@ -279,7 +383,7 @@ const D2Issue = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Start Operator</label>
               <select value={startOperator} onChange={e => setStartOperator(e.target.value)}
-                disabled={rows.length > 0}
+                
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer transition-all disabled:opacity-50">
                 <option value="">Select</option>
                 {qcUsers.map(u => <option key={u.qc_user_name} value={u.qc_user_name}>{u.qc_user_name}</option>)}

@@ -279,10 +279,9 @@ const DrawSpoolEntry = () => {
     { Message: "Bare fibre diameter High @ 320.571 Diameter = 126.002" },
     { Message: "Fast Layer Stop @ 321.190" },
     { Message: "Fast Layer Stop @ 321.191" },
-    { Message: "TowerFibre Break @ 332.37" },
+    
 
-
-    /*{ Message: "Coated fibre diameter High @ 412.880" },
+   { Message: "Coated fibre diameter High @ 412.880" },
     { Message: "Bare fibre diameter Low @ 455.224 Diameter = 123.741" },
   
     // Fast Layer 5
@@ -297,7 +296,7 @@ const DrawSpoolEntry = () => {
     { Message: "Coated fibre diameter Low @ 622.181" },
   
     // Fibre Break around 640 km
-    { Message: "TowerFibre Break @ 650.37" },*/
+    { Message: "TowerFibre Break @ 650.37" },
 
     { Message: "Message not defined for language English (United Kingdom), en" }
   ];
@@ -328,7 +327,7 @@ const DrawSpoolEntry = () => {
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
       setFieldValue("drawn_length", mappedFlaws?.totalKm)
-      setFieldValue("bottom_end_scrap", mappedFlaws?.goodFiberKm)
+      setFieldValue("bottom_end_scrap", mappedFlaws?.goodFiberKm?.[0])
       setFieldValue("drawn_weight", mappedFlaws?.totalKm / 35.714)
       const flawBalance = values.preform_weight - (mappedFlaws?.totalKm / 35.714);
       setFieldValue("balance_weight", flawBalance < 0 ? 0 : flawBalance)

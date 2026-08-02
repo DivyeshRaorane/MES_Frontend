@@ -159,7 +159,6 @@ const QCEntryScreen = () => {
 
   /* ── Fetch ── */
   const handleFetch = async (setValues) => {
-    console.log("What is the value:", setValues)
     const bobbin_no = scanInput.trim();
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
@@ -167,7 +166,6 @@ const QCEntryScreen = () => {
     setExistingTempGrade(''); setExistingFinalGrade('');
     try {
       const res = await fetchBobbinQC(bobbin_no);
-      console.log("Response:", res)
       if (!res?.success) {
         // Bobbin not in QC — check PT Entry table for flags
         try {
@@ -175,17 +173,30 @@ const QCEntryScreen = () => {
           console.log("Res:", ptRes)
           if (ptRes?.success && ptRes?.found) {
             const msgs = [];
-            if (ptRes.full_check) msgs.push('This is mandatory for Full Check — please do full checking.');
-            if (ptRes.is_sample) msgs.push('This is MBend sample bobbin — please do MBEND for this.');
-            if (ptRes.full_mbend) msgs.push('MBend is mandatory for this bobbin.');
-            if (msgs.length > 0) {
-              setPtCheckPopup({ open: true, messages: msgs });
-            } else {
-              showError('Bobbin found in PT Entry but not yet available in QC.');
-            }
-          } else {
-            showError(res?.message || 'Bobbin not found.');
-          }
+            if (ptRes.product_type !== "G652D250") {
+        if (ptRes.full_mbend) {
+        msgs.push("MBend is mandatory for this bobbin.");
+    }
+
+        if (ptRes.is_sample) {
+            msgs.push("This is MBend sample bobbin — please do MBEND for this.");
+        }
+    }
+
+    // Always show this regardless of product type
+    if (ptRes.full_check) {
+            msgs.push("This is mandatory for Full Check — please do full checking.");
+        } if (msgs.length === 0) {
+    msgs.push("Please do regular checking.");
+  }
+
+  setPtCheckPopup({
+    open: true,
+    messages: msgs,
+  });
+} else {
+  showError(res?.message || "Bobbin not found.");
+}
         } catch (ptErr) {
           showError(res?.message || 'Bobbin not found.');
         }
@@ -254,8 +265,6 @@ const QCEntryScreen = () => {
     setLoading(true);
     try {
       const res = await gradeBobbin(values.bobbin_no);
-      console.log('Grade response:', res);
-      
       // Handle response — res is already axios res.data, may have nested .data
       const data = res?.data?.status ? res.data : res;
       

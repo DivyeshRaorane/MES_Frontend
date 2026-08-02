@@ -147,9 +147,9 @@ const PTEntry = () => {
   };
 
   /* ── Bobbin No onBlur: fetch PT machine log data ── */
-  const handleBobbinBlur = async (bobbin_no, setFieldValue) => {
+  const handleBobbinBlur = async (bobbin_no, setFieldValue, pt_machine_no) => {
     if (!bobbin_no) return;
-    console.log('Fetching PT machine log for:', bobbin_no);
+    console.log('Fetching PT machine log for:', bobbin_no, pt_machine_no);
     // Reset break/scrap flags before checking new bobbin
     setFieldValue("pt_break", false);
     setFieldValue("pt_scrap", false);
@@ -727,7 +727,7 @@ const PTEntry = () => {
                             // Only call API when exactly 10 characters (scanner or manual entry)
                             if (val && val.length === 10) {
                               clearTimeout(window._ptBobbinTimer);
-                              window._ptBobbinTimer = setTimeout(() => { handleBobbinBlur(val, setFieldValue); }, 500);
+                              window._ptBobbinTimer = setTimeout(() => { handleBobbinBlur(val, setFieldValue,values.pt_machine_no); }, 500);
                             }
                           }} />
                         <FormikInput compact label="Spool Status" name="spool_status" placeholder="Spool Status" />
