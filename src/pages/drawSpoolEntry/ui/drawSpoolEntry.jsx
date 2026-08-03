@@ -17,6 +17,9 @@ import { getAllDrawFiberCutReason, getFiberCutReasonsByIndication } from '../../
 import { getAllFiberCutIndications } from '../../Admin_Folder/draw_management/fiber_cut_indication/service/fiber_cut_indication.api';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { useFormikContext } from 'formik';
+import axios from 'axios';
+
+const API = import.meta.env.VITE_API_URL;
 
 /* ── Compact section label ── */
 const SL = ({ title, color = 'text-blue-700' }) => (
@@ -137,6 +140,7 @@ const DrawSpoolEntry = () => {
   const [preformEndScenario, setPreformEndScenario] = useState(null); // 'balance' | 'fiber_cut' | 'preform_remove'
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
   const [pendingResetForm, setPendingResetForm] = useState(null);
+  const [processTypeOptions, setProcessTypeOptions] = useState([]);
   const formikRef = React.useRef(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
   const { preformByTowerData, pbtLoading, pbtError } = useSelector((state) => state.preformByTower)
@@ -190,6 +194,28 @@ const DrawSpoolEntry = () => {
     };
     fetchFiberCutIndications();
   }, [])
+
+  /* ── Fetch process types when preform_type changes (set after tower selection) ── */
+  const fetchProcessTypesByPreformType = async (preformType) => {
+    if (!preformType) {
+      setProcessTypeOptions([]);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/api/admin/process-types/by-preform/${preformType}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = res.data?.data || [];
+      setProcessTypeOptions(data.map(pt => ({
+        label: String(pt.process_type),
+        value: pt.process_type,
+      })));
+    } catch (e) {
+      console.error("Error fetching process types:", e);
+      setProcessTypeOptions([]);
+    }
+  };
 
 
 
@@ -519,6 +545,7 @@ const DrawSpoolEntry = () => {
                             setFieldValue("drawn_length", '');
                             setFieldValue("drawn_weight", '');
                             setFieldValue("balance_weight", '');
+                            setProcessTypeOptions([]);
                             return;
                           }
 
@@ -531,7 +558,7 @@ const DrawSpoolEntry = () => {
                             setFieldValue("preform_id", data.preform_id || '');
                             setFieldValue("preform_weight", data.balance_qty || '');
                             setFieldValue("preform_type", data.preform_type || '');
-                            setFieldValue("process_type", data.process_type || '');
+                            setFieldValue("process_type", ''); // user selects from dropdown
                             setFieldValue("product_type", data.product_type || '');
                             setFieldValue("drawn_line_speed", 2700 || '');
                             setFieldValue("draw_tension", 150 || '');
@@ -542,6 +569,9 @@ const DrawSpoolEntry = () => {
                             setFieldValue("co2_flow", 5 || '');
                             setFieldValue("n2_flow", 5 || '');
                             setFieldValue("uv_air", 10 || '');
+
+                            // Load process type options for this preform type
+                            fetchProcessTypesByPreformType(data.preform_type);
 
                             // Generate spool_fid: strip any existing trailing letter from last_fid, then append new suffix
                             // p_count 0=A, 1=B, 2=C...
@@ -566,6 +596,7 @@ const DrawSpoolEntry = () => {
                             setFieldValue("drawn_length", '');
                             setFieldValue("drawn_weight", '');
                             setFieldValue("balance_weight", '');
+                            setProcessTypeOptions([]);
                           }
                         }} />
                       <FormikInput compact label="Preform ID" name="preform_id" readOnly />
@@ -614,6 +645,7 @@ const DrawSpoolEntry = () => {
 
                       <FormikInput compact label="Spool ID" name="spool_id" type='text' />
                       <FormikInput compact label="Spool FID" name="spool_fid" readOnly />
+                      <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions} />
 
                     </div>
                   </div>

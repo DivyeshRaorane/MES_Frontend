@@ -11,12 +11,6 @@ import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { getAllDrawUsers } from '../../Admin_Folder/draw_management/draw_users/service/draw_user.api';
 import { preformDiallocation } from '../services/preform_allocation.api';
 import { getCurrentShift } from '../../../utils/shiftHelper';
-import axios from 'axios';
-
-
-
-const API = import.meta.env.VITE_API_URL;
-
 const FORM_INIT = {
   preform_id: "",
   allocation_date: new Date().toISOString().split('T')[0],
@@ -39,7 +33,7 @@ const PrerformAllocation = () => {
   const [drawUsers, setDrawUsers] = useState([]);
   const [autoShift, setAutoShift] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [processTypeOptions, setProcessTypeOptions] = useState([]);
+
   const formikRef = React.useRef(null);
 const [selectedAllocation, setSelectedAllocation] = useState(null);
 
@@ -111,32 +105,7 @@ const confirmDeallocation = async () => {
       fetchDrawUsers();
     }, [])
 
-  // Fetch process types filtered by preform_type from mapping table
-  useEffect(() => {
-    const fetchProcessTypes = async () => {
-      if (!selectedPreform?.preform_type) {
-        setProcessTypeOptions([]);
-        return;
-      }
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${API}/api/admin/process-types/by-preform/${selectedPreform.preform_type}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = res.data?.data || [];
-        setProcessTypeOptions(data.map(pt => ({
-          label: String(pt.process_type),
-          value: pt.process_type,
-        })));
-      } catch (e) {
-        console.error("Error fetching process types:", e);
-        setProcessTypeOptions([]);
-      }
-    };
-    fetchProcessTypes();
-  }, [selectedPreform?.preform_type]);
 
-console.log("Process type:", processTypeOptions)
   const shiftOptions = shifts.map((shift) => ({
     label: `${shift.shift_name}`,
     value: shift.shift_name,
@@ -374,7 +343,6 @@ console.log("Process type:", processTypeOptions)
                       <div className="grid grid-cols-3 gap-2">
                         <FormikInput compact label="Preform Type" name="preform_type" value={selectedPreform?.preform_type} disabled placeholder="e.g. 1" />
                         <FormikInput compact label="Product Type" name="product_type" value= { selectedPreform?.product_type} disabled />
-                        <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions} />
                       </div>
                       <FormikTextarea compact label="Draw Instruction" name="draw_instruction" placeholder="Draw Instruction..." rows={2} />
                     </div>

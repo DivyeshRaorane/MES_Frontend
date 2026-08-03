@@ -49,7 +49,16 @@ const D2Issue = () => {
   const [drafts, setDrafts] = useState([]);
   const [selectedDraft, setSelectedDraft] = useState('');
   const [draftLoading, setDraftLoading] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const draftRef = useRef(null);
   const scanRef = useRef(null);
+
+  // Close draft dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (draftRef.current && !draftRef.current.contains(e.target)) setDraftOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   /* ── Fetch master data ── */
   useEffect(() => {
@@ -283,6 +292,25 @@ const D2Issue = () => {
     setSubmitting(false);
   };
 
+  /* ── Delete entire draft ── */
+  const handleDeleteDraft = async (batchId, e) => {
+    e.stopPropagation();
+    const yes = await askConfirm(
+      'Delete Draft',
+      `Are you sure you want to delete draft batch:\n"${batchId}"?\n\nThis will permanently remove all scanned bobbins in this draft.`
+    );
+    if (!yes) return;
+    try {
+      await deleteDraft(batchId);
+      showSuccess('Draft deleted successfully');
+      // If the deleted draft was currently loaded, reset the screen
+      if (selectedDraft === batchId) handleReset();
+      loadDrafts();
+    } catch (e) {
+      showError('Failed to delete draft');
+    }
+  };
+
   /* ── Reset ── */
   const handleReset = () => {
     setChamber(''); setStartOperator('');
@@ -308,21 +336,68 @@ const D2Issue = () => {
           </div>
           <div className="flex items-center gap-2">
             {/* Draft dropdown */}
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-              <FileText size={12} className="text-amber-500" />
-              <select
-                value={selectedDraft}
-                onChange={(e) => handleLoadDraft(e.target.value)}
+            {/* Draft dropdown with delete option */}
+            <div ref={draftRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setDraftOpen(o => !o)}
                 disabled={draftLoading}
-                className="bg-transparent text-[10px] font-bold text-slate-700 outline-none cursor-pointer pr-1"
+                className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm hover:border-amber-300 transition-all"
               >
-                <option value="">Load Draft</option>
-                {drafts.map(d => (
-                  <option key={d.d2_batch_id} value={d.d2_batch_id}>
-                    {d.d2_batch_id} ({d.bobbin_count || 0} bobbins)
-                  </option>
-                ))}
-              </select>
+                <FileText size={12} className="text-amber-500" />
+                <span className="text-[10px] font-bold text-slate-700 max-w-[140px] truncate">
+                  {selectedDraft ? `${selectedDraft} (${drafts.find(d => d.d2_batch_id === selectedDraft)?.bobbin_count || 0})` : 'Load Draft'}
+                </span>
+                <span className={`text-[8px] text-slate-400 transition-transform ${draftOpen ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+
+              {draftOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 min-w-[240px] overflow-hidden">
+                  {/* Header */}
+                  <div className="px-3 py-2 bg-amber-50 border-b border-amber-100">
+                    <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider">Active Drafts</span>
+                  </div>
+
+                  {drafts.length === 0 ? (
+                    <div className="px-4 py-4 text-center">
+                      <p className="text-[10px] text-slate-400">No active drafts</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-52 overflow-y-auto">
+                      {drafts.map(d => (
+                        <div
+                          key={d.d2_batch_id}
+                          className={`flex items-center gap-2 px-3 py-2 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0 group
+                            ${selectedDraft === d.d2_batch_id ? 'bg-amber-50' : ''}`}
+                        >
+                          {/* Click area to load draft */}
+                          <button
+                            type="button"
+                            onClick={() => { handleLoadDraft(d.d2_batch_id); setDraftOpen(false); }}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-[10px] font-bold text-slate-800 truncate">{d.d2_batch_id}</p>
+                            <p className="text-[9px] text-slate-400">
+                              Chamber {d.chamber} · {d.bobbin_count || 0} bobbins · {d.d2_type}
+                            </p>
+                          </button>
+
+                          {/* X delete button */}
+                          <button
+                            type="button"
+                            title="Delete this draft"
+                            onClick={(e) => { setDraftOpen(false); handleDeleteDraft(d.d2_batch_id, e); }}
+                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full
+                              text-slate-300 hover:text-white hover:bg-rose-500 transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <span className="text-[10px] font-bold leading-none">✕</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {/* Restricted toggle */}
             <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">

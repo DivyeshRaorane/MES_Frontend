@@ -376,7 +376,7 @@ const PTEntry = () => {
             const relPos2 = (parseFloat(f.pos2) - currentPtDone).toFixed(3);
             const revPos1 = (ptLen - parseFloat(relPos2)).toFixed(3);
             const revPos2 = (ptLen - parseFloat(relPos1)).toFixed(3);
-            return `Flaw missed from ${revPos1} km to ${revPos2} km`;
+            return `Cut from ${revPos1} km to ${revPos2} ("Flaw Missed")`;
           })
           .join('; ');
       }
@@ -668,7 +668,7 @@ const PTEntry = () => {
                   if (bookableFlaw) {
                     const pos1 = parseFloat(bookableFlaw.pos1) || 0;
                     const pos2 = parseFloat(bookableFlaw.pos2) || 0;
-                    const flawCutOffLength = pos2 - pos1;
+                    const flawCutOffLength = pos2 - pos1 + 0.100;
 
                     if (flawCutOffLength > 0) {
                       setFieldValue('pt_length', flawCutOffLength.toFixed(3));
