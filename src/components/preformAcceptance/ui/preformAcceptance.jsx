@@ -155,28 +155,28 @@ useEffect(() => {
                         </div>
 
                         <FormikInput compact label="Preform Weight (kg)" name="preform_weight" type="number" disabled={true} />
-                        <FormikInput compact label="Charge Weight (kg)" name="charge_weight" type="number" min="0"
+                        <FormikInput compact label="Charge Weight (kg)" name="charge_weight" type="number" min="0"  step="0.01" 
                           error={errors.charge_weight}
                           touched={touched.charge_weight} />
-                        <FormikInput compact label="Preform Length (mm)" name="preform_length" type="number" min="0"
+                        <FormikInput compact label="Preform Length (mm)" name="preform_length" type="number" min="0"  step="0.01" 
                         error={errors.preform_length}
                           touched={touched.preform_length} />
-                        <FormikInput compact label="Charge Length (mm)" name="charge_length" type="number" min="0"
+                        <FormikInput compact label="Charge Length (mm)" name="charge_length" type="number" min="0"  step="0.01" 
                         error={errors.charge_length}
                           touched={touched.charge_length} />
-                        <FormikInput compact label="Drawing Length(km)" name="drawing_length" type="number" min="0"
+                        <FormikInput compact label="Drawing Length(km)" name="drawing_length" type="number" min="0"  step="0.01" 
                          error={errors.drawing_length}
                           touched={touched.drawing_length}/>
                         <FormikInput compact label="Material Code" name="material_code" disabled={true} 
                         error={errors.material_code}
                           touched={touched.material_code}/>
-                        <FormikInput compact label="Dia Variation" name="dia_variation" type="number" min="0"
+                        <FormikInput compact label="Dia Variation" name="dia_variation" type="number" min="0"  step="0.01" 
                         error={errors.dia_variation}
                           touched={touched.dia_variation} />
-                        <FormikInput compact label="Cut Off" name="cut_off" type="number" min="0"
+                        <FormikInput compact label="Cut Off" name="cut_off" type="number" min="0"  step="0.01" 
                         error={errors.cut_off}
                           touched={touched.cut_off} />
-                        <FormikInput compact label="MFD" name="mfd" type="number" min="0" />
+                        <FormikInput compact label="MFD" name="mfd" type="number" min="0"  step="0.01"  />
                         <FormikSelect compact label="Accepted By" name="accepted_by" options={drawUsersOption} />
                         <div className="col-span-2">
                           <FormikInput compact label="Material Description" name="material_description" disabled={true} />

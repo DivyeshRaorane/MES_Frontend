@@ -116,6 +116,7 @@ const errorMsg = error || error?.data?.message || "Something went wrong";
               <Field
                 type="number"
                 min="0"
+                 step="any" 
                 name="preform_weight"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 placeholder="Enter Weight"

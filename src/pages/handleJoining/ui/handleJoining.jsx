@@ -251,14 +251,14 @@ const HandleJoining = () => {
                         <div className="grid grid-cols-5 gap-1.5">
                           {['dia1', 'dia2', 'dia3', 'dia4', 'dia5'].map((d, i) => (
                             <FormikInput key={d} compact label={`Dia ${i + 1}`} name={d}
-                              type="number" min="0" placeholder="0.00" />
+                              type="number" min="0"  step="0.01"  placeholder="0.00" />
                           ))}
                         </div>
                         {/* Handle details */}
                         <div className="grid grid-cols-4 gap-1.5">
-                          <FormikInput compact label="Handle Length" name="handle_length" type="number" min="0" />
-                          <FormikInput compact label="Handle Diameter" name="handle_diameter" type="number" min="0" />
-                          <FormikInput compact label="Cone Length" name="cone_length" type="number" min="0" />
+                          <FormikInput compact label="Handle Length" name="handle_length" type="number" min="0"  step="0.01"  />
+                          <FormikInput compact label="Handle Diameter" name="handle_diameter" type="number" min="0"  step="0.01"  />
+                          <FormikInput compact label="Cone Length" name="cone_length" type="number" min="0"  step="0.01"  />
                           <FormikInput compact label="Handle Number" name="handle_number" />
                         </div>
                       </div>
@@ -279,8 +279,8 @@ const HandleJoining = () => {
                       {FLAME_ROWS.map(({ key, label }) => (
                         <div key={key} className="grid grid-cols-[1.6fr_2fr_2fr_1fr] gap-2 items-center">
                           <span className="text-[11px] font-medium text-slate-700 pl-1">{label}</span>
-                          <FormikInput compact name={`${key}.flow`} type="number" min="0" />
-                          <FormikInput compact name={`${key}.time`} type="number" min="0" />
+                          <FormikInput compact name={`${key}.flow`} type="number" min="0" step="0.01" />
+                          <FormikInput compact name={`${key}.time`} type="number" min="0" step="0.01"/>
                           <span className="text-[11px] font-bold text-emerald-600 font-mono text-right pr-1">
                             {cons(values[key]?.flow, values[key]?.time)}
                           </span>

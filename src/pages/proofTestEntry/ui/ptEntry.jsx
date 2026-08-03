@@ -117,6 +117,7 @@ const PTEntry = () => {
   });
 
   const formikRef = useRef(null);
+  const ptBreakRef = useRef(false); // mirrors pt_break; immune to Formik async batching
   const dispatch = useDispatch();
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
@@ -153,6 +154,7 @@ const PTEntry = () => {
     console.log('Fetching PT machine log for:', bobbin_no, pt_machine_no);
     // Reset break/scrap flags before checking new bobbin
     setFieldValue("pt_break", false);
+    ptBreakRef.current = false;
     setFieldValue("pt_scrap", false);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
@@ -184,6 +186,7 @@ const PTEntry = () => {
           stopReason === "STOP -> Fiber Break at PayOff"
         ) {
           setFieldValue("pt_break", true);
+          ptBreakRef.current = true;
           // pt_break is informational only — does NOT count as a rejection
           
         }
@@ -335,14 +338,19 @@ const PTEntry = () => {
   /* ── Actual PT submit logic (extracted for reuse with confirmation) ── */
   const doPtSubmit = async (values, setFieldValue) => {
     console.log("Pt Break:", values)
+    // pt_break can be lost from Formik state when multiple setFieldValue calls
+    // fire concurrently (e.g. selecting multiple_end after bobbin scan).
+    // ptBreakRef.current is the authoritative source — use OR to guard both.
+    const isPtBreak = values.pt_break === true || ptBreakRef.current === true;
+
     // Validate: PT length should not exceed balance
     // When pt_break is true, backend will also auto-book 180m scrap — account for that here
     const ptLen = parseFloat(values.pt_length) || 0;
-    const breakScrapDeduction = values.pt_break ? 0.180 : 0;
+    const breakScrapDeduction = isPtBreak ? 0.180 : 0;
     const effectiveBalance = balanceLength - breakScrapDeduction;
     const remaining = effectiveBalance - ptLen;
     if (remaining < 0) {
-      if (values.pt_break) {
+      if (isPtBreak) {
         showError(`PT Length (${ptLen} km) + PT Break scrap (0.180 km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
       } else {
         showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
@@ -530,6 +538,8 @@ const PTEntry = () => {
 
     const payload = {
       ...values,
+      // Use ref-guarded isPtBreak so the value is never lost due to Formik batching
+      pt_break: isPtBreak,
       // Sequential entry number for this spool
       no: ptLogsCount + 1,
       // Full check flag
@@ -559,7 +569,7 @@ const PTEntry = () => {
         showSuccess(response.payload.message || "PT Entry saved successfully");
 
         // Show break scrap alert if pt_break was true (backend auto-books 180m scrap)
-        if (values.pt_break) {
+        if (isPtBreak) {
           setBreakAlertContext(values.active_rejection_type || '');
           setShowBreakScrapAlert(true);
         }
@@ -569,6 +579,7 @@ const PTEntry = () => {
         setFieldValue("fid", "");
         setFieldValue("bobbin_no", "");
         setFieldValue("pt_break", false);
+        ptBreakRef.current = false;
         setFieldValue("pt_scrap", false);
         setFieldValue("multiple_end_weight", "");
         const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
@@ -660,32 +671,8 @@ const PTEntry = () => {
                 setFieldValue('fid', ''); // Clear FID when any rejection is checked
 
                 // ── CASE 1: Only "Rejection" (B-BFD, L-Lumps, etc.) uses flaw booking logic ──
-                // Other types (multiple_end, scratch, pt_scrap, ztmd, doc, bal_draw_rejection) do NOT book flaws
-                if (typeKey === 'rejection') {
-                  const ptDone = parseFloat(values.pt_done_so_far) || 0;
-                  const validation = validateFlawBooking(flaws, ptDone);
-
-                  if (!validation.allowed) {
-                    showError(validation.message);
-                    // Revert — don't allow rejection selection
-                    setFieldValue('active_rejection_type', '');
-                    setFieldValue('rejection_reason', '');
-                    return;
-                  }
-
-                  const bookableFlaw = validation.flaw || findBookableFlaw(flaws, ptDone);
-
-                  if (bookableFlaw) {
-                    const pos1 = parseFloat(bookableFlaw.pos1) || 0;
-                    const pos2 = parseFloat(bookableFlaw.pos2) || 0;
-                    const flawCutOffLength = pos2 - pos1 + 0.100;
-
-                    if (flawCutOffLength > 0) {
-                      setFieldValue('pt_length', flawCutOffLength.toFixed(3));
-                      setActiveFlaw(bookableFlaw); // Ties to state tracking
-                    }
-                  }
-                }
+                // Flaw booking now fires on dropdown selection, NOT on checkbox check.
+                // Other types (multiple_end, scratch, pt_scrap, ztmd, doc, bal_draw_rejection) do NOT book flaws.
 
               }
 
@@ -705,7 +692,7 @@ const PTEntry = () => {
                     {values.pt_break && <span className="text-orange-600 animate-pulse font-mono ml-2">(PT BREAK)</span>}
                   </span>
                   <div className="flex gap-1.5">
-                    <ResetButton compact type="button" onClick={() => { resetForm(); setActiveFlaw(null); }}>Reset</ResetButton>
+                    <ResetButton compact type="button" onClick={() => { resetForm(); setActiveFlaw(null); ptBreakRef.current = false; }}>Reset</ResetButton>
                     <SubmitButton compact type="submit">Submit</SubmitButton>
                     <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
                   </div>
@@ -837,7 +824,54 @@ const PTEntry = () => {
                           <div className="flex flex-col overflow-y-auto h-full">
 
                         <RejRowLayout label="Rejection" checked={values.active_rejection_type === 'rejection'} onChange={e => handleRadioSelection('rejection', e.target.checked)}>
-                          <FormikSelect compact name="rejection_reason" options={['Select', 'B-BFD', 'L-Lumps', 'C-SCD', 'S-Bot End', 'M-Multiple End', 'D-Scratch']} />
+                          <select
+                            name="rejection_reason"
+                            value={values.rejection_reason}
+                            className="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[9px] font-semibold text-slate-800 outline-none focus:ring-1 focus:ring-indigo-400"
+                            onChange={(e) => {
+                              const selected = e.target.value;
+                              setFieldValue('rejection_reason', selected);
+
+                              // "Missed Rejection" — acknowledge missed flaw, no flaw booking
+                              if (!selected || selected === 'Select' || selected === 'Missed Rejection') {
+                                setActiveFlaw(null);
+                                setFieldValue('pt_length', '');
+                                return;
+                              }
+
+                              // All other options — run flaw booking logic
+                              const ptDone = parseFloat(values.pt_done_so_far) || 0;
+                              const validation = validateFlawBooking(flaws, ptDone);
+
+                              if (!validation.allowed) {
+                                showError(validation.message);
+                                setFieldValue('rejection_reason', '');
+                                setActiveFlaw(null);
+                                setFieldValue('pt_length', '');
+                                return;
+                              }
+
+                              const bookableFlaw = validation.flaw || findBookableFlaw(flaws, ptDone);
+
+                              if (bookableFlaw) {
+                                const pos1 = parseFloat(bookableFlaw.pos1) || 0;
+                                const pos2 = parseFloat(bookableFlaw.pos2) || 0;
+                                const flawCutOffLength = pos2 - pos1 + 0.100;
+                                if (flawCutOffLength > 0) {
+                                  setFieldValue('pt_length', flawCutOffLength.toFixed(3));
+                                  setActiveFlaw(bookableFlaw);
+                                }
+                              } else {
+                                // No bookable flaw — clear pt_length so user sets it manually
+                                setActiveFlaw(null);
+                                setFieldValue('pt_length', '');
+                              }
+                            }}
+                          >
+                            {['Select', 'B-BFD', 'L-Lumps', 'C-SCD', 'S-Bot End', 'M-Multiple End', 'D-Scratch', 'Missed Rejection'].map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
                         </RejRowLayout>
 
                         <div className="flex items-center gap-2 py-1 border-b border-slate-50">
