@@ -73,7 +73,7 @@ const RejRowLayout = ({ label, checked, onChange, children }) => (
 
 const genPTID = (last) => `PT-${String((parseInt(last.replace(/\D/g, '')) || 0) + 1).padStart(5, '0')}`;
 
-const GOOD_LENGTH = 2.1; // km — configurable good length threshold
+const GOOD_LENGTH = 4.5; // km — configurable good length threshold
 
 const validationSchema = Yup.object({
   spool_id: Yup.string().required('Spool ID is required'),
@@ -102,6 +102,7 @@ const PTEntry = () => {
   const [showSpoolEndPopup, setShowSpoolEndPopup] = useState(false);
   const [showFlawConfirm, setShowFlawConfirm] = useState(false);
   const [showBreakScrapAlert, setShowBreakScrapAlert] = useState(false);
+  const [breakAlertContext, setBreakAlertContext] = useState('');
   const [pendingPtSubmit, setPendingPtSubmit] = useState(null);
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
@@ -335,10 +336,17 @@ const PTEntry = () => {
   const doPtSubmit = async (values, setFieldValue) => {
     console.log("Pt Break:", values)
     // Validate: PT length should not exceed balance
+    // When pt_break is true, backend will also auto-book 180m scrap — account for that here
     const ptLen = parseFloat(values.pt_length) || 0;
-    const remaining = balanceLength - ptLen;
+    const breakScrapDeduction = values.pt_break ? 0.180 : 0;
+    const effectiveBalance = balanceLength - breakScrapDeduction;
+    const remaining = effectiveBalance - ptLen;
     if (remaining < 0) {
-      showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
+      if (values.pt_break) {
+        showError(`PT Length (${ptLen} km) + PT Break scrap (0.180 km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
+      } else {
+        showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
+      }
       return;
     }
 
@@ -552,6 +560,7 @@ const PTEntry = () => {
 
         // Show break scrap alert if pt_break was true (backend auto-books 180m scrap)
         if (values.pt_break) {
+          setBreakAlertContext(values.active_rejection_type || '');
           setShowBreakScrapAlert(true);
         }
 
@@ -561,6 +570,7 @@ const PTEntry = () => {
         setFieldValue("bobbin_no", "");
         setFieldValue("pt_break", false);
         setFieldValue("pt_scrap", false);
+        setFieldValue("multiple_end_weight", "");
         const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
         await handleScan(values.spool_id, setFieldValue);
         setBalanceLength(spoolResponse.data.balance_qty);
@@ -692,6 +702,7 @@ const PTEntry = () => {
                 <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                   <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                     PT Entry {activeFlaw && <span className="text-rose-600 animate-pulse font-mono ml-2">(FLAW INTERCEPTED)</span>}
+                    {values.pt_break && <span className="text-orange-600 animate-pulse font-mono ml-2">(PT BREAK)</span>}
                   </span>
                   <div className="flex gap-1.5">
                     <ResetButton compact type="button" onClick={() => { resetForm(); setActiveFlaw(null); }}>Reset</ResetButton>
@@ -856,21 +867,29 @@ const PTEntry = () => {
                         </div>
 
                         <RejRowLayout label="Multiple End" checked={values.active_rejection_type === 'multiple_end'} onChange={e => handleRadioSelection('multiple_end', e.target.checked)}>
-                          <FormikInput
-                            compact
-                            name="multiple_end_weight"
-                            type="number"
-                            step="0.001"
-                            placeholder="Enter weight (kg)"
-                            className="!bg-white !text-slate-800 !font-semibold !border-slate-300"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setFieldValue('multiple_end_weight', val);
-                              const weightNum = parseFloat(val) || 0;
-                              const computedLength = weightNum * 35.714;
-                              setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
-                            }}
-                          />
+                          <div className="flex flex-col gap-1">
+                            <FormikInput
+                              compact
+                              name="multiple_end_weight"
+                              type="number"
+                              step="0.001"
+                              placeholder="Enter weight (kg)"
+                              className="!bg-white !text-slate-800 !font-semibold !border-slate-300"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setFieldValue('multiple_end_weight', val);
+                                const weightNum = parseFloat(val) || 0;
+                                const computedLength = weightNum * 35.714;
+                                setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
+                              }}
+                            />
+                            {values.pt_break && (
+                              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[8px] font-bold text-orange-700">
+                                <Zap size={8} className="flex-shrink-0" />
+                                PT Break detected — 0.180 km scrap will be auto-booked
+                              </div>
+                            )}
+                          </div>
                         </RejRowLayout>
 
                         <RejRowLayout label="Scratch" checked={values.active_rejection_type === 'scratch'} onChange={e => handleRadioSelection('scratch', e.target.checked)} />
@@ -883,6 +902,7 @@ const PTEntry = () => {
                           if (isChecked) {
                             setFieldValue('active_rejection_type', 'ztmd');
                             setFieldValue('pt_length', '0.200'); // Sets 200m instantly on click
+                            setFieldValue('fid', '');            // Clear FID on selection
                             setActiveFlaw(null);                 // Unlocks the input box restriction
                           } else {
                             setFieldValue('active_rejection_type', '');
@@ -903,7 +923,8 @@ const PTEntry = () => {
 
                           if (isChecked) {
                             setFieldValue('active_rejection_type', 'doc');
-                            setFieldValue('pt_length', '0.200'); // Sets 200m instantly on click
+                            setFieldValue('pt_length', '0.500'); // Sets 500m instantly on click
+                            setFieldValue('fid', '');            // Clear FID on selection
                             setActiveFlaw(null);                 // Unlocks the input box restriction
                           } else {
                             setFieldValue('active_rejection_type', '');
@@ -1170,12 +1191,18 @@ const PTEntry = () => {
                 <span className="text-2xl">✅</span>
               </div>
               <h3 className="text-sm font-bold text-emerald-700 mb-2">PT Break — Scrap Auto-Booked</h3>
-              <p className="text-xs text-slate-600 mb-4">
+              <p className="text-xs text-slate-600 mb-2">
                 PT Break was detected.<br/>
                 <strong className="text-emerald-700">180m (0.180 KM)</strong> PT Scrap has been <strong>automatically booked</strong>.
               </p>
+              {breakAlertContext === 'multiple_end' && (
+                <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-3 py-2 mb-2">
+                  <Zap size={10} className="inline mr-1" />
+                  This entry was a <strong>Multiple End</strong>. The 0.180 km break scrap is booked separately from the multiple end length.
+                </p>
+              )}
               <p className="text-[10px] text-slate-400 mb-4">No manual scrap entry is required.</p>
-              <button type="button" onClick={() => setShowBreakScrapAlert(false)}
+              <button type="button" onClick={() => { setShowBreakScrapAlert(false); setBreakAlertContext(''); }}
                 className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all">
                 OK
               </button>

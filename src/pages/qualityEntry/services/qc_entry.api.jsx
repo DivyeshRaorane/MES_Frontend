@@ -53,3 +53,10 @@ export const updateMbendCycleAfterFailedSample = async (bobbin_no) => {
   const res = await axios.post(`${API}/api/qcentry/mbend-reassign`, { bobbin_no }, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Submit flaw rewind instruction entry ── */
+export const submitFlawRewind = async (payload) => {
+  // payload: { bobbin_no, bobbin_fid, p1, p2, instruction }
+  const res = await axios.post(`${API}/api/qcentry/flaw-rewind`, payload, { headers: authHeaders() });
+  return res.data;
+};

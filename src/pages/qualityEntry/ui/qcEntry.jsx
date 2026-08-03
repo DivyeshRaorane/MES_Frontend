@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample } from '../services/qc_entry.api';
+import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind } from '../services/qc_entry.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -146,16 +146,27 @@ const QCEntryScreen = () => {
   const [existingFinalGrade, setExistingFinalGrade] = useState('');
   const [rewPopup, setRewPopup] = useState(false);
   const [rewCuts, setRewCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
+  const [rewFromFlaw, setRewFromFlaw] = useState(false); // true when opened from flaw popup
   const [missingPopup, setMissingPopup] = useState(false);
   const [missingParams, setMissingParams] = useState([]);
   const [missingValues, setMissingValues] = useState({});
   const [missingBobbin, setMissingBobbin] = useState('');
   const [savingMissing, setSavingMissing] = useState(false);
   const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [] });
+  const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
   const formRef = useRef(null);
   const scanRef = useRef(null);
 
   const locked = source === 'final';
+
+  /* ── Parse flaw_rewind_instr: "Cut from 38.422 km to 39.065 ("Flaw Missed")" ── */
+  const parseFlawInstr = (instr) => {
+    if (!instr) return { p1: '', p2: '', msg: '' };
+    // Match: "Cut from {p1} km to {p2} ({msg})"  — msg may be inside quotes or parens
+    const match = instr.match(/Cut from\s+([\d.]+)\s+km\s+to\s+([\d.]+)[^(]*\([""]?([^"")]+)[""]?\)/i);
+    if (match) return { p1: match[1], p2: match[2], msg: match[3].trim() };
+    return { p1: '', p2: '', msg: instr };
+  };
 
   /* ── Fetch ── */
   const handleFetch = async (setValues) => {
@@ -190,10 +201,16 @@ const QCEntryScreen = () => {
     msgs.push("Please do regular checking.");
   }
 
-  setPtCheckPopup({
-    open: true,
-    messages: msgs,
-  });
+  // Check for missed draw flaw instruction
+  if (ptRes.flaw_rewind_instr) {
+    const parsed = parseFlawInstr(ptRes.flaw_rewind_instr);
+    setFlawInstrPopup({ open: true, instrText: ptRes.flaw_rewind_instr, bobbin_no, bobbin_fid: ptRes.bobbin_fid || '', ...parsed });
+  } else {
+    setPtCheckPopup({
+      open: true,
+      messages: msgs,
+    });
+  }
 } else {
   showError(res?.message || "Bobbin not found.");
 }
@@ -321,7 +338,7 @@ const QCEntryScreen = () => {
   };
 
   /* ── Rewinding popup confirm ── */
-  const handleRewConfirm = () => {
+  const handleRewConfirm = async () => {
     // Validate at least one cut has p1 and p2
     const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
     if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
@@ -332,11 +349,42 @@ const QCEntryScreen = () => {
     );
     const remarkStr = remarkParts.join(', ');
 
-    setGrade('REW');
-    setGraded(true);
-    setRewPopup(false);
-    // Store remark in a ref so submit can access it
-    formRef.current = remarkStr;
+    if (rewFromFlaw) {
+      // ── Flaw rewind path ──
+      // 1. Insert into rewind_instructions table
+      // 2. Update bobbin_entries: temp_grade = 'REW', final_grade = 'REW'
+      setLoading(true);
+      try {
+        const cut = rewCuts[0]; // flaw rewind always single cut
+        const res = await submitFlawRewind({
+          bobbin_no: flawInstrPopup.bobbin_no,
+          bobbin_fid: flawInstrPopup.bobbin_fid,
+          p1: cut.p1,
+          p2: cut.p2,
+          instruction: remarkStr,
+        });
+        if (res?.success) {
+          showSuccess('Flaw rewind instruction saved. Bobbin marked as REW.');
+          setRewPopup(false);
+          setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+          setRewFromFlaw(false);
+          setFlawInstrPopup({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
+        } else {
+          showError(res?.message || 'Failed to save flaw rewind');
+        }
+      } catch (e) {
+        showError(e?.response?.data?.message || 'Failed to save flaw rewind');
+      }
+      setLoading(false);
+    } else {
+      // ── Grade-fail rewind path (existing behaviour) ──
+      setGrade('REW');
+      setGraded(true);
+      setRewPopup(false);
+      setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+      // Store remark in a ref so submit can access it
+      formRef.current = remarkStr;
+    }
   };
 
   /* ── Final Grade ── */
@@ -756,7 +804,7 @@ const QCEntryScreen = () => {
               </div>
 
               <div className="flex gap-2">
-                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); }}
+                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" onClick={handleRewConfirm}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
@@ -822,6 +870,23 @@ const QCEntryScreen = () => {
           isOpen={missingPopup}
           missingParams={missingParams}
           onClose={() => { setMissingPopup(false); setMissingParams([]); setMissingValues({}); }}
+        />
+
+        {/* ── Missed Draw Flaw Popup ── */}
+        <FlawInstrPopup
+          isOpen={flawInstrPopup.open}
+          instrText={flawInstrPopup.instrText}
+          p1={flawInstrPopup.p1}
+          p2={flawInstrPopup.p2}
+          msg={flawInstrPopup.msg}
+          onCancel={() => setFlawInstrPopup({ open: false, instrText: '', p1: '', p2: '', msg: '' })}
+          onOk={() => {
+            setFlawInstrPopup(prev => ({ ...prev, open: false }));
+            // Pre-fill rewind popup with parsed flaw values
+            setRewCuts([{ p1: flawInstrPopup.p1, p2: flawInstrPopup.p2, c_remark: flawInstrPopup.msg }]);
+            setRewFromFlaw(true);
+            setRewPopup(true);
+          }}
         />
 
         {/* ── PT Entry Check Popup (Bobbin not in QC but found in PT) ── */}
@@ -932,6 +997,70 @@ const MissingFieldsPopup = ({ isOpen, missingParams, onClose }) => {
           </button>
         </div>
 
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   Missed Draw Flaw Warning Popup
+   Shows when ptRes.flaw_rewind_instr is set.
+   OK → opens pre-filled rewind popup. Cancel → dismiss.
+   ══════════════════════════════════════════════════════════ */
+const FlawInstrPopup = ({ isOpen, instrText, p1, p2, msg, onOk, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
+      <div className="bg-white rounded-2xl shadow-2xl p-0 w-[460px] overflow-hidden border border-red-100">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4 flex items-center gap-3">
+          <div className="bg-white/20 rounded-xl p-2.5">
+            <AlertTriangle size={20} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white tracking-tight">Missed Draw Flaw Detected</h3>
+            <p className="text-[10px] text-white/80 mt-0.5">This bobbin has a missed flaw from Proof Testing</p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-4 space-y-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5">Flaw Instruction</p>
+            <p className="text-xs font-mono text-slate-700 break-words">{instrText}</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">P1</p>
+              <p className="text-sm font-bold text-slate-700 font-mono">{p1 || '—'} km</p>
+            </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">P2</p>
+              <p className="text-sm font-bold text-slate-700 font-mono">{p2 || '—'} km</p>
+            </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Reason</p>
+              <p className="text-xs font-bold text-slate-700 break-words">{msg || '—'}</p>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-slate-500 text-center">
+            We need to perform a <span className="font-bold text-amber-600">Rewind</span> on this bobbin before it can proceed.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-100 bg-slate-50 px-6 py-3 flex gap-2">
+          <button type="button" onClick={onCancel}
+            className="flex-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">
+            Cancel
+          </button>
+          <button type="button" onClick={onOk}
+            className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-xs font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-md shadow-amber-200/50">
+            OK — Proceed to Rewind
+          </button>
+        </div>
       </div>
     </div>
   );

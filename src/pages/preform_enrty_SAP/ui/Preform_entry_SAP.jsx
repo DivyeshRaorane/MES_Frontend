@@ -26,7 +26,8 @@ const PreformEntryForm = () => {
 
   // Basic validation schema (Adjust according to your needs)
   const validationSchema = Yup.object({
-    preform_id: Yup.string().required('Preform ID is required'),
+    preform_id: Yup.string().required('Preform ID is required')
+    .length(10, 'Preform ID must be exactly 10 characters'),
     preform_weight: Yup.number().positive('Must be positive').required('Weight is required'),
     preform_type: Yup.string().required('Preform Type is required'),
     material_code: Yup.string().required('Material Code is required'),
@@ -114,6 +115,7 @@ const errorMsg = error || error?.data?.message || "Something went wrong";
               <label className="block text-sm font-medium text-gray-700 mb-1">Preform Weight</label>
               <Field
                 type="number"
+                min="0"
                 name="preform_weight"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 placeholder="Enter Weight"
