@@ -35,3 +35,12 @@ export const getQCUsers = async () => {
   const res = await axios.get(`${API}/api/getqcusers`);
   return res.data;
 };
+
+/* ── Get Fiber Information (Bobbin + QC + Dispatch) ── */
+export const getFiberInformation = async (searchValue, searchType = 'bobbin_no') => {
+  const res = await axios.get(`${API}/api/fg/fiber-information`, {
+    params: { search_value: searchValue, search_type: searchType },
+    headers: authHeaders(),
+  });
+  return res.data;
+};

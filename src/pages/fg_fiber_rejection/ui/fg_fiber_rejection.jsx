@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Scan, Trash2, ClipboardCheck, Plus, Palette, RotateCcw } from 'lucide-react';
+import { Scan, Trash2, ClipboardCheck, Plus, Palette, RotateCcw, Info } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import {
   validateBobbinForColor, submitColorRequest,
   validateBobbinForRewind, submitRewindRequest, getQCUsers,
 } from '../services/fg_rejection.api';
+import FiberInformationPanel from './FiberInformationPanel';
 
 const today = () => new Date().toISOString().split('T')[0];
 const nowTime = () => {
@@ -17,8 +18,9 @@ const COLORS = ['Natural', 'Blue', 'Red', 'Green', 'Yellow', 'White', 'Orange', 
 
 /* ══════════════════════════════════════════════════════════ */
 const FGFiberRejection = () => {
-  const [mode, setMode] = useState(''); // '' | 'color' | 'rewind'
+  const [mode, setMode] = useState(''); // '' | 'color' | 'rewind' | 'fiberinfo'
   const [qcUsers, setQcUsers] = useState([]);
+  const [lastScannedBobbin, setLastScannedBobbin] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -42,16 +44,27 @@ const FGFiberRejection = () => {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-bold rounded-lg transition-all border ${
                 mode === 'rewind' ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}><RotateCcw size={11} /> Rewinding / Rework</button>
+            <button type="button" onClick={() => setMode('fiberinfo')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-bold rounded-lg transition-all border ${
+                mode === 'fiberinfo' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}><Info size={11} /> Fiber Information</button>
           </div>
         </div>
 
-        {/* ── Content ── */}
-        <div className="flex-1 overflow-hidden">
-          {mode === 'color' && <ColorPanel qcUsers={qcUsers} />}
-          {mode === 'rewind' && <RewindPanel qcUsers={qcUsers} />}
+        {/* ── Content (all panels stay mounted to preserve state) ── */}
+        <div className="flex-1 overflow-hidden relative">
+          <div className={`absolute inset-0 ${mode === 'color' ? '' : 'invisible pointer-events-none'}`}>
+            <ColorPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
+          </div>
+          <div className={`absolute inset-0 ${mode === 'rewind' ? '' : 'invisible pointer-events-none'}`}>
+            <RewindPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
+          </div>
+          <div className={`absolute inset-0 ${mode === 'fiberinfo' ? '' : 'invisible pointer-events-none'}`}>
+            <FiberInformationPanel lastScannedBobbin={lastScannedBobbin} />
+          </div>
           {!mode && (
             <div className="flex items-center justify-center h-full">
-              <p className="text-xs text-slate-400">Select <strong>Color</strong> or <strong>Rewinding / Rework</strong> to begin</p>
+              <p className="text-xs text-slate-400">Select <strong>Color</strong>, <strong>Rewinding / Rework</strong>, or <strong>Fiber Information</strong> to begin</p>
             </div>
           )}
         </div>
@@ -63,7 +76,7 @@ const FGFiberRejection = () => {
 /* ══════════════════════════════════════════════════════════
    COLOR PANEL
    ══════════════════════════════════════════════════════════ */
-const ColorPanel = ({ qcUsers }) => {
+const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
   const [requireColor, setRequireColor] = useState('');
   const [requestBy, setRequestBy] = useState('');
   const [scanInput, setScanInput] = useState('');
@@ -84,6 +97,8 @@ const ColorPanel = ({ qcUsers }) => {
       const res = await validateBobbinForColor(bobbin_no, requireColor);
       if (!res?.success) { showError(res?.message || 'Validation failed'); refocus(); return; }
       setRows(prev => [...prev, { id: Date.now(), ...res.data }]);
+      // Store last scanned bobbin for Fiber Information tab
+      onBobbinScanned(bobbin_no);
       refocus();
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); refocus(); }
   };
@@ -166,7 +181,8 @@ const ColorPanel = ({ qcUsers }) => {
             {rows.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-400">Scan bobbins to add</td></tr>
             ) : rows.map((r, i) => (
-              <tr key={r.id} className="border-b border-slate-100 hover:bg-blue-50/30 group">
+              <tr key={r.id} className="border-b border-slate-100 hover:bg-blue-50/30 group cursor-pointer"
+                onClick={() => { onBobbinScanned(r.bobbin_no); onViewFiberInfo(); }}>
                 <td className="px-3 py-2 text-xs text-slate-400 font-bold">{i + 1}</td>
                 <td className="px-3 py-2 text-xs font-mono font-bold text-blue-700">{r.bobbin_no}</td>
                 <td className="px-3 py-2 text-xs font-mono text-slate-600">{r.bobbin_fid || '—'}</td>
@@ -174,7 +190,7 @@ const ColorPanel = ({ qcUsers }) => {
                 <td className="px-3 py-2 text-xs font-bold text-indigo-700">{requireColor}</td>
                 <td className="px-3 py-2 text-xs font-mono text-emerald-700">{r.fiber_length || '—'}</td>
                 <td className="px-3 py-2">
-                  <button type="button" onClick={() => setRows(prev => prev.filter(x => x.id !== r.id))}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setRows(prev => prev.filter(x => x.id !== r.id)); }}
                     className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500"><Trash2 size={12} /></button>
                 </td>
               </tr>
@@ -189,7 +205,7 @@ const ColorPanel = ({ qcUsers }) => {
 /* ══════════════════════════════════════════════════════════
    REWIND PANEL
    ══════════════════════════════════════════════════════════ */
-const RewindPanel = ({ qcUsers }) => {
+const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
   const [requestBy, setRequestBy] = useState('');
   const [scanInput, setScanInput] = useState('');
   const [rows, setRows] = useState([]);
@@ -214,6 +230,8 @@ const RewindPanel = ({ qcUsers }) => {
       setPopup(res.data);
       setRewindType('');
       setCuts([{ p1: '', p2: '', c_remark: '' }]);
+      // Store last scanned bobbin for Fiber Information tab
+      onBobbinScanned(bobbin_no);
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); refocus(); }
   };
 
@@ -307,7 +325,8 @@ const RewindPanel = ({ qcUsers }) => {
             {rows.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-12 text-center text-xs text-slate-400">Scan bobbins to add</td></tr>
             ) : rows.map((r, i) => (
-              <tr key={r.id} className="border-b border-slate-100 hover:bg-amber-50/30 group">
+              <tr key={r.id} className="border-b border-slate-100 hover:bg-amber-50/30 group cursor-pointer"
+                onClick={() => { onBobbinScanned(r.bobbin_no); onViewFiberInfo(); }}>
                 <td className="px-3 py-2 text-xs text-slate-400 font-bold">{i + 1}</td>
                 <td className="px-3 py-2 text-xs font-mono font-bold text-blue-700">{r.bobbin_no}</td>
                 <td className="px-3 py-2 text-xs font-mono text-slate-600">{r.bobbin_fid || '—'}</td>
@@ -321,7 +340,7 @@ const RewindPanel = ({ qcUsers }) => {
                   {r.cuts?.length > 0 ? r.cuts.map((c, ci) => `(${c.p1}-${c.p2})`).join(', ') : '—'}
                 </td>
                 <td className="px-3 py-2">
-                  <button type="button" onClick={() => setRows(prev => prev.filter(x => x.id !== r.id))}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setRows(prev => prev.filter(x => x.id !== r.id)); }}
                     className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500"><Trash2 size={12} /></button>
                 </td>
               </tr>
@@ -399,6 +418,10 @@ const RewindPanel = ({ qcUsers }) => {
             <div className="flex gap-2">
               <button type="button" onClick={() => { setPopup(null); refocus(); }}
                 className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+              <button type="button" onClick={onViewFiberInfo}
+                className="flex-1 px-3 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-bold hover:bg-teal-100 flex items-center justify-center gap-1">
+                <Info size={11} /> Fiber Info
+              </button>
               <button type="button" onClick={handlePopupConfirm}
                 className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700">Confirm</button>
             </div>
