@@ -83,7 +83,7 @@ const CONSUMPTION_TABS = ['Coating'];
 const validationSchema = Yup.object({
   tower_no: Yup.string().required('Tower No is required'),
   preform_id: Yup.string().required('Preform ID is required'),
-  spool_id: Yup.string().required('Spool ID is required'),
+  spool_id: Yup.string().required('Spool ID is required').length(10, 'Spool ID must be exactly 10 characters'),
   start_date: Yup.string().required('Start Date is required'),
   start_time: Yup.string().required('Start Time is required'),
   end_date: Yup.string().required('End Date is required'),
@@ -352,11 +352,11 @@ const DrawSpoolEntry = () => {
       console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
-      setFieldValue("drawn_length", mappedFlaws?.totalKm)
-      setFieldValue("bottom_end_scrap", mappedFlaws?.goodFiberKm?.[0])
-      setFieldValue("drawn_weight", mappedFlaws?.totalKm / 35.714)
-      const flawBalance = values.preform_weight - (mappedFlaws?.totalKm / 35.714);
-      setFieldValue("balance_weight", flawBalance < 0 ? 0 : flawBalance)
+      setFieldValue("drawn_length", parseFloat((mappedFlaws?.totalKm || 0).toFixed(2)))
+      setFieldValue("bottom_end_scrap", parseFloat((mappedFlaws?.goodFiberKm?.[0] || 0).toFixed(2)))
+      setFieldValue("drawn_weight", parseFloat(((mappedFlaws?.totalKm || 0) / 35.714).toFixed(2)))
+      const flawBalance = values.preform_weight - ((mappedFlaws?.totalKm || 0) / 35.714);
+      setFieldValue("balance_weight", parseFloat((flawBalance < 0 ? 0 : flawBalance).toFixed(2)))
       
 
     } catch (err) {
@@ -370,10 +370,10 @@ const DrawSpoolEntry = () => {
     const { values, setFieldValue } = useFormikContext();
 
     useEffect(() => {
-      const drawnWeight = Number(values.drawn_length || 0) / 35.714;
+      const drawnWeight = parseFloat((Number(values.drawn_length || 0) / 35.714).toFixed(2));
 
       setFieldValue("drawn_weight", drawnWeight);
-      const calcBalance = Number(values.preform_weight || 0) - drawnWeight;
+      const calcBalance = parseFloat((Number(values.preform_weight || 0) - drawnWeight).toFixed(2));
       setFieldValue("balance_weight", calcBalance < 0 ? 0 : calcBalance);
     }, [values.drawn_length, values.preform_weight]);
 
@@ -600,7 +600,7 @@ const DrawSpoolEntry = () => {
                           }
                         }} />
                       <FormikInput compact label="Preform ID" name="preform_id" readOnly />
-                      <FormikInput compact label="Preform Wt(KG)" name="preform_weight" type="number" />
+                      <FormikInput compact label="Preform Wt(KG)" name="preform_weight" type="number" step="0.01" />
                       <FormikInput compact label="Preform Type" name="preform_type" readOnly />
                       <FormikInput compact label="Product Type" name="product_type" readOnly />
                       <FormikInput compact label="Start Date" name="start_date" type="date" />
@@ -628,22 +628,24 @@ const DrawSpoolEntry = () => {
                             setFieldValue("end_time", endTime);
                           }
                         }} />
-                      <FormikInput compact label="Drawn Wt(KG)" name="drawn_weight" type="number"
+                      <FormikInput compact label="Drawn Wt(KG)" name="drawn_weight" type="number" step="0.01"
                         onChange={(e) => {
                           const val = e.target.value;
                           if (Number(val) < 0) { showError("Drawn Weight cannot be negative"); setFieldValue("drawn_weight", ''); }
+                          else if (val && val.includes('.') && val.split('.')[1]?.length > 2) { return; }
                           else { setFieldValue("drawn_weight", val); }
                         }} />
-                      <FormikInput compact label="Drawn Len(KM)" name="drawn_length" type="number"
+                      <FormikInput compact label="Drawn Len(KM)" name="drawn_length" type="number" step="0.01"
                         onChange={(e) => {
                           const val = e.target.value;
                           if (Number(val) < 0) { showError("Drawn Length cannot be negative"); setFieldValue("drawn_length", ''); }
+                          else if (val && val.includes('.') && val.split('.')[1]?.length > 2) { return; }
                           else { setFieldValue("drawn_length", val); }
                         }} />
-                      <FormikInput compact label="Balance Weight" name="balance_weight" type="number" readOnly />
+                      <FormikInput compact label="Balance Weight" name="balance_weight" type="number" step="0.01" readOnly />
                       <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
 
-                      <FormikInput compact label="Spool ID" name="spool_id" type='text' />
+                      <FormikInput compact label="Spool ID" name="spool_id" type='text' maxLength={10} />
                       <FormikInput compact label="Spool FID" name="spool_fid" readOnly />
                       <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions} />
 
@@ -667,8 +669,8 @@ const DrawSpoolEntry = () => {
                       <FormikSelect compact label="Winding Observation" name="winding_observation" options={drawWindingObsOptions} />
                       <FormikSelect compact label="Scr Observation" name="scr_observation" options={['Yes', 'No']} />
 
-                      <FormikInput compact label="Top End Scrap" name="top_end_scrap" type="number" />
-                      <FormikInput compact label="Bottom End Scrap" name="bottom_end_scrap" type='number' />
+                      <FormikInput compact label="Top End Scrap" name="top_end_scrap" type="number" step="0.01" />
+                      <FormikInput compact label="Bottom End Scrap" name="bottom_end_scrap" type='number' step="0.01" />
 
                       <FormikSelect compact label="Die Clean" name="die_clean" options={['Yes', 'No']} />
                       <FormikSelect compact label="Spool Status" name="spool_status" options={['Ok', 'Not Ok']} />

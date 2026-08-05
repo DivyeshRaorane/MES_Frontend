@@ -8,6 +8,54 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* Global text darkness for readability */
+body {
+  color: #1e293b; /* slate-800 — very dark, easy to read */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all labels, paragraphs, spans in content area are dark */
+main label,
+main p,
+main span,
+main td,
+main th,
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6,
+main li,
+main div {
+  color: inherit;
+}
+
+/* Override any light gray text utilities in main content */
+main .text-gray-400,
+main .text-gray-500,
+main .text-slate-400,
+main .text-slate-500 {
+  color: #334155 !important; /* slate-700 — dark and readable */
+}
+
+main .text-gray-300,
+main .text-slate-300 {
+  color: #475569 !important; /* slate-600 */
+}
+
+/* Hide number input spinners/arrows globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }

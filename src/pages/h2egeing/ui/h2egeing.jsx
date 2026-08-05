@@ -321,7 +321,8 @@ const ReadingTab = ({ stage, qcUsers }) => {
   const [loading, setLoading] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [bobbins, setBobbins] = useState([]);
-  const [readings, setReadings] = useState({});
+  // Per-bobbin readings: { [bobbin_no]: { attn_1240: '', attn_1310: '', ... } }
+  const [bobbinReadings, setBobbinReadings] = useState({});
   const [operator, setOperator] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -343,18 +344,41 @@ const ReadingTab = ({ stage, qcUsers }) => {
 
   const openBatch = async (batch) => {
     setSelectedBatch(batch);
-    setReadings(ATTN_FIELDS.reduce((a, f) => ({ ...a, [f]: '' }), {}));
     setOperator('');
+    setBobbinReadings({});
     try {
       const res = await getBobbinsForBatch(batch.h2_batch_id);
-      if (res?.success) setBobbins(res.data || []);
-    } catch (_) { setBobbins([]); }
+      if (res?.success) {
+        const bobbinData = res.data || [];
+        setBobbins(bobbinData);
+        // Initialize per-bobbin readings
+        const initial = {};
+        bobbinData.forEach(b => {
+          initial[b.bobbin_no] = ATTN_FIELDS.reduce((a, f) => ({ ...a, [f]: '' }), {});
+        });
+        setBobbinReadings(initial);
+      }
+    } catch (_) { setBobbins([]); setBobbinReadings({}); }
+  };
+
+  const updateBobbinReading = (bobbin_no, field, value) => {
+    setBobbinReadings(prev => ({
+      ...prev,
+      [bobbin_no]: { ...prev[bobbin_no], [field]: value },
+    }));
   };
 
   const handleSave = async () => {
     if (!operator) { showError('Select operator'); return; }
-    for (const f of ATTN_FIELDS) {
-      if (!readings[f] && readings[f] !== 0) { showError(`Enter ${f.replace('attn_', 'ATTN ')}`); return; }
+    // Validate all bobbins have readings filled
+    for (const b of bobbins) {
+      const bReadings = bobbinReadings[b.bobbin_no] || {};
+      for (const f of ATTN_FIELDS) {
+        if (!bReadings[f] && bReadings[f] !== 0) {
+          showError(`Enter ${f.replace('attn_', 'ATTN ')} for bobbin ${b.bobbin_no}`);
+          return;
+        }
+      }
     }
     setSubmitting(true);
     try {
@@ -363,7 +387,15 @@ const ReadingTab = ({ stage, qcUsers }) => {
         operator,
         date: today(),
         time: nowTime(),
-        readings: ATTN_FIELDS.reduce((a, f) => ({ ...a, [`${f}${suffix}`]: Number(readings[f]) }), {}),
+        bobbins: bobbins.map(b => ({
+          bobbin_no: b.bobbin_no,
+          h2_id: b.h2_id || b.id,
+          d2_batch_id: b.d2_batch_id,
+          readings: ATTN_FIELDS.reduce((a, f) => ({
+            ...a,
+            [`${f}${suffix}`]: Number(bobbinReadings[b.bobbin_no]?.[f] || 0),
+          }), {}),
+        })),
       };
       const saver = stage === 'before' ? saveBeforeEntry : stage === 'after' ? saveAfterEntry : save14DayEntry;
       const res = await saver(payload);
@@ -371,6 +403,7 @@ const ReadingTab = ({ stage, qcUsers }) => {
         showSuccess(`${stageLabel} readings saved for batch ${selectedBatch.h2_batch_id}`);
         setSelectedBatch(null);
         setBobbins([]);
+        setBobbinReadings({});
         fetchBatches();
       } else { showError(res?.message || 'Save failed'); }
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
@@ -421,12 +454,12 @@ const ReadingTab = ({ stage, qcUsers }) => {
     );
   }
 
-  /* ── Batch Detail / Reading Entry View ── */
+  /* ── Batch Detail / Per-Bobbin Reading Entry View ── */
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => { setSelectedBatch(null); setBobbins([]); }}
+          <button type="button" onClick={() => { setSelectedBatch(null); setBobbins([]); setBobbinReadings({}); }}
             className="text-[9px] text-blue-600 font-bold hover:underline">← Back</button>
           <span className="text-[10px] font-bold text-slate-700 uppercase">
             {stageLabel} Entry — {selectedBatch.h2_batch_id}
@@ -444,29 +477,15 @@ const ReadingTab = ({ stage, qcUsers }) => {
         </div>
       </div>
 
-      {/* Readings input */}
-      <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
-        <div className="grid grid-cols-5 gap-3">
-          {ATTN_FIELDS.map(f => (
-            <div key={f} className="flex flex-col gap-0.5">
-              <label className="text-[9px] font-bold text-slate-600 uppercase">{f.replace('attn_', 'ATTN ')}</label>
-              <input type="number" step="0.001" value={readings[f] || ''}
-                onChange={e => setReadings(prev => ({ ...prev, [f]: e.target.value }))}
-                placeholder="0.000"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bobbins table */}
+      {/* Per-Bobbin Reading Inputs */}
       <div className="flex-1 min-h-0 overflow-auto">
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10">
             <tr className="border-b border-slate-200">
-              {['#', 'Bobbin No', 'D2 Batch', 'H2 Date', 'H2 Operator',
+              {['#', 'Bobbin No', 'D2 Batch',
                 ...(stage !== 'before' ? ['1240 B', '1310 B', '1383 B', '1550 B', '1625 B'] : []),
                 ...(stage === '14day' ? ['1240 A', '1310 A', '1383 A', '1550 A', '1625 A'] : []),
+                'ATTN 1240', 'ATTN 1310', 'ATTN 1383', 'ATTN 1550', 'ATTN 1625',
               ].map(h => (
                 <th key={h} className="px-2 py-2 text-[8px] font-bold text-slate-500 uppercase whitespace-nowrap">{h}</th>
               ))}
@@ -478,8 +497,7 @@ const ReadingTab = ({ stage, qcUsers }) => {
                 <td className="px-2 py-1.5 text-[9px] text-slate-400 font-bold">{i + 1}</td>
                 <td className="px-2 py-1.5 text-xs font-mono font-bold text-blue-700">{b.bobbin_no}</td>
                 <td className="px-2 py-1.5 text-xs font-mono text-slate-500">{b.d2_batch_id}</td>
-                <td className="px-2 py-1.5 text-xs text-slate-500">{b.h2_date || '—'}</td>
-                <td className="px-2 py-1.5 text-xs text-slate-500">{b.h2_operator || '—'}</td>
+                {/* Show previous stage readings if applicable */}
                 {stage !== 'before' && <>
                   <td className="px-2 py-1.5 text-xs text-slate-600">{b.attn_1240_before ?? '—'}</td>
                   <td className="px-2 py-1.5 text-xs text-slate-600">{b.attn_1310_before ?? '—'}</td>
@@ -494,6 +512,16 @@ const ReadingTab = ({ stage, qcUsers }) => {
                   <td className="px-2 py-1.5 text-xs text-slate-600">{b.attn_1550_after ?? '—'}</td>
                   <td className="px-2 py-1.5 text-xs text-slate-600">{b.attn_1625_after ?? '—'}</td>
                 </>}
+                {/* Per-bobbin input fields for current stage */}
+                {ATTN_FIELDS.map(f => (
+                  <td key={f} className="px-1 py-1.5">
+                    <input type="number" step="0.001"
+                      value={bobbinReadings[b.bobbin_no]?.[f] || ''}
+                      onChange={e => updateBobbinReading(b.bobbin_no, f, e.target.value)}
+                      placeholder="0.000"
+                      className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-blue-200" />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

@@ -77,13 +77,13 @@ const TopBar = () => {
 
       {/* Right: clock + user */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5 text-slate-400">
+        <div className="flex items-center gap-1.5 text-white">
           <Clock size={11} className="text-emerald-400" />
           <span className="text-[10px] font-mono font-semibold tracking-wider">{fmt(time)}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-[8px] font-bold">{userInitials}</div>
-          <span className="text-[10px] font-semibold text-slate-300">{userName}</span>
+          <span className="text-[10px] font-semibold text-white">{userName}</span>
         </div>
       </div>
     </div>

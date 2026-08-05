@@ -74,7 +74,7 @@ const QCInOut = () => {
       }
 
       const bobbin = data.data;
-
+      
       // Check final_grade
       if (!bobbin.final_grade) {
         showError('Final grade is pending for this bobbin. Cannot proceed with QC Out.');
@@ -92,19 +92,19 @@ const QCInOut = () => {
         id: Date.now(),
         bobbin_no: bobbin.bobbin_no,
         bobbin_fid: bobbin.bobbin_fid || '',
-        fiber_type: bobbin.fiber_type || '',
+        product_type: bobbin.product_type || '',
         fiber_color: bobbin.fiber_color || '',
         fiber_length: bobbin.fiber_length || '',
         final_grade: bobbin.final_grade || '',
         out_time: nowTime(),
       }]);
+      
       refocus(setFieldValue);
     } catch (e) {
       showError(e?.response?.data?.message || 'Something went wrong');
       refocus(setFieldValue);
     }
   };
-
   /* ── Remove row ── */
   const removeRow = (id) => setRows(prev => prev.filter(r => r.id !== id));
 
@@ -207,7 +207,7 @@ const QCInOut = () => {
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr className="border-b border-slate-200">
-                        {['#', 'Bobbin No', 'Bobbin FID', 'Fiber Type', 'Color', 'Fiber Length', 'Final Grade', 'Out Time', ''].map(h => (
+                        {['#', 'Bobbin No', 'Bobbin FID', 'Product Type', 'Color', 'Fiber Length', 'Final Grade', 'Out Time', ''].map(h => (
                           <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
                         ))}
                       </tr>
@@ -220,7 +220,7 @@ const QCInOut = () => {
                           <td className="px-3 py-1.5 text-[9px] font-bold text-slate-400 border-r border-slate-100">{idx + 1}</td>
                           <td className="px-3 py-1.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{row.bobbin_no}</td>
                           <td className="px-3 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.bobbin_fid || '—'}</td>
-                          <td className="px-3 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_type || '—'}</td>
+                          <td className="px-3 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.product_type || '—'}</td>
                           <td className="px-3 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_color || '—'}</td>
                           <td className="px-3 py-1.5 text-xs font-mono text-emerald-700 font-bold border-r border-slate-100">{row.fiber_length || '—'}</td>
                           <td className="px-3 py-1.5 border-r border-slate-100">

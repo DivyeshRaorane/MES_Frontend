@@ -68,15 +68,15 @@ const FormHeader = ({
                 <User size={14} className="text-blue-400" />
               </div>
             </div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{userRole}</span>
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider">{userRole}</span>
           </div>
 
           <div className="flex flex-col items-start min-w-[140px]">
-            <div className="flex items-center gap-2 text-slate-300">
+            <div className="flex items-center gap-2 text-white">
               <Calendar size={12} className="text-indigo-400" />
               <span className="text-xs font-semibold">{formatDate(currentTime)}</span>
             </div>
-            <div className="flex items-center gap-2 text-slate-300 mt-0.5">
+            <div className="flex items-center gap-2 text-white mt-0.5">
               <Clock size={12} className="text-emerald-400" />
               <span className="text-xs font-bold tracking-wider uppercase">{formatTime(currentTime)}</span>
             </div>

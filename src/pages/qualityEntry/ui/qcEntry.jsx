@@ -11,16 +11,16 @@ const TCell = ({ name, disabled, highlight }) => (
   <Field name={name} disabled={disabled}
     className={`w-full h-full px-1 py-0 text-[9px] outline-none text-center transition-all
       ${highlight ? 'bg-red-100 border-red-400 ring-1 ring-red-300' : ''}
-      ${disabled ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
+      ${disabled ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
 );
 const GridDivider = ({ label }) => (
-  <div className="col-span-2 pt-0.5 border-t border-slate-100">
-    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+  <div className="col-span-2 pt-0.5 border-t border-slate-200">
+    <p className="text-[7px] font-bold text-slate-700 uppercase tracking-wider">{label}</p>
   </div>
 );
 const Col = ({ children }) => (
   <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-white border border-slate-200 rounded-lg px-1.5 py-1">
-    <div className="grid grid-cols-2 gap-x-1 text-slate-2000 text-bold gap-y-0.5">{children}</div>
+    <div className="grid grid-cols-2 gap-x-1 text-slate-900 font-semibold gap-y-0.5">{children}</div>
   </div>
 );
 
@@ -76,7 +76,7 @@ const MEASUREMENT_FIELDS = [
 ];
 
 const buildInitialValues = () => {
-  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '' };
+  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '' };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
 };
@@ -493,7 +493,7 @@ const QCEntryScreen = () => {
   );
 
   return (
-    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+    <div className="h-full bg-slate-50 font-sans text-slate-900 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <Formik initialValues={buildInitialValues()} onSubmit={() => {}}>
           {({ values, setValues }) => (
@@ -508,7 +508,7 @@ const QCEntryScreen = () => {
                 {/* Scan */}
                 <div className="flex items-center border border-slate-200 rounded overflow-hidden">
                   <span className="bg-blue-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BOBBIN</span>
-                  <input ref={scanRef} value={scanInput} onChange={e => setScanInput(e.target.value)}
+                  <input ref={scanRef} value={scanInput} onChange={e => setScanInput(e.target.value.toUpperCase())}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleFetch(setValues); } }}
                     className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-700" placeholder="Scan..." />
                 </div>
@@ -522,6 +522,14 @@ const QCEntryScreen = () => {
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
                     <span className="bg-orange-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID</span>
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.bobbin_fid}</span>
+                  </div>
+                )}
+
+                {/* Product Type display */}
+                {values.product_type && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-green-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">TYPE</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-800">{values.product_type}</span>
                   </div>
                 )}
 
@@ -574,9 +582,9 @@ const QCEntryScreen = () => {
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 disabled:opacity-40 transition-all">
                     <CheckCircle2 size={10} /> Final Grade
                   </button>
-                  <ResetButton compact type="button" onClick={() => {
+                  {/* <ResetButton compact type="button" onClick={() => {
                     setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null); setExistingTempGrade(''); setExistingFinalGrade('');
-                  }}>Reset</ResetButton>
+                  }}>Reset</ResetButton> */}
                   <SubmitButton compact type="button" disabled={submitting || !graded || locked || (!!existingTempGrade && !!existingFinalGrade)} onClick={() => handleSubmit(values)}>
                     {submitting ? 'Saving...' : 'Update'}
                   </SubmitButton>
@@ -725,7 +733,7 @@ const QCEntryScreen = () => {
                       <tbody>
                         {MB_ROWS.map(({ label, s1550, s1310, s1625 }) => (
                           <tr key={label} className="bg-white">
-                            <td className="border border-slate-200 px-1 text-[7px] font-bold bg-slate-50 whitespace-nowrap">{label}</td>
+                            <td className="border border-slate-200 px-1 text-[7px] font-bold bg-slate-50 whitespace-nowrap text-slate-800">{label}</td>
                             <td className="border border-slate-200 h-5"><TCell name={s1550} disabled={locked} highlight={failedParam === s1550} /></td>
                             <td className="border border-slate-200 h-5"><TCell name={s1310} disabled={locked} highlight={failedParam === s1310} /></td>
                             <td className="border border-slate-200 h-5"><TCell name={s1625} disabled={locked} highlight={failedParam === s1625} /></td>
@@ -754,11 +762,11 @@ const QCEntryScreen = () => {
                 <AlertTriangle size={16} className="text-amber-500" />
                 <h3 className="text-sm font-bold text-slate-800">Rewinding Instructions</h3>
               </div>
-              <p className="text-[10px] text-slate-500 mb-3">Enter cutting instructions for rewinding. These will be saved as the QC remark.</p>
+              <p className="text-[10px] text-slate-700 mb-3">Enter cutting instructions for rewinding. These will be saved as the QC remark.</p>
 
               <div className="border border-slate-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Cutting Instructions</span>
+                  <span className="text-[9px] font-bold text-slate-700 uppercase">Cutting Instructions</span>
                   <button type="button" onClick={() => setRewCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
                     className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
                     <Plus size={9} /> Add Row
@@ -766,7 +774,7 @@ const QCEntryScreen = () => {
                 </div>
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="text-[9px] text-slate-500 font-bold">
+                    <tr className="text-[9px] text-slate-700 font-bold">
                       <th className="text-left py-1">P1 (km)</th>
                       <th className="text-left py-1">P2 (km)</th>
                       <th className="text-left py-1">Remark</th>
@@ -955,7 +963,7 @@ const MissingFieldsPopup = ({ isOpen, missingParams, onClose }) => {
               <XCircle size={12} className="text-red-500" />
               <span className="text-[11px] font-bold text-red-600">{totalCount} Missing Field{totalCount > 1 ? 's' : ''}</span>
             </span>
-            <span className="text-[10px] text-slate-400">Please fill these values in the form</span>
+            <span className="text-[10px] text-slate-600">Please fill these values in the form</span>
           </div>
         </div>
 
@@ -973,7 +981,7 @@ const MissingFieldsPopup = ({ isOpen, missingParams, onClose }) => {
 
               {/* Field Name */}
               <div className="flex-1 min-w-0">
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block truncate">
+                <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide block truncate">
                   {param.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -1032,20 +1040,20 @@ const FlawInstrPopup = ({ isOpen, instrText, p1, p2, msg, onOk, onCancel }) => {
 
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
-              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">P1</p>
-              <p className="text-sm font-bold text-slate-700 font-mono">{p1 || '—'} km</p>
+              <p className="text-[8px] font-bold text-slate-600 uppercase mb-1">P1</p>
+              <p className="text-sm font-bold text-slate-800 font-mono">{p1 || '—'} km</p>
             </div>
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
-              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">P2</p>
-              <p className="text-sm font-bold text-slate-700 font-mono">{p2 || '—'} km</p>
+              <p className="text-[8px] font-bold text-slate-600 uppercase mb-1">P2</p>
+              <p className="text-sm font-bold text-slate-800 font-mono">{p2 || '—'} km</p>
             </div>
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
-              <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Reason</p>
-              <p className="text-xs font-bold text-slate-700 break-words">{msg || '—'}</p>
+              <p className="text-[8px] font-bold text-slate-600 uppercase mb-1">Reason</p>
+              <p className="text-xs font-bold text-slate-800 break-words">{msg || '—'}</p>
             </div>
           </div>
 
-          <p className="text-[10px] text-slate-500 text-center">
+          <p className="text-[10px] text-slate-700 text-center">
             We need to perform a <span className="font-bold text-amber-600">Rewind</span> on this bobbin before it can proceed.
           </p>
         </div>
@@ -1053,7 +1061,7 @@ const FlawInstrPopup = ({ isOpen, instrText, p1, p2, msg, onOk, onCancel }) => {
         {/* Footer */}
         <div className="border-t border-slate-100 bg-slate-50 px-6 py-3 flex gap-2">
           <button type="button" onClick={onCancel}
-            className="flex-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">
+            className="flex-1 px-3 py-2 bg-slate-100 text-slate-800 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">
             Cancel
           </button>
           <button type="button" onClick={onOk}

@@ -900,7 +900,18 @@ const PTEntry = () => {
                           </div>
                         </div>
 
-                        <RejRowLayout label="Multiple End" checked={values.active_rejection_type === 'multiple_end'} onChange={e => handleRadioSelection('multiple_end', e.target.checked)}>
+                        <RejRowLayout label="Multiple End" checked={values.active_rejection_type === 'multiple_end'} onChange={e => {
+                          const isChecked = e.target.checked;
+                          handleRadioSelection('multiple_end', isChecked);
+                          if (isChecked) {
+                            // Multiple End always implies PT Break — 0.180 km scrap will be auto-booked
+                            setFieldValue('pt_break', true);
+                            ptBreakRef.current = true;
+                          } else {
+                            setFieldValue('pt_break', false);
+                            ptBreakRef.current = false;
+                          }
+                        }}>
                           <div className="flex flex-col gap-1">
                             <FormikInput
                               compact
@@ -917,12 +928,10 @@ const PTEntry = () => {
                                 setFieldValue('pt_length', computedLength > 0 ? computedLength.toFixed(3) : '');
                               }}
                             />
-                            {values.pt_break && (
-                              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[8px] font-bold text-orange-700">
-                                <Zap size={8} className="flex-shrink-0" />
-                                PT Break detected — 0.180 km scrap will be auto-booked
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[8px] font-bold text-orange-700">
+                              <Zap size={8} className="flex-shrink-0" />
+                              PT Break — 0.180 km scrap will be auto-booked
+                            </div>
                           </div>
                         </RejRowLayout>
 

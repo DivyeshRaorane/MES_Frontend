@@ -13,6 +13,7 @@ const MENU = [
   {
     key: 'dashboard',
     label: 'Dashboard',
+    shortLabel: 'Home',
     icon: LayoutDashboard,
     path: '/dashboard',
     color: 'text-blue-400',
@@ -20,6 +21,7 @@ const MENU = [
   {
     key: 'draw',
     label: 'Draw Management',
+    shortLabel: 'Draw',
     icon: Box,
     color: 'text-blue-400',
     children: [
@@ -38,6 +40,7 @@ const MENU = [
   {
     key: 'proof',
     label: 'Proof Testing',
+    shortLabel: 'PT',
     icon: ShieldCheck,
     color: 'text-purple-400',
     children: [
@@ -50,6 +53,7 @@ const MENU = [
   {
     key: 'quality',
     label: 'Quality',
+    shortLabel: 'QC',
     icon: CheckCircle2,
     color: 'text-emerald-400',
     children: [
@@ -64,6 +68,7 @@ const MENU = [
   {
     key: 'qa',
     label: 'Quality Assuranc',
+    shortLabel: 'QA',
     icon: MessageSquareWarning,
     color: 'text-rose-400',
     children: [
@@ -84,15 +89,16 @@ const MENU = [
   {
     key: 'finishgoods',
     label: 'Finish Goods',
+    shortLabel: 'FG',
     icon: Truck,
     color: 'text-orange-400',
     children: [
-      { label: 'Modula IN/OUT', path: '/fg/modulainout'},
-      { label: 'TC Generation',         path: '/fg/tcgeneration' },
-      { label: 'Order Register',        path: '/fg/orderregister' },
       { label: 'FG Fiber Rejection',    path: '/fg/fiberrejection' },
-      { label: 'Packing List',          path: '/fg/packinglist' },
+      { label: 'Modula IN/OUT', path: '/fg/modulainout'},
       { label: 'Customer Allocation', path: '/fg/customerallocation' },
+      { label: 'Order Register',        path: '/fg/orderregister' },
+      { label: 'Packing List',          path: '/fg/packinglist' },
+      { label: 'TC Generation',         path: '/fg/tcgeneration' },
       { label: 'Reports', path: '/fg/reports' },
     ],
   },
@@ -100,6 +106,7 @@ const MENU = [
   {
     key: 'admin',
     label: 'Admin',
+    shortLabel: 'Admin',
     icon: Shield,
     color: 'text-slate-400',
     children: [
@@ -113,16 +120,10 @@ const MENU = [
   {
     key: 'dynamicreports',
     label: 'Dynamic Reports',
+    shortLabel: 'Rpts',
     icon: FileBarChart2,
     path: '/dynamicreports',
     color: 'text-cyan-400',
-  },
-  {
-    key: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    path: '/underdev',
-    color: 'text-slate-400',
   },
 ];
 
@@ -204,7 +205,7 @@ const Sidebar = () => {
     <div ref={drawerRef} className="relative flex h-screen z-50">
 
       {/* ── Icon rail ── */}
-      <aside className="w-14 bg-slate-900 flex flex-col items-center py-3 gap-1 shadow-2xl flex-shrink-0">
+      <aside className="w-16 bg-slate-900 flex flex-col items-center py-3 gap-1 shadow-2xl flex-shrink-0">
 
         {/* Logo */}
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mb-3 flex-shrink-0">
@@ -225,13 +226,14 @@ const Sidebar = () => {
                 <button
                   onClick={() => handleIconClick(item)}
                   className={`
-                    w-full flex items-center justify-center p-2 rounded-lg transition-all duration-150
+                    w-full flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-150
                     ${isOpen   ? 'bg-blue-600 text-white'  : ''}
                     ${isActive && !isOpen ? 'bg-slate-700 ' + item.color : ''}
-                    ${!isOpen && !isActive ? 'text-slate-500 hover:bg-slate-800 hover:text-slate-200' : ''}
+                    ${!isOpen && !isActive ? 'text-slate-200 hover:bg-slate-800 hover:text-white' : ''}
                   `}
                 >
                   <Icon size={18} />
+                  <span className="text-[9px] font-semibold mt-0.5 leading-tight">{item.shortLabel}</span>
                 </button>
               </Tooltip>
             );
@@ -242,7 +244,7 @@ const Sidebar = () => {
         <Tooltip label="Logout">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-slate-500 hover:bg-rose-900/40 hover:text-rose-400 transition-all mx-1.5 mb-1"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-slate-200 hover:bg-rose-900/40 hover:text-rose-400 transition-all mx-1.5 mb-1"
           >
             <LogOut size={18} />
           </button>
@@ -253,7 +255,7 @@ const Sidebar = () => {
 
       {/* ── Drawer panel (overlay, not pushing content) ── */}
       {openDrawer && activeDrawer?.children && (
-        <div className="absolute left-14 top-0 h-full w-52 bg-slate-800 shadow-2xl flex flex-col border-r border-slate-700 animate-in slide-in-from-left-2 duration-150">
+        <div className="absolute left-16 top-0 h-full w-52 bg-slate-800 shadow-2xl flex flex-col border-r border-slate-700 animate-in slide-in-from-left-2 duration-150">
 
           {/* Drawer header */}
           <div className="px-4 py-3 border-b border-slate-700 flex items-center gap-2.5 flex-shrink-0">
@@ -273,7 +275,7 @@ const Sidebar = () => {
                     w-full text-left px-4 py-2 text-[11px] font-medium transition-all flex items-center gap-2
                     ${isActive
                       ? 'bg-blue-600/20 text-blue-400 border-l-2 border-blue-400'
-                      : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200 border-l-2 border-transparent'}
+                      : 'text-slate-200 hover:bg-slate-700/60 hover:text-white border-l-2 border-transparent'}
                   `}
                 >
                   <ChevronRight size={11} className={isActive ? 'text-blue-400' : 'text-slate-600'} />

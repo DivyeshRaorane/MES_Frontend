@@ -359,7 +359,7 @@ const confirmDeallocation = async () => {
                         ))}
                         <FormikInput compact label="Cone L" name="coneL" value={selectedPreform?.cone_length} type="number" placeholder="0.00" />
                       </div>
-                      <FormikInput compact label="Average Diameter" name="average_diameter" type="number" value={avgDia} placeholder="Calculated average" />
+                      <FormikInput compact label="Average Diameter" name="average_diameter" type="number" value={avgDia ? Number(avgDia).toFixed(2) : ""} placeholder="Calculated average" />
                       <div>
                         <FormikTextarea compact label="Process Remark" name="process_remarks" placeholder="Enter observations..." rows={2} />
                       </div>
