@@ -15,6 +15,9 @@ const authHeaders = () => ({
 
 /* ── All parameter groups with their min/max field pairs ── */
 const PARAM_GROUPS = [
+  { title: 'Optical Length', fields: [
+    ['optical_length'],
+  ]},
   { title: 'AVG LSA Attenuation', fields: [
     ['avg_lsa_atn_1310'],['avg_lsa_atn_1550'],['avg_lsa_atn_1625'],['avg_lsa_atn_1383'],
   ]},
@@ -100,7 +103,13 @@ PARAM_GROUPS.forEach(g => g.fields.forEach(([f]) => {
 }));
 
 const buildInitialValues = (data) => {
-  const vals = { grade: data?.grade || '', product_type: data?.product_type || '', priority: data?.priority || '', status: data?.status ?? true };
+  const vals = {
+    grade: data?.grade || '',
+    product_type: data?.product_type || '',
+    color_type: data?.color_type || '',
+    priority: data?.priority || '',
+    status: data?.status ?? true
+  };
   ALL_LIMIT_FIELDS.forEach(f => {
     if (data?.[f] !== undefined && data?.[f] !== null) {
       vals[f] = data[f];
@@ -149,6 +158,7 @@ const GradeManagement = ({ onBack }) => {
     return (
       <GradeForm
         data={editGrade}
+        allGrades={grades}
         onBack={() => { setEditGrade(null); setIsCreating(false); }}
         onSaved={() => { setEditGrade(null); setIsCreating(false); fetchGrades(); }}
       />
@@ -186,19 +196,21 @@ const GradeManagement = ({ onBack }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 z-10">
               <tr>
-                {['ID','Grade','product_type','Priority','Status','Actions'].map(h => (
+                {['ID','Grade','product_type','Min OL','Max OL','Priority','Status','Actions'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-xs text-slate-400">No grades found</td></tr>
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-xs text-slate-400">No grades found</td></tr>
               ) : filtered.map(g => (
                 <tr key={g.qc_entry_id} className="hover:bg-blue-50/30 transition-colors">
                   <td className="px-4 py-2.5 text-xs font-mono text-slate-500 border-r border-slate-100">{g.qc_entry_id}</td>
                   <td className="px-4 py-2.5 text-xs font-bold text-slate-700 border-r border-slate-100">{g.grade}</td>
                   <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.product_type || '—'}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.min_optical_length ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.max_optical_length ?? '—'}</td>
                   <td className="px-4 py-2.5 text-xs font-bold text-indigo-700 border-r border-slate-100">{g.priority}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${g.status ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
@@ -233,7 +245,7 @@ const GradeManagement = ({ onBack }) => {
 /* ══════════════════════════════════════════════════════════
    GRADE FORM (Create / Edit) — Full screen with categorized min/max fields
    ══════════════════════════════════════════════════════════ */
-const GradeForm = ({ data, onBack, onSaved }) => {
+const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
   const isEdit = !!data;
   const [submitting, setSubmitting] = useState(false);
   const [mandatoryFields, setMandatoryFields] = useState({});
@@ -280,7 +292,13 @@ const GradeForm = ({ data, onBack, onSaved }) => {
     setSubmitting(true);
     try {
       // Build payload with only non-empty numeric fields
-      const payload = { grade: values.grade, product_type: values.product_type, priority: Number(values.priority), status: values.status };
+      const payload = {
+        grade: values.grade,
+        product_type: values.product_type,
+        color_type: values.color_type || null,
+        priority: Number(values.priority),
+        status: values.status
+      };
       ALL_LIMIT_FIELDS.forEach(f => {
         if (values[f] !== '' && values[f] !== null && values[f] !== undefined) payload[f] = Number(values[f]);
         else payload[f] = null;
@@ -307,7 +325,7 @@ const GradeForm = ({ data, onBack, onSaved }) => {
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
         <Formik initialValues={buildInitialValues(data)} onSubmit={handleSubmit} enableReinitialize>
-          {({ values }) => (
+          {({ values, setFieldValue }) => (
             <Form className="flex flex-col flex-1 overflow-hidden">
 
               {/* Top bar */}
@@ -327,10 +345,59 @@ const GradeForm = ({ data, onBack, onSaved }) => {
 
               {/* Header fields */}
               <div className="px-4 py-2 border-b border-slate-100 flex-shrink-0">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-6 gap-3">
                   <FormikInput compact label="Grade Name" name="grade" placeholder="e.g. A+" />
                   <FormikInput compact label="product Type" name="product_type" placeholder="Product Type" />
+                  <div className="flex flex-col">
+                    <label className="text-[9px] font-bold text-slate-600 mb-0.5">Color Type</label>
+                    <Field as="select" name="color_type"
+                      className="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-300 text-slate-700">
+                      <option value="">— Select —</option>
+                      <option value="NATURAL">NATURAL</option>
+                      <option value="COLORED">COLORED</option>
+                      <option value="RM">RM</option>
+                    </Field>
+                  </div>
                   <FormikInput compact label="Priority (1=highest)" name="priority" type="number" placeholder="1" />
+                  <div className="flex flex-col">
+                    <label className="text-[9px] font-bold text-slate-600 mb-0.5">Copy From Grade</label>
+                    <select
+                      className="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-300 text-slate-700"
+                      defaultValue=""
+                      onChange={async (e) => {
+                        const selectedGrade = allGrades.find(g => g.qc_entry_id === Number(e.target.value));
+                        if (selectedGrade) {
+                          // Copy all min/max values
+                          ALL_LIMIT_FIELDS.forEach(f => {
+                            if (selectedGrade[f] !== undefined && selectedGrade[f] !== null) {
+                              setFieldValue(f, selectedGrade[f]);
+                            }
+                          });
+                          // Copy mandatory checkboxes
+                          try {
+                            const res = await axios.get(`${API}/api/admin/grade-mandatory`, {
+                              params: { grade: selectedGrade.grade, product_type: selectedGrade.product_type },
+                              headers: authHeaders()
+                            });
+                            if (res.data?.data?.mandatory_params) {
+                              const params = res.data.data.mandatory_params.split(',').map(s => s.trim()).filter(Boolean);
+                              const obj = {};
+                              params.forEach(p => { obj[p] = true; });
+                              setMandatoryFields(obj);
+                            }
+                          } catch (err) { console.error('Failed to copy mandatory params', err); }
+                        }
+                        e.target.value = '';
+                      }}
+                    >
+                      <option value="" disabled>— Select to copy —</option>
+                      {allGrades.filter(g => g.status).map(g => (
+                        <option key={g.qc_entry_id} value={g.qc_entry_id}>
+                          {g.grade} ({g.product_type || 'N/A'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex items-end gap-2 pb-0.5">
                     <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
                       <Field type="checkbox" name="status" className="w-3.5 h-3.5 accent-emerald-600" />
@@ -341,40 +408,40 @@ const GradeForm = ({ data, onBack, onSaved }) => {
               </div>
 
               {/* Parameter limits — scrollable */}
-              <div className="flex-1 overflow-y-auto px-4 py-2">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="flex-1 overflow-y-auto px-3 py-1.5">
+                <div className="grid grid-cols-3 gap-2 auto-rows-min">
                   {PARAM_GROUPS.map(group => (
-                    <div key={group.title} className="border border-slate-200 rounded-lg p-2">
-                      <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 border-b border-slate-100 pb-1">{group.title}</p>
-                      <table className="w-full text-[9px] border-collapse">
+                    <div key={group.title} className="border border-slate-200 rounded-lg p-1.5">
+                      <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-1 border-b border-slate-100 pb-0.5">{group.title}</p>
+                      <table className="w-full text-[11px] border-collapse">
                         <thead>
-                          <tr className="text-slate-400">
-                            <th className="text-left font-bold py-0.5 w-6">M</th>
-                            <th className="text-left font-bold py-0.5 w-1/3">Parameter</th>
-                            <th className="text-center font-bold py-0.5">Min</th>
-                            <th className="text-center font-bold py-0.5">Max</th>
+                          <tr className="text-slate-600">
+                            <th className="text-left font-bold py-0 w-5">M</th>
+                            <th className="text-left font-bold py-0">Parameter</th>
+                            <th className="text-center font-bold py-0">Min</th>
+                            <th className="text-center font-bold py-0">Max</th>
                           </tr>
                         </thead>
                         <tbody>
                           {group.fields.map(([field]) => (
                             <tr key={field} className="border-t border-slate-50">
-                              <td className="py-1 pr-1">
+                              <td className="py-0.5 pr-0.5">
                                 <input
                                   type="checkbox"
                                   checked={!!mandatoryFields[field]}
                                   onChange={() => toggleMandatory(field)}
-                                  className="w-3 h-3 rounded border-slate-300 text-indigo-600 cursor-pointer accent-indigo-600"
+                                  className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 cursor-pointer accent-indigo-600"
                                   title={`Mark ${field} as mandatory`}
                                 />
                               </td>
-                              <td className="py-1 pr-2 text-[8px] font-medium text-slate-600 whitespace-nowrap">{field.replace(/_/g, ' ')}</td>
-                              <td className="py-1 px-0.5">
+                              <td className="py-0.5 pr-1 text-[10px] font-semibold text-slate-700 whitespace-nowrap">{field.replace(/_/g, ' ')}</td>
+                              <td className="py-0.5 px-0.5">
                                 <Field name={`min_${field}`} type="number" step="0.001" placeholder="—"
-                                  className="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[9px] text-center outline-none focus:ring-1 focus:ring-blue-300" />
+                                  className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[11px] text-center text-slate-800 outline-none focus:ring-1 focus:ring-blue-300" />
                               </td>
-                              <td className="py-1 px-0.5">
+                              <td className="py-0.5 px-0.5">
                                 <Field name={`max_${field}`} type="number" step="0.001" placeholder="—"
-                                  className="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[9px] text-center outline-none focus:ring-1 focus:ring-blue-300" />
+                                  className="w-full bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[11px] text-center text-slate-800 outline-none focus:ring-1 focus:ring-blue-300" />
                               </td>
                             </tr>
                           ))}

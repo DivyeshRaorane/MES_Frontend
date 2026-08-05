@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, ClipboardList, FileText,
+  Package, Layers, ClipboardList, FileText, Truck,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -94,6 +94,14 @@ const ADMIN_CARDS = [
     color: 'text-amber-600 bg-amber-100',
     component: 'process_order',
   },
+  {
+    key: 'preform_vendor',
+    title: 'Preform Vendor',
+    desc: 'Manage preform vendor master',
+    icon: Truck,
+    color: 'text-cyan-600 bg-cyan-100',
+    component: 'preform_vendor',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -146,6 +154,10 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'process_order') {
     return <ProcessOrderPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'preform_vendor') {
+    return <PreformVendorPanel onBack={() => setActiveCard(null)} />;
   }
 
   return (
@@ -851,6 +863,190 @@ const BobbinColorFormModal = ({ item, onClose, onSaved }) => {
           <Formik initialValues={initVals} validationSchema={schema} onSubmit={handleSubmit} enableReinitialize>
             <Form className="flex flex-col gap-3">
               <FormikInput compact label="Color Name *" name="bobbin_color_name" placeholder="e.g. Red, Blue" />
+              <div className="flex justify-between gap-3 pt-2 border-t border-slate-100">
+                <ResetButton compact type="button" onClick={onClose}>Cancel</ResetButton>
+                <SubmitButton compact type="submit" disabled={submitting}>
+                  {submitting ? 'Saving...' : isEdit ? 'Update' : 'Create'}
+                </SubmitButton>
+              </div>
+            </Form>
+          </Formik>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════
+   PREFORM VENDOR PANEL
+   ══════════════════════════════════════════════════════════ */
+const PreformVendorPanel = ({ onBack }) => {
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const fetchVendors = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/getpreformvendor`, { headers: authHeaders() });
+      setVendors(res.data?.data || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchVendors(); }, []);
+
+  const filtered = vendors.filter(v => {
+    const q = search.toLowerCase();
+    return !q || v.vendor_name?.toLowerCase().includes(q) || v.vendor_code?.toLowerCase().includes(q) || v.vendor_initial?.toLowerCase().includes(q);
+  });
+
+  const handleToggle = async (item) => {
+    try {
+      const res = await axios.put(`${API}/api/admin/preformvendor/${item.preform_vendor_id}`, {
+        vendor_code: item.vendor_code,
+        vendor_name: item.vendor_name,
+        vendor_initial: item.vendor_initial,
+        is_disable: !item.is_disable,
+      }, { headers: authHeaders() });
+      if (res.data?.success) { showSuccess(`${!item.is_disable ? 'Disabled' : 'Enabled'} successfully`); fetchVendors(); }
+      else showError(res.data?.message || 'Failed');
+    } catch (e) { showError(e?.response?.data?.message || 'Failed'); }
+  };
+
+  return (
+    <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onBack} className="flex items-center gap-1 text-[9px] text-blue-600 font-bold hover:underline"><ArrowLeft size={11} /> Back</button>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-cyan-600 bg-cyan-100"><Truck size={14} /></div>
+            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Preform Vendor</span>
+            <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">{vendors.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
+                className="pl-7 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500/20 w-40" />
+            </div>
+            <button type="button" onClick={() => { setEditItem(null); setShowForm(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded-lg hover:bg-blue-700 transition-all">
+              <Plus size={11} /> Add Vendor
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {loading ? (
+            <div className="flex items-center justify-center py-16 gap-2"><Loader2 size={18} className="text-blue-500 animate-spin" /></div>
+          ) : (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-slate-800 z-10">
+              <tr>
+                {['ID', 'Vendor Code', 'Vendor Name', 'Initial', 'Status', 'Created At', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-400">No vendors found</td></tr>
+              ) : filtered.map(v => (
+                <tr key={v.preform_vendor_id} className="hover:bg-blue-50/30 transition-colors">
+                  <td className="px-4 py-2.5 text-xs font-mono font-bold text-blue-700 border-r border-slate-100">{v.preform_vendor_id}</td>
+                  <td className="px-4 py-2.5 text-xs font-bold text-slate-700 border-r border-slate-100">{v.vendor_code || '—'}</td>
+                  <td className="px-4 py-2.5 text-xs font-bold text-slate-700 border-r border-slate-100">{v.vendor_name}</td>
+                  <td className="px-4 py-2.5 text-xs font-mono text-slate-600 border-r border-slate-100">{v.vendor_initial}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100">
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${v.is_disable ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {v.is_disable ? 'Disabled' : 'Enabled'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-[9px] text-slate-400 border-r border-slate-100">{v.created_at ? new Date(v.created_at).toLocaleDateString('en-IN') : '—'}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" onClick={() => { setEditItem(v); setShowForm(true); }}
+                        className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold rounded hover:bg-amber-100 transition-all">
+                        <Edit2 size={9} /> Edit
+                      </button>
+                      <button type="button" onClick={() => handleToggle(v)}
+                        className={`flex items-center gap-1 px-2 py-1 text-[8px] font-bold rounded transition-all border ${
+                          v.is_disable ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                        }`}>
+                        <Power size={9} /> {v.is_disable ? 'Enable' : 'Disable'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          )}
+        </div>
+      </div>
+
+      {showForm && (
+        <PreformVendorFormModal item={editItem} onClose={() => { setShowForm(false); setEditItem(null); }}
+          onSaved={() => { setShowForm(false); setEditItem(null); fetchVendors(); }} />
+      )}
+    </div>
+  );
+};
+
+const PreformVendorFormModal = ({ item, onClose, onSaved }) => {
+  const isEdit = !!item;
+  const [submitting, setSubmitting] = useState(false);
+  const schema = Yup.object({
+    vendor_code: Yup.string().nullable(),
+    vendor_name: Yup.string().required('Vendor name is required'),
+    vendor_initial: Yup.string().required('Vendor initial is required').max(10, 'Max 10 characters'),
+  });
+  const initVals = {
+    vendor_code: item?.vendor_code || '',
+    vendor_name: item?.vendor_name || '',
+    vendor_initial: item?.vendor_initial || '',
+  };
+
+  const handleSubmit = async (values) => {
+    setSubmitting(true);
+    try {
+      let res;
+      if (isEdit) {
+        res = await axios.put(`${API}/api/admin/preformvendor/${item.preform_vendor_id}`, {
+          vendor_code: values.vendor_code,
+          vendor_name: values.vendor_name,
+          vendor_initial: values.vendor_initial,
+          is_disable: item.is_disable ?? false,
+        }, { headers: authHeaders() });
+      } else {
+        res = await axios.post(`${API}/api/createpreformvendor`, {
+          vendor_code: values.vendor_code,
+          vendor_name: values.vendor_name,
+          vendor_initial: values.vendor_initial,
+        }, { headers: authHeaders() });
+      }
+      if (res.data?.success) { showSuccess(isEdit ? 'Vendor updated' : 'Vendor created'); onSaved(); }
+      else showError(res.data?.message || 'Failed');
+    } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+          <span className="text-sm font-bold text-slate-700">{isEdit ? 'Edit Vendor' : 'Create Vendor'}</span>
+          <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded"><X size={16} /></button>
+        </div>
+        <div className="px-4 py-4">
+          <Formik initialValues={initVals} validationSchema={schema} onSubmit={handleSubmit} enableReinitialize>
+            <Form className="flex flex-col gap-3">
+              <FormikInput compact label="Vendor Code" name="vendor_code" placeholder="e.g. V001" />
+              <FormikInput compact label="Vendor Name *" name="vendor_name" placeholder="e.g. Sumitomo" />
+              <FormikInput compact label="Vendor Initial *" name="vendor_initial" placeholder="e.g. SUM" />
               <div className="flex justify-between gap-3 pt-2 border-t border-slate-100">
                 <ResetButton compact type="button" onClick={onClose}>Cancel</ResetButton>
                 <SubmitButton compact type="submit" disabled={submitting}>

@@ -20,7 +20,6 @@ main label,
 main p,
 main span,
 main td,
-main th,
 main h1,
 main h2,
 main h3,
@@ -45,6 +44,16 @@ main .text-slate-300 {
   color: #475569 !important; /* slate-600 */
 }
 
+/* Exclude table headers from the dark text overrides — keep them white */
+main thead .text-slate-300,
+main thead .text-slate-400,
+main thead .text-slate-500,
+main thead .text-gray-300,
+main thead .text-gray-400,
+main thead .text-gray-500 {
+  color: #ffffff !important;
+}
+
 /* Hide number input spinners/arrows globally */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
@@ -54,6 +63,11 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Make table header text white on dark backgrounds for readability */
+thead th {
+  color: #ffffff !important;
 }
 
 .scrollbar-thin::-webkit-scrollbar {

@@ -76,7 +76,7 @@ const MEASUREMENT_FIELDS = [
 ];
 
 const buildInitialValues = () => {
-  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '' };
+  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '' };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
 };
@@ -522,6 +522,14 @@ const QCEntryScreen = () => {
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
                     <span className="bg-orange-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID</span>
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.bobbin_fid}</span>
+                  </div>
+                )}
+
+                {/* Optical Length display */}
+                {values.optical_length && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
                   </div>
                 )}
 

@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Loader from '../../loader';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getAllDrawUsers } from '../../../pages/Admin_Folder/draw_management/draw_users/service/draw_user.api';
+import { getPreformVendors } from '../../../pages/Admin_Folder/general_admin/preform_vendor/service/preform_vendor.api';
 
 
 
@@ -26,7 +27,7 @@ const modalColumns = [
 const initialValues = {
   preform_id: '', preform_weight: '', charge_weight: '', preform_length: '', charge_length: '', drawing_length: '', material_code: '',
   dia_variation: '', cut_off: '', mfd: '', accepted_by: '', preform_type: '', product_type: '', material_description: '',
-  remarks: '', draw_instruction: '', acceptance_status: '', rejection_note: '', logged_in_user: "",
+  remarks: '', draw_instruction: '', acceptance_status: '', rejection_note: '', logged_in_user: "", preform_vendor_id: '',
 };
 
 const validationSchema = Yup.object({
@@ -59,6 +60,7 @@ const validationSchema = Yup.object({
 const PreformAcceptance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ drawUsers, setDrawUsers] = useState([]);
+  const [vendors, setVendors] = useState([]);
 
   const dispatch = useDispatch();
 
@@ -76,10 +78,29 @@ useEffect(() => {
     fetchDrawUsers();
   }, [])
 
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const res = await getPreformVendors();
+        setVendors(res.data || []);
+      } catch (error) {
+        console.error("Error Fetching Preform Vendors:", error)
+      }
+    }
+    fetchVendors();
+  }, [])
+
   const drawUsersOption = drawUsers.map((users) => ({
     label: `${users.draw_user_name}`,
     value: users.draw_user_name
   }))
+
+  const vendorOptions = vendors
+    .filter(v => !v.is_disable)
+    .map(v => ({
+      label: v.vendor_name,
+      value: v.preform_vendor_id
+    }))
 
   useEffect(() => {
     dispatch(getPreforms())
@@ -181,6 +202,7 @@ useEffect(() => {
                         <div className="col-span-2">
                           <FormikInput compact label="Material Description" name="material_description" disabled={true} />
                         </div>
+                        <FormikSelect compact label="Preform Vendor" name="preform_vendor_id" options={vendorOptions} />
                         <FormikInput compact label="Preform Type" name="preform_type" type="text" readOnly />
                         {/*<FormikSelect compact label="Preform Type" name="preform_type_id" options={['G652D', 'G667A1', 'G657A2']} />*/}
                       </div>
