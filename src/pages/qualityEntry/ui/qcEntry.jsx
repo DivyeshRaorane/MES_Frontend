@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2 } from 'lucide-react';
+import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind } from '../services/qc_entry.api';
+import { submitRewindRequest } from '../../fg_fiber_rejection/services/fg_rejection.api';
 
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
@@ -147,6 +148,8 @@ const QCEntryScreen = () => {
   const [rewPopup, setRewPopup] = useState(false);
   const [rewCuts, setRewCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
   const [rewFromFlaw, setRewFromFlaw] = useState(false); // true when opened from flaw popup
+  const [manualRew, setManualRew] = useState(false); // true when opened from manual REW button
+  const [manualRewType, setManualRewType] = useState(''); // 'REWINDING' | 'CUT'
   const [missingPopup, setMissingPopup] = useState(false);
   const [missingParams, setMissingParams] = useState([]);
   const [missingValues, setMissingValues] = useState({});
@@ -155,6 +158,7 @@ const QCEntryScreen = () => {
   const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [] });
   const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
   const formRef = useRef(null);
+  const valuesRef = useRef(null); // stores current Formik values for manual REW
   const scanRef = useRef(null);
 
   const locked = source === 'final';
@@ -337,25 +341,46 @@ const QCEntryScreen = () => {
     }
   };
 
+  /* ── Manual REW button click ── */
+  const handleManualRew = async (values) => {
+    const bobbin_no = values.bobbin_no;
+    if (!bobbin_no) { showError('Fetch a bobbin first'); return; }
+    // Only allow if bobbin was found in QC (i.e. source is set)
+    if (!source) { showError('Bobbin not found in bobbin_entries'); return; }
+    // Store current values for later use in confirm
+    valuesRef.current = values;
+    // Open rewinding popup in manual mode (no prefilled cut lengths)
+    setManualRew(true);
+    setManualRewType('');
+    setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+    setRewFromFlaw(false);
+    setRewPopup(true);
+  };
+
   /* ── Rewinding popup confirm ── */
   const handleRewConfirm = async () => {
-    // Validate at least one cut has p1 and p2
-    const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
-    if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
+    // Manual REW requires type selection
+    if (manualRew && !manualRewType) { showError('Select Rewinding Type'); return; }
 
-    // Build remark string: "Cut from {p1} km to {p2}({c_remark}:)"
-    const remarkParts = rewCuts.map(cut =>
-      `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`
-    );
+    // For CUT type or grade-fail rewind, validate cuts
+    if (manualRewType === 'CUT' || (!manualRew && !rewFromFlaw) || rewFromFlaw) {
+      if (manualRewType !== 'REWINDING') {
+        const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
+        if (hasEmpty && manualRewType !== 'REWINDING') { showError('Fill all P1 and P2 values'); return; }
+      }
+    }
+
+    // Build remark string
+    const remarkParts = manualRewType === 'REWINDING'
+      ? ['Whole Length Rewinding']
+      : rewCuts.map(cut => `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`);
     const remarkStr = remarkParts.join(', ');
 
     if (rewFromFlaw) {
       // ── Flaw rewind path ──
-      // 1. Insert into rewind_instructions table
-      // 2. Update bobbin_entries: temp_grade = 'REW', final_grade = 'REW'
       setLoading(true);
       try {
-        const cut = rewCuts[0]; // flaw rewind always single cut
+        const cut = rewCuts[0];
         const res = await submitFlawRewind({
           bobbin_no: flawInstrPopup.bobbin_no,
           bobbin_fid: flawInstrPopup.bobbin_fid,
@@ -368,6 +393,8 @@ const QCEntryScreen = () => {
           setRewPopup(false);
           setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
           setRewFromFlaw(false);
+          setManualRew(false);
+          setManualRewType('');
           setFlawInstrPopup({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
         } else {
           showError(res?.message || 'Failed to save flaw rewind');
@@ -376,14 +403,76 @@ const QCEntryScreen = () => {
         showError(e?.response?.data?.message || 'Failed to save flaw rewind');
       }
       setLoading(false);
+    } else if (manualRew) {
+      // ── Manual REW path (same as FG fiber rejection rewind logic) ──
+      setLoading(true);
+      try {
+        // 1. Submit to FG rewind endpoint (same as FG fiber rejection)
+        const vals = valuesRef.current || {};
+        const bobbinNo = vals.bobbin_no || scanInput.trim();
+        const bobbinFid = vals.bobbin_fid || '';
+        const fiberLength = vals.optical_length || '';
+
+        const rewindPayload = {
+          request_by: 'QC_Manual',
+          date: new Date().toISOString().split('T')[0],
+          time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
+          bobbins: [{
+            bobbin_no: bobbinNo,
+            bobbin_fid: bobbinFid,
+            total_length: fiberLength,
+            rewinding_type: manualRewType,
+            cuts: manualRewType === 'CUT' ? [...rewCuts] : [],
+          }],
+        };
+        const rewRes = await submitRewindRequest(rewindPayload);
+        if (!rewRes?.success) { showError(rewRes?.message || 'Rewind request failed'); setLoading(false); return; }
+
+        // 2. Set grade to REW — submit QC entry immediately as immediate_final
+        const measurements = {};
+        MEASUREMENT_FIELDS.forEach(f => { if (vals[f] !== '' && vals[f] !== null && vals[f] !== undefined) measurements[f] = Number(vals[f]); });
+
+        const qcPayload = {
+          bobbin_no: vals.bobbin_no || bobbinNo,
+          bobbin_fid: vals.bobbin_fid || bobbinFid,
+          matcode: vals.matcode || '',
+          grade: 'REW',
+          action: 'immediate_final',
+          measurements,
+          remark: remarkStr,
+        };
+        const qcRes = await submitQCEntry(qcPayload);
+        if (!qcRes?.success) { showError(qcRes?.message || 'QC update failed'); setLoading(false); return; }
+
+        setGrade('REW');
+        setGraded(true);
+        setRewPopup(false);
+        setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+        setManualRew(false);
+        setManualRewType('');
+        // Mark as final so all buttons get disabled
+        setSource('final');
+        setExistingTempGrade('REW');
+        setExistingFinalGrade('REW');
+        formRef.current = remarkStr;
+        showSuccess('Bobbin marked as REW. Final QC completed.');
+      } catch (e) {
+        showError(e?.response?.data?.message || 'Rewind request failed');
+      }
+      setLoading(false);
     } else {
       // ── Grade-fail rewind path (existing behaviour) ──
+      const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
+      if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
+      const gradeRemarkParts = rewCuts.map(cut => `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`);
       setGrade('REW');
       setGraded(true);
       setRewPopup(false);
       setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+      setManualRew(false);
+      setManualRewType('');
       // Store remark in a ref so submit can access it
-      formRef.current = remarkStr;
+      formRef.current = gradeRemarkParts.join(', ');
     }
   };
 
@@ -586,6 +675,10 @@ const QCEntryScreen = () => {
                     className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded hover:bg-amber-600 disabled:opacity-40 transition-all">
                     <Award size={10} /> Temp Grade
                   </button>
+                  <button type="button" onClick={() => handleManualRew(values)} disabled={locked || loading || !values.bobbin_no}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 disabled:opacity-40 transition-all">
+                    <RotateCcw size={10} /> REW
+                  </button>
                   <button type="button" onClick={() => handleFinalGrade(values)} disabled={locked || loading || !values.bobbin_no}
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 disabled:opacity-40 transition-all">
                     <CheckCircle2 size={10} /> Final Grade
@@ -768,59 +861,87 @@ const QCEntryScreen = () => {
             <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle size={16} className="text-amber-500" />
-                <h3 className="text-sm font-bold text-slate-800">Rewinding Instructions</h3>
+                <h3 className="text-sm font-bold text-slate-800">{manualRew ? 'Rewinding / Rework' : 'Rewinding Instructions'}</h3>
               </div>
-              <p className="text-[10px] text-slate-700 mb-3">Enter cutting instructions for rewinding. These will be saved as the QC remark.</p>
+              <p className="text-[10px] text-slate-700 mb-3">
+                {manualRew
+                  ? 'Select rewinding type and enter instructions. This will mark the bobbin as REW.'
+                  : 'Enter cutting instructions for rewinding. These will be saved as the QC remark.'}
+              </p>
 
-              <div className="border border-slate-200 rounded-lg p-3 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-bold text-slate-700 uppercase">Cutting Instructions</span>
-                  <button type="button" onClick={() => setRewCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
-                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
-                    <Plus size={9} /> Add Row
-                  </button>
+              {/* ── Type selection (only for manual REW) ── */}
+              {manualRew && (
+                <div className="flex gap-2 mb-3">
+                  <button type="button" onClick={() => { setManualRewType('REWINDING'); setRewCuts([]); }}
+                    className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      manualRewType === 'REWINDING' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}>Whole Length</button>
+                  <button type="button" onClick={() => { setManualRewType('CUT'); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); }}
+                    className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      manualRewType === 'CUT' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}>Cut</button>
                 </div>
-                <table className="w-full text-xs border-collapse">
-                  <thead>
-                    <tr className="text-[9px] text-slate-700 font-bold">
-                      <th className="text-left py-1">P1 (km)</th>
-                      <th className="text-left py-1">P2 (km)</th>
-                      <th className="text-left py-1">Remark</th>
-                      <th className="w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rewCuts.map((cut, ci) => (
-                      <tr key={ci}>
-                        <td className="py-1 pr-1">
-                          <input type="number" step="0.001" value={cut.p1}
-                            onChange={e => { const v = [...rewCuts]; v[ci].p1 = e.target.value; setRewCuts(v); }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
-                        </td>
-                        <td className="py-1 pr-1">
-                          <input type="number" step="0.001" value={cut.p2}
-                            onChange={e => { const v = [...rewCuts]; v[ci].p2 = e.target.value; setRewCuts(v); }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
-                        </td>
-                        <td className="py-1 pr-1">
-                          <input type="text" value={cut.c_remark}
-                            onChange={e => { const v = [...rewCuts]; v[ci].c_remark = e.target.value; setRewCuts(v); }}
-                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="e.g. h1310" />
-                        </td>
-                        <td className="py-1 text-center">
-                          {rewCuts.length > 1 && (
-                            <button type="button" onClick={() => setRewCuts(prev => prev.filter((_, i) => i !== ci))}
-                              className="text-slate-300 hover:text-rose-500"><Trash2 size={11} /></button>
-                          )}
-                        </td>
+              )}
+
+              {/* ── Cut instructions (show for CUT type in manual, or always for grade-fail/flaw) ── */}
+              {((!manualRew) || (manualRew && manualRewType === 'CUT')) && (
+                <div className="border border-slate-200 rounded-lg p-3 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-bold text-slate-700 uppercase">Cutting Instructions</span>
+                    <button type="button" onClick={() => setRewCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
+                      <Plus size={9} /> Add Row
+                    </button>
+                  </div>
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="text-[9px] text-slate-700 font-bold">
+                        <th className="text-left py-1">P1 (km)</th>
+                        <th className="text-left py-1">P2 (km)</th>
+                        <th className="text-left py-1">Remark</th>
+                        <th className="w-8"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {rewCuts.map((cut, ci) => (
+                        <tr key={ci}>
+                          <td className="py-1 pr-1">
+                            <input type="number" step="0.001" value={cut.p1}
+                              onChange={e => { const v = [...rewCuts]; v[ci].p1 = e.target.value; setRewCuts(v); }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
+                          </td>
+                          <td className="py-1 pr-1">
+                            <input type="number" step="0.001" value={cut.p2}
+                              onChange={e => { const v = [...rewCuts]; v[ci].p2 = e.target.value; setRewCuts(v); }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="0.000" />
+                          </td>
+                          <td className="py-1 pr-1">
+                            <input type="text" value={cut.c_remark}
+                              onChange={e => { const v = [...rewCuts]; v[ci].c_remark = e.target.value; setRewCuts(v); }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-300" placeholder="e.g. h1310" />
+                          </td>
+                          <td className="py-1 text-center">
+                            {rewCuts.length > 1 && (
+                              <button type="button" onClick={() => setRewCuts(prev => prev.filter((_, i) => i !== ci))}
+                                className="text-slate-300 hover:text-rose-500"><Trash2 size={11} /></button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Whole Length confirmation message */}
+              {manualRew && manualRewType === 'REWINDING' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
+                  <p className="text-xs text-emerald-700 font-medium">This bobbin will be rewound at full / whole length. No cut instructions needed.</p>
+                </div>
+              )}
 
               <div className="flex gap-2">
-                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); }}
+                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" onClick={handleRewConfirm}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
