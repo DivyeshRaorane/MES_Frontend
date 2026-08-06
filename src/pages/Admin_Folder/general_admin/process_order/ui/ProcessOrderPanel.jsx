@@ -270,10 +270,13 @@ const ProcessOrderForm = ({ processONo, onBack, onSaved }) => {
       setLoading(true);
       try {
         const prodRes = await getMaterialsByCategory('SEMI_FINISHED');
-        setProductMaterials(prodRes?.data || []);
+        const semiFinishedData = prodRes?.data || [];
+        setProductMaterials(semiFinishedData);
 
         const consRes = await getMaterialsByCategory('CONSUMABLE');
-        setConsumableMaterials(consRes?.data || []);
+        const consumableData = consRes?.data || [];
+        // Combine both CONSUMABLE and SEMI_FINISHED for component materials dropdown
+        setConsumableMaterials([...consumableData, ...semiFinishedData]);
 
         if (isEdit) {
           const poRes = await getProcessOrderByNo(processONo);

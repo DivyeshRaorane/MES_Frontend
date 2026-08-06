@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Layers, Palette } from 'lucide-react';
+import { Layers, Palette, ClipboardList } from 'lucide-react';
 import RewindingEntry from '../pages/rewColoringEntry/ui/rewindingEntry';
 import ColouringEntry from '../pages/coloringEntry/ui/colringEntry';
+import ColorJobCardList from '../pages/coloringEntry/ui/ColorJobCardList';
 
 const TABS = [
   { id: 'Rewinding', label: 'Rewinding', icon: Layers,  color: 'blue' },
   { id: 'Colouring', label: 'Colouring', icon: Palette, color: 'blue' },
+  { id: 'JobCards',  label: 'Job Cards', icon: ClipboardList, color: 'blue' },
 ];
 
 const RewColContainer = () => {
@@ -38,6 +40,7 @@ const RewColContainer = () => {
         <div className="flex-1 overflow-hidden">
           {activeTab === 'Rewinding' && <RewindingEntry />}
           {activeTab === 'Colouring' && <ColouringEntry />}
+          {activeTab === 'JobCards' && <ColorJobCardList />}
         </div>
 
       </div>

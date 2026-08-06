@@ -6,6 +6,7 @@ import {
   validateBobbinForColor, submitColorRequest,
   validateBobbinForRewind, submitRewindRequest, getQCUsers,
 } from '../services/fg_rejection.api';
+import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
 import FiberInformationPanel from './FiberInformationPanel';
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -14,17 +15,19 @@ const nowTime = () => {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 };
 
-const COLORS = ['Natural', 'Blue', 'Red', 'Green', 'Yellow', 'White', 'Orange', 'Violet'];
+
 
 /* ══════════════════════════════════════════════════════════ */
 const FGFiberRejection = () => {
   const [mode, setMode] = useState(''); // '' | 'color' | 'rewind' | 'fiberinfo'
   const [qcUsers, setQcUsers] = useState([]);
+  const [bobbinColors, setBobbinColors] = useState([]);
   const [lastScannedBobbin, setLastScannedBobbin] = useState(null);
 
   useEffect(() => {
     (async () => {
       try { const res = await getQCUsers(); setQcUsers(res?.data || []); } catch (_) {}
+      try { const res = await getBobbinColors(); setBobbinColors(res?.data || []); } catch (_) {}
     })();
   }, []);
 
@@ -54,7 +57,7 @@ const FGFiberRejection = () => {
         {/* ── Content (all panels stay mounted to preserve state) ── */}
         <div className="flex-1 overflow-hidden relative">
           <div className={`absolute inset-0 ${mode === 'color' ? '' : 'invisible pointer-events-none'}`}>
-            <ColorPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
+            <ColorPanel qcUsers={qcUsers} bobbinColors={bobbinColors} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
           </div>
           <div className={`absolute inset-0 ${mode === 'rewind' ? '' : 'invisible pointer-events-none'}`}>
             <RewindPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
@@ -76,11 +79,12 @@ const FGFiberRejection = () => {
 /* ══════════════════════════════════════════════════════════
    COLOR PANEL
    ══════════════════════════════════════════════════════════ */
-const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
+const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo }) => {
+  const [colJcardNo, setColJcardNo] = useState('');
   const [requireColor, setRequireColor] = useState('');
   const [requestBy, setRequestBy] = useState('');
   const [scanInput, setScanInput] = useState('');
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState([]); // each row stores its own require_color
   const [submitting, setSubmitting] = useState(false);
   const scanRef = useRef(null);
 
@@ -89,6 +93,7 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
   const handleScan = async () => {
     const bobbin_no = scanInput.trim();
     if (!bobbin_no) return;
+    if (!colJcardNo.trim()) { showError('Enter Job Card No first'); return; }
     if (!requireColor) { showError('Select Required Color first'); return; }
     if (!requestBy) { showError('Select Request By first'); return; }
     if (rows.some(r => r.bobbin_no === bobbin_no)) { showError('This bobbin has already been scanned.'); refocus(); return; }
@@ -96,8 +101,8 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
     try {
       const res = await validateBobbinForColor(bobbin_no, requireColor);
       if (!res?.success) { showError(res?.message || 'Validation failed'); refocus(); return; }
-      setRows(prev => [...prev, { id: Date.now(), ...res.data }]);
-      // Store last scanned bobbin for Fiber Information tab
+      // Store the require_color with each bobbin row
+      setRows(prev => [...prev, { id: Date.now(), ...res.data, require_color: requireColor }]);
       onBobbinScanned(bobbin_no);
       refocus();
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); refocus(); }
@@ -105,10 +110,11 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
 
   const handleSubmit = async () => {
     if (!rows.length) { showError('No bobbins scanned'); return; }
+    if (!colJcardNo.trim()) { showError('Enter Job Card No'); return; }
     setSubmitting(true);
     try {
       const payload = {
-        require_color: requireColor,
+        col_jcard_no: colJcardNo.trim(),
         request_by: requestBy,
         date: today(),
         time: nowTime(),
@@ -116,11 +122,12 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
           bobbin_no: r.bobbin_no,
           bobbin_fid: r.bobbin_fid,
           current_color: r.current_color || r.fiber_color,
+          require_color: r.require_color,
           total_length: r.fiber_length,
         })),
       };
       const res = await submitColorRequest(payload);
-      if (res?.success) { showSuccess(`${rows.length} bobbin(s) submitted for color change!`); setRows([]); }
+      if (res?.success) { showSuccess(`${rows.length} bobbin(s) submitted for color change!`); setRows([]); setColJcardNo(''); }
       else showError(res?.message || 'Submit failed');
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
     setSubmitting(false);
@@ -129,13 +136,19 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="w-40 flex flex-col gap-0.5">
+            <label className="text-[9px] font-bold text-rose-600 uppercase">Job Card No *</label>
+            <input value={colJcardNo} onChange={e => setColJcardNo(e.target.value)}
+              placeholder="Enter Job Card No"
+              className="w-full bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-rose-300 placeholder:text-rose-300" />
+          </div>
           <div className="w-36 flex flex-col gap-0.5">
             <label className="text-[9px] font-bold text-slate-500 uppercase">Required Color</label>
             <select value={requireColor} onChange={e => setRequireColor(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
               <option value="">Select</option>
-              {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+              {bobbinColors.filter(c => !c.is_disable).map(c => <option key={c.bobbin_color_id || c.bobbin_color_name} value={c.bobbin_color_name}>{c.bobbin_color_name}</option>)}
             </select>
           </div>
           <div className="w-36 flex flex-col gap-0.5">
@@ -160,7 +173,7 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
             </div>
           </div>
           <div className="flex gap-1.5">
-            <ResetButton compact type="button" onClick={() => { setRows([]); setRequireColor(''); setRequestBy(''); }}>Reset</ResetButton>
+            <ResetButton compact type="button" onClick={() => { setRows([]); setRequireColor(''); setRequestBy(''); setColJcardNo(''); }}>Reset</ResetButton>
             <SubmitButton compact type="button" disabled={submitting || !rows.length} onClick={handleSubmit}>
               {submitting ? 'Saving...' : `Submit (${rows.length})`}
             </SubmitButton>
@@ -187,7 +200,7 @@ const ColorPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                 <td className="px-3 py-2 text-xs font-mono font-bold text-blue-700">{r.bobbin_no}</td>
                 <td className="px-3 py-2 text-xs font-mono text-slate-600">{r.bobbin_fid || '—'}</td>
                 <td className="px-3 py-2 text-xs text-slate-600">{r.current_color || r.fiber_color || '—'}</td>
-                <td className="px-3 py-2 text-xs font-bold text-indigo-700">{requireColor}</td>
+                <td className="px-3 py-2 text-xs font-bold text-indigo-700">{r.require_color}</td>
                 <td className="px-3 py-2 text-xs font-mono text-emerald-700">{r.fiber_length || '—'}</td>
                 <td className="px-3 py-2">
                   <button type="button" onClick={(e) => { e.stopPropagation(); setRows(prev => prev.filter(x => x.id !== r.id)); }}

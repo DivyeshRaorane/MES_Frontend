@@ -23,3 +23,15 @@ export const getPTUsers = async () => {
   const res = await axios.get(`${API}/api/getptusers`);
   return res.data;
 };
+
+/* ── Get Job Card list summary (for Color Job Cards tab) ── */
+export const getColorJobCards = async () => {
+  const res = await axios.get(`${API}/api/colouring/jobcards`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Get bobbins detail for a specific job card ── */
+export const getColorJobCardBobbins = async (col_jcard_no) => {
+  const res = await axios.get(`${API}/api/colouring/jobcards/${encodeURIComponent(col_jcard_no)}/bobbins`, { headers: authHeaders() });
+  return res.data;
+};
