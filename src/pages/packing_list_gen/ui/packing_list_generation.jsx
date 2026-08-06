@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Package, Scan, Box, Layers, Loader2, Plus, Trash2, ArrowLeft, Search, Eye } from 'lucide-react';
+import { Package, Scan, Box, Layers, Loader2, Plus, Trash2, ArrowLeft, Search, Eye, Edit3, X, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { getOrderByNo, validateBobbinForPacking, submitPackingList, getAllPackingLists, viewPackingList } from '../services/packing.api';
+import { getOrderByNo, validateBobbinForPacking, submitPackingList, getAllPackingLists, viewPackingList, removeBobbinFromPacking, removeBoxFromPacking, addBobbinToPacking } from '../services/packing.api';
 
 /* ── Stat card ── */
 const StatCard = ({ label, value, max, color }) => (
@@ -13,6 +13,379 @@ const StatCard = ({ label, value, max, color }) => (
     </span>
   </div>
 );
+
+/* ══════════════════════════════════════════════════════════
+   PACKING EDIT MODAL - Stack → Box → Bobbin hierarchy with remove
+   ══════════════════════════════════════════════════════════ */
+const PackingEditModal = ({ orderNo, onClose, onUpdated }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState(null); // bobbin id being removed
+  const [removingBox, setRemovingBox] = useState(null); // 'stackNo-boxNo'
+  const [confirmRemove, setConfirmRemove] = useState(null); // { type: 'bobbin'|'box', id, label }
+  const [expandedStacks, setExpandedStacks] = useState({});
+  const [expandedBoxes, setExpandedBoxes] = useState({});
+  const [addInput, setAddInput] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [targetStack, setTargetStack] = useState('');
+  const [targetBox, setTargetBox] = useState('');
+  const addRef = useRef(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await viewPackingList(orderNo);
+      if (res?.success) {
+        setData(res.data);
+        // Auto-expand all stacks
+        const stacks = {};
+        const boxes = {};
+        const bobbins = res.data?.bobbins || [];
+        bobbins.forEach(b => {
+          stacks[b.stack_no] = true;
+          boxes[`${b.stack_no}-${b.box_no}`] = true;
+        });
+        setExpandedStacks(stacks);
+        setExpandedBoxes(boxes);
+      } else { showError(res?.message || 'Failed to load'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Failed to load'); }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, [orderNo]);
+
+  // Group bobbins into stacks → boxes hierarchy
+  const buildHierarchy = () => {
+    if (!data?.bobbins) return [];
+    const stackMap = {};
+    data.bobbins.forEach(b => {
+      const sKey = b.stack_no || '1';
+      if (!stackMap[sKey]) stackMap[sKey] = {};
+      const bKey = b.box_no || '1';
+      if (!stackMap[sKey][bKey]) stackMap[sKey][bKey] = [];
+      stackMap[sKey][bKey].push(b);
+    });
+    return Object.entries(stackMap)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([stackNo, boxes]) => ({
+        stackNo,
+        boxes: Object.entries(boxes)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([boxNo, bobbins]) => ({ boxNo, bobbins }))
+      }));
+  };
+
+  const hierarchy = buildHierarchy();
+  const totalBobbins = data?.bobbins?.length || 0;
+  const totalBoxes = hierarchy.reduce((s, st) => s + st.boxes.length, 0);
+  const totalStacks = hierarchy.length;
+
+  const toggleStack = (sNo) => setExpandedStacks(prev => ({ ...prev, [sNo]: !prev[sNo] }));
+  const toggleBox = (key) => setExpandedBoxes(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // Remove bobbin
+  const handleRemoveBobbin = async (bobbin) => {
+    const id = bobbin.packing_order_bobbin_id || bobbin.id || bobbin.bobbin_id;
+    if (!id) {
+      showError('Cannot remove: bobbin ID not found in response. Check backend viewPackingList query includes packing_order_bobbin_id.');
+      setConfirmRemove(null);
+      return;
+    }
+    setRemoving(id);
+    try {
+      const res = await removeBobbinFromPacking(id);
+      if (res?.success) {
+        showSuccess(`Bobbin ${bobbin.bobbin_no} removed`);
+        await fetchData();
+        onUpdated?.();
+      } else { showError(res?.message || 'Remove failed'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Remove failed'); }
+    setRemoving(null);
+    setConfirmRemove(null);
+  };
+
+  // Remove box (all bobbins in box)
+  const handleRemoveBox = async (stackNo, boxNo) => {
+    const key = `${stackNo}-${boxNo}`;
+    setRemovingBox(key);
+    try {
+      const res = await removeBoxFromPacking(orderNo, stackNo, boxNo);
+      if (res?.success) {
+        showSuccess(`Box ${boxNo} from Stack ${stackNo} removed`);
+        await fetchData();
+        onUpdated?.();
+      } else { showError(res?.message || 'Remove failed'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Remove failed'); }
+    setRemovingBox(null);
+    setConfirmRemove(null);
+  };
+
+  // Add bobbin to packing
+  const handleAddBobbin = async () => {
+    const bobbin_no = addInput.trim();
+    if (!bobbin_no) { showError('Enter or scan a bobbin number'); return; }
+    if (!targetStack || !targetBox) { showError('Select target stack and box number'); return; }
+    // Check if already in packing
+    if (data?.bobbins?.some(b => b.bobbin_no === bobbin_no)) {
+      showError('This bobbin is already in the packing list');
+      setAddInput('');
+      return;
+    }
+    setAdding(true);
+    try {
+      const res = await addBobbinToPacking({
+        order_no: orderNo,
+        bobbin_no,
+        stack_no: targetStack,
+        box_no: targetBox,
+      });
+      if (res?.success) {
+        showSuccess(`Bobbin ${bobbin_no} added to Stack ${targetStack}, Box ${targetBox}`);
+        setAddInput('');
+        await fetchData();
+        onUpdated?.();
+        setTimeout(() => addRef.current?.focus(), 50);
+      } else { showError(res?.message || 'Add failed'); }
+    } catch (e) { showError(e?.response?.data?.message || 'Add failed'); }
+    setAdding(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200] backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-[80vw] max-w-[900px] max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+        {/* Modal Header */}
+        <div className="px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-blue-50/40 to-indigo-50/30 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+              <Edit3 size={16} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-800">Edit Packing List</h2>
+              <p className="text-[9px] text-slate-400 mt-0.5">Add or remove bobbins from boxes</p>
+            </div>
+            <span className="text-[10px] font-mono font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg ml-2">{orderNo}</span>
+          </div>
+          <button type="button" onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Summary bar */}
+        {data && !loading && (
+          <div className="px-5 py-2.5 border-b border-slate-100 flex items-center gap-4 flex-shrink-0 bg-slate-50/50">
+            <div className="flex items-center gap-1.5">
+              <Layers size={11} className="text-emerald-600" />
+              <span className="text-[10px] font-bold text-slate-600">Stacks: <span className="text-emerald-700">{totalStacks}</span></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Box size={11} className="text-indigo-600" />
+              <span className="text-[10px] font-bold text-slate-600">Boxes: <span className="text-indigo-700">{totalBoxes}</span></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Package size={11} className="text-blue-600" />
+              <span className="text-[10px] font-bold text-slate-600">Bobbins: <span className="text-blue-700">{totalBobbins}</span></span>
+            </div>
+            {data.header?.customer_name && (
+              <div className="ml-auto text-[10px] text-slate-500">
+                Customer: <span className="font-bold text-slate-700">{data.header.customer_name}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Add Bobbin Section */}
+        {data && !loading && (
+          <div className="px-5 py-2.5 border-b border-slate-100 flex-shrink-0 bg-gradient-to-r from-green-50/40 to-emerald-50/30">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Scan size={12} className="text-emerald-600" />
+                <span className="text-[9px] font-bold text-emerald-700 uppercase">Add Bobbin</span>
+              </div>
+              <input
+                ref={addRef}
+                value={addInput}
+                onChange={e => setAddInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddBobbin(); } }}
+                placeholder="Scan or type bobbin no..."
+                className="w-44 bg-white border border-emerald-200 rounded-lg px-3 py-1.5 text-[10px] font-mono outline-none focus:ring-2 focus:ring-emerald-200 placeholder:text-emerald-300"
+              />
+              <div className="flex items-center gap-1">
+                <label className="text-[8px] font-bold text-slate-500">Stack:</label>
+                <input
+                  value={targetStack}
+                  onChange={e => setTargetStack(e.target.value)}
+                  placeholder="#"
+                  className="w-12 bg-white border border-slate-200 rounded px-2 py-1.5 text-[10px] font-mono text-center outline-none focus:ring-1 focus:ring-emerald-200"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <label className="text-[8px] font-bold text-slate-500">Box:</label>
+                <input
+                  value={targetBox}
+                  onChange={e => setTargetBox(e.target.value)}
+                  placeholder="#"
+                  className="w-12 bg-white border border-slate-200 rounded px-2 py-1.5 text-[10px] font-mono text-center outline-none focus:ring-1 focus:ring-emerald-200"
+                />
+              </div>
+              <button type="button" onClick={handleAddBobbin} disabled={adding}
+                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-sm">
+                {adding ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Body - Hierarchy */}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 size={20} className="animate-spin text-blue-500" />
+              <span className="ml-2 text-xs text-slate-500">Loading packing data...</span>
+            </div>
+          ) : hierarchy.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <Package size={32} className="mb-2 opacity-40" />
+              <span className="text-xs">No bobbins remaining in this packing list</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {hierarchy.map(stack => (
+                <div key={stack.stackNo} className="border border-emerald-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                  {/* Stack Header */}
+                  <button type="button" onClick={() => toggleStack(stack.stackNo)}
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 flex items-center gap-3 hover:from-emerald-100 hover:to-emerald-100/70 transition-all">
+                    {expandedStacks[stack.stackNo] ? <ChevronDown size={13} className="text-emerald-600" /> : <ChevronRight size={13} className="text-emerald-600" />}
+                    <Layers size={14} className="text-emerald-600" />
+                    <span className="text-[11px] font-bold text-emerald-800">Stack {stack.stackNo}</span>
+                    <span className="text-[9px] bg-emerald-200/60 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
+                      {stack.boxes.length} {stack.boxes.length === 1 ? 'box' : 'boxes'}
+                    </span>
+                    <span className="text-[9px] text-emerald-600 ml-auto font-mono">
+                      {stack.boxes.reduce((s, b) => s + b.bobbins.length, 0)} bobbins
+                    </span>
+                  </button>
+
+                  {/* Stack Expanded Content */}
+                  {expandedStacks[stack.stackNo] && (
+                    <div className="px-3 py-2 space-y-2">
+                      {stack.boxes.map(box => {
+                        const boxKey = `${stack.stackNo}-${box.boxNo}`;
+                        const isBoxRemoving = removingBox === boxKey;
+                        return (
+                          <div key={boxKey} className="border border-indigo-100 rounded-lg overflow-hidden bg-indigo-50/20">
+                            {/* Box Header */}
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-50/80 to-indigo-50/30">
+                              <button type="button" onClick={() => toggleBox(boxKey)} className="flex items-center gap-2 flex-1">
+                                {expandedBoxes[boxKey] ? <ChevronDown size={11} className="text-indigo-500" /> : <ChevronRight size={11} className="text-indigo-500" />}
+                                <Box size={12} className="text-indigo-500" />
+                                <span className="text-[10px] font-bold text-indigo-700">Box {box.boxNo}</span>
+                                <span className="text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-bold">
+                                  {box.bobbins.length} {box.bobbins.length === 1 ? 'bobbin' : 'bobbins'}
+                                </span>
+                              </button>
+                              <button type="button"
+                                onClick={() => setConfirmRemove({ type: 'box', stackNo: stack.stackNo, boxNo: box.boxNo, label: `Box ${box.boxNo} (Stack ${stack.stackNo})` })}
+                                disabled={isBoxRemoving}
+                                className="flex items-center gap-1 px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 text-[8px] font-bold rounded-md hover:bg-rose-100 hover:border-rose-300 transition-all disabled:opacity-50">
+                                {isBoxRemoving ? <Loader2 size={9} className="animate-spin" /> : <Trash2 size={9} />}
+                                Remove Box
+                              </button>
+                            </div>
+
+                            {/* Box Bobbins */}
+                            {expandedBoxes[boxKey] && (
+                              <div className="px-3 py-2">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-indigo-100">
+                                      <th className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase w-8">#</th>
+                                      <th className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase">Bobbin No</th>
+                                      <th className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase">Length (KM)</th>
+                                      <th className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase">FID</th>
+                                      <th className="px-2 py-1.5 text-[8px] font-bold text-slate-400 uppercase w-20 text-right">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50">
+                                    {box.bobbins.map((bobbin, bIdx) => {
+                                      const isRemoving = removing === bobbin.packing_order_bobbin_id;
+                                      return (
+                                        <tr key={bobbin.packing_order_bobbin_id || bIdx} className="hover:bg-white/80 group transition-colors">
+                                          <td className="px-2 py-1.5 text-[9px] text-slate-400 font-bold">{bIdx + 1}</td>
+                                          <td className="px-2 py-1.5 text-[10px] font-mono font-bold text-blue-700">{bobbin.bobbin_no}</td>
+                                          <td className="px-2 py-1.5 text-[10px] font-mono text-emerald-700">{bobbin.length_km || bobbin.fiber_length || '—'}</td>
+                                          <td className="px-2 py-1.5 text-[10px] font-mono text-slate-500">{bobbin.fid || bobbin.bobbin_fid || '—'}</td>
+                                          <td className="px-2 py-1.5 text-right">
+                                            <button type="button"
+                                              onClick={() => setConfirmRemove({ type: 'bobbin', bobbin, label: bobbin.bobbin_no })}
+                                              disabled={isRemoving}
+                                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-500 border border-rose-200 text-[8px] font-bold rounded hover:bg-rose-100 hover:text-rose-700 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50">
+                                              {isRemoving ? <Loader2 size={8} className="animate-spin" /> : <Trash2 size={8} />}
+                                              Remove
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-end flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="px-4 py-2 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-300 transition-all">
+            Close
+          </button>
+        </div>
+      </div>
+
+      {/* Confirm Remove Dialog */}
+      {confirmRemove && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[300]">
+          <div className="bg-white rounded-xl shadow-2xl p-5 w-80 text-center border border-slate-200">
+            <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle size={22} className="text-rose-500" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 mb-1">Confirm Remove</h4>
+            <p className="text-xs text-slate-500 mb-4">
+              {confirmRemove.type === 'bobbin'
+                ? <>Are you sure you want to remove bobbin <span className="font-bold text-blue-700">{confirmRemove.label}</span> from this box?</>
+                : <>Are you sure you want to remove <span className="font-bold text-indigo-700">{confirmRemove.label}</span> and all its bobbins?</>
+              }
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setConfirmRemove(null)}
+                className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg hover:bg-slate-200 transition-all">
+                Cancel
+              </button>
+              <button type="button"
+                onClick={() => {
+                  if (confirmRemove.type === 'bobbin') handleRemoveBobbin(confirmRemove.bobbin);
+                  else handleRemoveBox(confirmRemove.stackNo, confirmRemove.boxNo);
+                }}
+                className="flex-1 px-3 py-2 bg-rose-600 text-white text-[10px] font-bold rounded-lg hover:bg-rose-700 transition-all">
+                Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ══════════════════════════════════════════════════════════ */
 const PackingListGeneration = () => {
@@ -33,18 +406,20 @@ const PackingListView = ({ onCreate }) => {
   const [search, setSearch] = useState('');
   const [viewData, setViewData] = useState(null); // { header, bobbins }
   const [viewLoading, setViewLoading] = useState(false);
+  const [editOrderNo, setEditOrderNo] = useState(null); // order_no being edited
 
   useEffect(() => {
-    const fetchLists = async () => {
-      setLoading(true);
-      try {
-        const res = await getAllPackingLists();
-        setLists(res?.data || []);
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    };
     fetchLists();
   }, []);
+
+  const fetchLists = async () => {
+    setLoading(true);
+    try {
+      const res = await getAllPackingLists();
+      setLists(res?.data || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
 
   const filtered = lists.filter(l => {
     const q = search.toLowerCase();
@@ -124,10 +499,16 @@ const PackingListView = ({ onCreate }) => {
                     <td className="px-3 py-2 text-xs font-mono text-slate-600 text-center border-r border-slate-100">{item.total_stacks || '—'}</td>
                     <td className="px-3 py-2 text-[10px] text-slate-500 border-r border-slate-100">{item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}</td>
                     <td className="px-3 py-2">
-                      <button type="button" onClick={() => handleView(item.order_no || item.packing_order)}
-                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-bold rounded hover:bg-blue-100 transition-all">
-                        <Eye size={9} /> View
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => handleView(item.order_no || item.packing_order)}
+                          className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-bold rounded hover:bg-blue-100 transition-all">
+                          <Eye size={9} /> View
+                        </button>
+                        <button type="button" onClick={() => setEditOrderNo(item.order_no || item.packing_order)}
+                          className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold rounded hover:bg-amber-100 transition-all">
+                          <Edit3 size={9} /> Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -215,6 +596,15 @@ const PackingListView = ({ onCreate }) => {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── Edit Modal ── */}
+      {editOrderNo && (
+        <PackingEditModal
+          orderNo={editOrderNo}
+          onClose={() => setEditOrderNo(null)}
+          onUpdated={fetchLists}
+        />
       )}
     </div>
   );

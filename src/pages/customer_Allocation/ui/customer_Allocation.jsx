@@ -4,7 +4,7 @@ import { ModuleCard } from '../../../components/common_fields';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getSpecList } from '../../QualityAssurance/SpecCreation/SpecService';
 import { runAllocationEngine } from '../services/allocation.api';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import { saveAs } from 'file-saver';
 
 /* ══════════════════════════════════════════════════════════ */
@@ -38,6 +38,7 @@ const CustomerAllocation = () => {
     setResults(null);
     try {
       const res = await runAllocationEngine(selectedSpecs);
+      console.log("Data spec:,", res)
       if (res?.success) {
         setResults(res.data);
         showSuccess(`Allocation complete. ${res.data.specs?.length || 0} spec(s) processed.`);
@@ -63,21 +64,122 @@ const CustomerAllocation = () => {
       return;
     }
 
+    // Header style - dark fill with white bold text
+    const headerStyle = {
+      fill: { fgColor: { rgb: '1F2937' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } },
+      }
+    };
+
     // Build Excel data
-    const headers = ['Sr No', 'Bobbin No', 'FID', 'Fiber Length (KM)', 'Draw Date', 'PT Strain', 'Product Type', 'Status'];
+    const headers = ['Sr No', 'Bobbin No', 'FID', 'Optical Length (KM)', 'Draw Date', 'PT Strain', 'Product Type', 'Spec', 'E Length', 'Glass', 'Status'];
     const rows = specBobbins.map((b, i) => [
       i + 1,
       b.bobbin_no || '',
       b.fid || '',
-      b.fiber_length || '',
+      b.optical_length || '',
       b.draw_date || '',
       b.pt_strain || '',
       b.product_type || '',
+      b.assigned_spec || '',
+      b.effective_length || '',
+      b.preform_vendor_id || '',
       'Allocated',
     ]);
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length + 2, 14) }));
+    // Calculate Total Allocated KM
+    const totalAllocatedKM = spec.total_allocated_km || specBobbins.reduce((sum, b) => sum + (Number(b.optical_length) || 0), 0);
+
+    // Calculate Effective Length wise data grouped by Vendor (Glass/preform_vendor_id)
+    const vendorMap = {};
+    specBobbins.forEach(b => {
+      const vendor = b.preform_vendor_id || 'Unknown';
+      if (!vendorMap[vendor]) {
+        vendorMap[vendor] = { count: 0, totalLength: 0, effectiveLengths: {} };
+      }
+      vendorMap[vendor].count += 1;
+      vendorMap[vendor].totalLength += (Number(b.optical_length) || 0);
+      const eLength = b.effective_length || 'N/A';
+      if (!vendorMap[vendor].effectiveLengths[eLength]) {
+        vendorMap[vendor].effectiveLengths[eLength] = 0;
+      }
+      vendorMap[vendor].effectiveLengths[eLength] += 1;
+    });
+
+    // Build the sheet data
+    const sheetData = [headers, ...rows];
+
+    // Add empty rows as separator
+    sheetData.push([]);
+    sheetData.push([]);
+
+    // Add Total Allocated KM
+    const summaryStartRow = sheetData.length;
+    sheetData.push(['Total Allocated KM', '', totalAllocatedKM.toFixed(2) + ' KM']);
+    sheetData.push([]);
+
+    // Add Effective Length wise data by Vendor
+    sheetData.push(['Effective Length Wise Data']);
+    sheetData.push([]);
+
+    Object.entries(vendorMap).forEach(([vendor, data]) => {
+      sheetData.push(['Vendor:', vendor, '', 'Bobbins:', data.count, '', 'Total KM:', data.totalLength.toFixed(2)]);
+      // Effective length breakdown header
+      sheetData.push(['', 'Effective Length', 'Bobbin Count']);
+      Object.entries(data.effectiveLengths).forEach(([eLen, count]) => {
+        sheetData.push(['', eLen, count]);
+      });
+      sheetData.push([]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Apply dark header style to the first row
+    headers.forEach((_, colIdx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+      if (ws[cellRef]) {
+        ws[cellRef].s = headerStyle;
+      }
+    });
+
+    // Style the summary section labels (bold)
+    const boldStyle = { font: { bold: true, sz: 11 } };
+    const summaryLabelCell = XLSX.utils.encode_cell({ r: summaryStartRow, c: 0 });
+    if (ws[summaryLabelCell]) ws[summaryLabelCell].s = boldStyle;
+
+    const elTitleRow = summaryStartRow + 2;
+    const elTitleCell = XLSX.utils.encode_cell({ r: elTitleRow, c: 0 });
+    if (ws[elTitleCell]) ws[elTitleCell].s = { font: { bold: true, sz: 12 } };
+
+    // Style vendor rows
+    let currentRow = elTitleRow + 2;
+    Object.entries(vendorMap).forEach(([, data]) => {
+      // Vendor label row - bold
+      const vendorCell = XLSX.utils.encode_cell({ r: currentRow, c: 0 });
+      if (ws[vendorCell]) ws[vendorCell].s = boldStyle;
+      const bobbinsLabelCell = XLSX.utils.encode_cell({ r: currentRow, c: 3 });
+      if (ws[bobbinsLabelCell]) ws[bobbinsLabelCell].s = boldStyle;
+      const totalKmLabelCell = XLSX.utils.encode_cell({ r: currentRow, c: 6 });
+      if (ws[totalKmLabelCell]) ws[totalKmLabelCell].s = boldStyle;
+      currentRow++; // sub-header row
+      // Style sub-header
+      const subH1 = XLSX.utils.encode_cell({ r: currentRow, c: 1 });
+      const subH2 = XLSX.utils.encode_cell({ r: currentRow, c: 2 });
+      if (ws[subH1]) ws[subH1].s = { font: { bold: true }, fill: { fgColor: { rgb: 'E2E8F0' } } };
+      if (ws[subH2]) ws[subH2].s = { font: { bold: true }, fill: { fgColor: { rgb: 'E2E8F0' } } };
+      currentRow++; // data rows
+      currentRow += Object.keys(data.effectiveLengths).length;
+      currentRow++; // empty separator row
+    });
+
+    // Set column widths
+    ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length + 2, 16) }));
 
     const wb = XLSX.utils.book_new();
     const sheetName = (spec.cust_spec_name || 'Allocation').substring(0, 31);
@@ -184,12 +286,12 @@ const CustomerAllocation = () => {
                         </div>
                         <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-100">
                           <div className="text-center">
-                            <p className="text-[8px] text-slate-400 uppercase">Required</p>
-                            <p className="text-xs font-black text-slate-700">{Number(spec.required_km || 0).toFixed(1)} KM</p>
+                            <p className="text-[8px] text-slate-400 uppercase">Total Length</p>
+                            <p className="text-xs font-black text-slate-700">{Number(spec.total_allocated_km || 0).toFixed(1)} KM</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[8px] text-slate-400 uppercase">Allocated</p>
-                            <p className="text-xs font-black text-emerald-700">{Number(spec.allocated_km || 0).toFixed(1)} KM</p>
+                            <p className="text-[8px] text-slate-400 uppercase">Product Type</p>
+                            <p className="text-xs font-black text-emerald-700">{(spec.product_type || ' ')}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-[8px] text-slate-400 uppercase">Remaining</p>

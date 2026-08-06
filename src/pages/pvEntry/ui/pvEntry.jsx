@@ -173,6 +173,8 @@ const PVEntry = () => {
       fiber_color: data.fiber_color || '', drawn_length: data.drawn_length || '', qty_kms: data.fiber_length || '',
       temp_grade: data.temp_grade || '', final_grade: data.final_grade || '', operator: formValues.pv_operator || '',
       has_pv_record: !!has_pv_record,
+      pv_color: formValues.fiber_color || '',
+      pv_remark: formValues.pv_remark || '',
     }]);
     refocus();
   };
@@ -211,6 +213,7 @@ const PVEntry = () => {
       spool_fid: data.spool_fid || '', preform_id: data.preform_id || '', fiber_type: data.fiber_type || '',
       fiber_color: data.fiber_color || '', drawn_length: data.drawn_length || '', qty_kms: data.fiber_length || '',
       temp_grade: data.temp_grade || '', final_grade: data.final_grade || '', operator: formValues.pv_operator || '',
+      pv_remark: formValues.pv_remark || '',
     }]);
     refocus();
   };
@@ -253,19 +256,19 @@ const PVEntry = () => {
       const bobbins = tableRows.map(r => ({
         bobbin_no: r.bobbin_no, bobbin_fid: r.bobbin_fid, spool_id: r.spool_id,
         spool_fid: r.spool_fid, preform_id: r.preform_id, fiber_type: r.fiber_type,
-        fiber_color: r.fiber_color, drawn_length: r.drawn_length, qty_kms: r.qty_kms,
+        fiber_color: r.fiber_color, pv_color: r.pv_color || '', pv_remark: r.pv_remark || '',
+        drawn_length: r.drawn_length, qty_kms: r.qty_kms,
         temp_grade: r.temp_grade, final_grade: r.final_grade, operator: r.operator,
         has_pv_record: r.has_pv_record || false,
       }));
 
-      console.log("Data submit:", bobbins)
-
+      
       let res;
       if (formValues.pv_type === 'online') {
         res = await submitPVEntries({ header, bobbins });
       } else {
         // Re-PV: only sends header fields that need updating + bobbin identifiers
-        res = await submitRePVEntries({ header, bobbins: bobbins.map(b => ({ bobbin_no: b.bobbin_no })) });
+        res = await submitRePVEntries({ header, bobbins: bobbins.map(b => ({ bobbin_no: b.bobbin_no, pv_remark: b.pv_remark })) });
       }
 
       if (res?.success) {
@@ -312,10 +315,9 @@ const PVEntry = () => {
                     <FormikSelect compact label="PV Type" name="pv_type"
                       options={[{ label: 'Online', value: 'online' }, { label: 'Re-Physical Verification', value: 're_pv' }]}
                       disabled={tableRows.length > 0} />
-                    {/* Fiber Color — only for Online mode */}
+                    {/* Fiber Color — only for Online mode, changeable between scans */}
                     {values.pv_type === 'online' && (
-                      <FormikSelect compact label="Fiber Color" name="fiber_color" options={FIBER_COLORS}
-                        disabled={tableRows.length > 0} />
+                      <FormikSelect compact label="Fiber Color" name="fiber_color" options={FIBER_COLORS} />
                     )}
                   </div>
                 </ModuleCard>
@@ -367,7 +369,7 @@ const PVEntry = () => {
                   <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
                     <thead className="sticky top-0 bg-slate-50 z-10">
                       <tr className="border-b border-slate-200">
-                        {['#','Bobbin No','Bobbin FID','Spool ID','Spool FID','Preform ID','Fiber Type','Fiber Color','Drawn Len','Qty (KM)','Temp Grade','Final Grade','Operator',''].map(h => (
+                        {['#','Bobbin No','Bobbin FID','Spool ID','Spool FID','Preform ID','Fiber Type','Fiber Color','PV Color','Drawn Len','Qty (KM)','Temp Grade','Final Grade','Operator','Remark',''].map(h => (
                           <th key={h} className="px-2 py-2 text-[8px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
                         ))}
                       </tr>
@@ -375,7 +377,7 @@ const PVEntry = () => {
                     <tbody className="divide-y divide-slate-100">
                       {tableRows.length === 0 ? (
                         <tr>
-                          <td colSpan={14} className="px-4 py-10 text-center text-[10px] text-slate-400">
+                          <td colSpan={16} className="px-4 py-10 text-center text-[10px] text-slate-400">
                             {values.pv_type ? 'Scan a bobbin barcode above' : 'Select PV Type to begin'}
                           </td>
                         </tr>
@@ -389,11 +391,13 @@ const PVEntry = () => {
                           <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.preform_id}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_type || '—'}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.fiber_color || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs font-bold text-indigo-600 border-r border-slate-100">{row.pv_color || '—'}</td>
                           <td className="px-2 py-1.5 text-xs font-mono text-slate-600 border-r border-slate-100">{row.drawn_length}</td>
                           <td className="px-2 py-1.5 text-xs font-mono text-emerald-700 font-bold border-r border-slate-100">{row.qty_kms}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.temp_grade || '—'}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.final_grade || '—'}</td>
                           <td className="px-2 py-1.5 text-xs text-slate-600 border-r border-slate-100">{row.operator || '—'}</td>
+                          <td className="px-2 py-1.5 text-xs text-slate-500 border-r border-slate-100 max-w-[120px] truncate" title={row.pv_remark || ''}>{row.pv_remark || '—'}</td>
                           <td className="px-2 py-1.5 text-center">
                             <button type="button" onClick={() => removeRow(row.id)}
                               className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>

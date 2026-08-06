@@ -42,3 +42,15 @@ export const getGradeById = async (gradeId) => {
   const res = await axios.get(`${API}/api/qcgrade/${gradeId}`, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Get preform vendors for dropdown ── */
+export const getPreformVendors = async () => {
+  const res = await axios.get(`${API}/api/preform-vendor`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Get bobbin colors for fiber color dropdown ── */
+export const getBobbinColors = async () => {
+  const res = await axios.get(`${API}/api/bobbin-color`, { headers: authHeaders() });
+  return res.data;
+};

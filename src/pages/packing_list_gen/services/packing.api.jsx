@@ -35,3 +35,21 @@ export const viewPackingList = async (orderNo) => {
   const res = await axios.get(`${API}/api/packing/view/${orderNo}`, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Remove bobbin from packing list ── */
+export const removeBobbinFromPacking = async (packingOrderBobbinId) => {
+  const res = await axios.delete(`${API}/api/packing/bobbin/${packingOrderBobbinId}`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Remove entire box from packing list ── */
+export const removeBoxFromPacking = async (orderNo, stackNo, boxNo) => {
+  const res = await axios.delete(`${API}/api/packing/box/${orderNo}/${stackNo}/${boxNo}`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Add bobbin to existing packing list ── */
+export const addBobbinToPacking = async (payload) => {
+  const res = await axios.post(`${API}/api/packing/add-bobbin`, payload, { headers: authHeaders() });
+  return res.data;
+};

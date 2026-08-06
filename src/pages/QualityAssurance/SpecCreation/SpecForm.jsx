@@ -4,7 +4,7 @@ import { Formik, Form, Field } from 'formik';
 import { FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { createSpec, updateSpec, getSpecById, getGradeList, getGradeById } from './SpecService';
+import { createSpec, updateSpec, getSpecById, getGradeList, getGradeById, getPreformVendors, getBobbinColors } from './SpecService';
 
 /* ── Same PARAM_GROUPS as GradeManagement ── */
 const PARAM_GROUPS = [
@@ -42,8 +42,13 @@ const buildInitialValues = (data) => {
     customer_name: data?.customer_name || '', po_number: data?.po_number || '',
     pt_strain: data?.pt_strain || '', cust_spec_name: data?.cust_spec_name || '',
     product_type: data?.product_type || '', coating_type: data?.coating_type || '',
-    quantity_km: data?.quantity_km || '', color: data?.color || '',
+    quantity_km: data?.quantity_km || '',
     priority: data?.priority || 1, remarks: data?.remarks || '',
+    preform_vendor_id: data?.preform_vendor_id || '',
+    color_type: data?.color_type || '',
+    fiber_color: data?.fiber_color || '',
+    allocation_ratio: data?.allocation_ratio || '',
+    minimum_length: data?.minimum_length || '',
   };
   ALL_FIELDS.forEach(f => {
     if (data?.[f] !== undefined && data?.[f] !== null) vals[f] = data[f];
@@ -68,6 +73,8 @@ const SpecForm = ({ specId, onBack }) => {
   const [grades, setGrades] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [mandatoryFields, setMandatoryFields] = useState({});
+  const [preformVendors, setPreformVendors] = useState([]);
+  const [bobbinColors, setBobbinColors] = useState([]);
   const isEdit = !!specId;
 
   useEffect(() => {
@@ -85,6 +92,22 @@ const SpecForm = ({ specId, onBack }) => {
         const axios = (await import('axios')).default;
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/customers`);
         setCustomers((res.data?.data || []).filter(c => !c.disable));
+      } catch (_) {}
+    })();
+
+    // Load preform vendors for dropdown
+    (async () => {
+      try {
+        const res = await getPreformVendors();
+        if (res?.success) setPreformVendors((res.data || []).filter(v => !v.is_disable));
+      } catch (_) {}
+    })();
+
+    // Load bobbin colors for dropdown
+    (async () => {
+      try {
+        const res = await getBobbinColors();
+        if (res?.success) setBobbinColors((res.data || []).filter(c => !c.is_disable));
       } catch (_) {}
     })();
 
@@ -141,6 +164,20 @@ const SpecForm = ({ specId, onBack }) => {
       if (payload.quantity_km) payload.quantity_km = Number(payload.quantity_km);
       if (payload.priority) payload.priority = Number(payload.priority);
 
+      // Convert new dropdown fields to proper types
+      if (payload.preform_vendor_id) payload.preform_vendor_id = Number(payload.preform_vendor_id);
+      else payload.preform_vendor_id = null;
+      if (payload.fiber_color) payload.fiber_color = Number(payload.fiber_color);
+      else payload.fiber_color = null;
+      if (!payload.color_type) payload.color_type = null;
+      // If NATURAL selected, ensure fiber_color is null
+      if (payload.color_type === 'NATURAL') payload.fiber_color = null;
+      // Allocation ratio and minimum length
+      if (payload.allocation_ratio) payload.allocation_ratio = Number(payload.allocation_ratio);
+      else payload.allocation_ratio = null;
+      if (payload.minimum_length) payload.minimum_length = Number(payload.minimum_length);
+      else payload.minimum_length = null;
+
       // Add mandatory_params as JSONB array
       const mandatoryArr = Object.entries(mandatoryFields).filter(([, v]) => v).map(([k]) => k);
       payload.mandatory_params = mandatoryArr;
@@ -153,6 +190,44 @@ const SpecForm = ({ specId, onBack }) => {
   };
 
   const customerOptions = customers.map(c => ({ label: c.customer_name, value: c.customer_name }));
+  const preformVendorOptions = preformVendors.map(v => ({ label: `${v.vendor_name} (${v.vendor_code})`, value: v.preform_vendor_id }));
+  const colorTypeOptions = [
+    { label: 'NATURAL', value: 'NATURAL' },
+    { label: 'COLORED', value: 'COLORED' },
+    { label: 'RM', value: 'RM' },
+  ];
+
+  const getFilteredFiberColors = (colorType) => {
+    if (!colorType || colorType === 'NATURAL') return [];
+    if (colorType === 'COLORED') {
+      // Show only colors that do NOT start with "RM"
+      return bobbinColors
+        .filter(c => !c.bobbin_color_name.toUpperCase().startsWith('RM'))
+        .map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_id }));
+    }
+    if (colorType === 'RM') {
+      // Show only colors that start with "RM"
+      return bobbinColors
+        .filter(c => c.bobbin_color_name.toUpperCase().startsWith('RM'))
+        .map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_id }));
+    }
+    return [];
+  };
+
+  const allocationRatioOptions = [
+    { label: '2.1', value: 2.1 },
+    { label: '4.2', value: 4.2 },
+  ];
+
+  const getMinimumLengthOptions = (ratio) => {
+    if (!ratio) return [];
+    const r = Number(ratio);
+    const options = [];
+    for (let val = r; val <= 50.4; val = parseFloat((val + r).toFixed(1))) {
+      options.push({ label: `${val}`, value: val });
+    }
+    return options;
+  };
 
   if (loading) return <div className="flex items-center justify-center h-full"><span className="text-xs text-slate-400">Loading...</span></div>;
 
@@ -186,9 +261,29 @@ const SpecForm = ({ specId, onBack }) => {
                   <FormikInput compact label="Product Type" name="product_type" />
                   <FormikSelect compact label="Coating Type" name="coating_type" options={['Single', 'Dual']} />
                   <FormikInput compact label="Quantity (KM)" name="quantity_km" type="number" />
-                  <FormikInput compact label="Color" name="color" />
                   <FormikInput compact label="Priority" name="priority" type="number" />
                   <FormikInput compact label="Remarks" name="remarks" />
+                  <FormikSelect compact label="Preform Vendor" name="preform_vendor_id" options={preformVendorOptions} />
+                  <FormikSelect compact label="Color Type" name="color_type" options={colorTypeOptions}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'NATURAL' || val === '') {
+                        setValues({ ...values, color_type: val || null, fiber_color: '' });
+                      }
+                    }}
+                  />
+                  {values.color_type && values.color_type !== 'NATURAL' && (
+                    <FormikSelect compact label="Fiber Color" name="fiber_color" options={getFilteredFiberColors(values.color_type)} />
+                  )}
+                  <FormikSelect compact label="Allocation Ratio" name="allocation_ratio" options={allocationRatioOptions}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setValues({ ...values, allocation_ratio: val ? Number(val) : '', minimum_length: '' });
+                    }}
+                  />
+                  {values.allocation_ratio && (
+                    <FormikSelect compact label="Minimum Length (KM)" name="minimum_length" options={getMinimumLengthOptions(values.allocation_ratio)} />
+                  )}
                 </div>
               </div>
 

@@ -299,13 +299,12 @@ const PTEntry = () => {
   useEffect(() => {
     const formik = formikRef.current;
     if (!formik || !formik.values.spool_id) return; // Only run when spool is loaded
-    if (!ptFlawsData || ptFlawsData.length === 0) return;
 
     const result = checkPTLength({
       ptDoneLength: formik.values.pt_done_so_far,
       standardLength: 50.400,
       balanceLength,
-      ptFlaws: ptFlawsData
+      ptFlaws: ptFlawsData || []
     });
 
     
@@ -401,138 +400,89 @@ const PTEntry = () => {
     // Build payload with missed flaw info + booked flaw (only for "rejection" type)
     const ptLogsCount = Array.isArray(formikRef.current?.values?.pt_logs) ? formikRef.current.values.pt_logs.length : 0;
 
-    // Full Check Logic: ok_length threshold
+    // Full Check Logic:
+    // full_check = true for ALL bobbins until a bobbin with pt_length >= 50.4 km appears (inclusive)
+    // After that 50.4 bobbin, all subsequent bobbins get full_check = false
+    // Last bobbin (balance = 0) gets full_check = true — handled server-side
     const OK_LENGTH = 50.4;
     const SAMPLE_CYCLE_KM = 200;
-    let fullCheck = true;
     const ptLogs = Array.isArray(formikRef.current?.values?.pt_logs) ? formikRef.current.values.pt_logs : [];
-    // Check if any previous good bobbin (with FID) already met ok_length
+
+    // Check if any previous bobbin (regardless of FID/rejection) already had pt_length >= 50.4
     let foundOkLengthInPrevious = false;
     for (const log of ptLogs) {
-      const logHasFid = log.fid && log.fid.trim() !== '';
       const logLen = parseFloat(log.pt_length) || 0;
-      if (logHasFid && logLen >= OK_LENGTH) {
+      if (logLen >= OK_LENGTH) {
         foundOkLengthInPrevious = true;
         break;
       }
     }
-    if (foundOkLengthInPrevious) {
-      // A previous bobbin already met ok_length, so this one is false
-      fullCheck = false;
-    } else {
-      // No previous bobbin met ok_length yet, so this one is true
+
+    let fullCheck;
+    if (!foundOkLengthInPrevious) {
+      // No previous bobbin reached 50.4 yet — this bobbin gets full_check = true
+      // (whether this bobbin itself is >= 50.4 or not, it's still true)
       fullCheck = true;
+    } else {
+      // A previous bobbin already reached 50.4 — all subsequent are false
+      fullCheck = false;
     }
 
     // ── Sample & Full MBend Logic ──
-    // Determine is_sample and full_mbend for the current entry
+    // Rules:
+    // 1. is_sample = true for the FIRST bobbin with FID (any length)
+    // 2. After that, is_sample = true for the first bobbin with FID after every 200km cycle
+    // 3. full_mbend = true ONLY for sample bobbins (is_sample = true), no other bobbins
     let isSample = false;
     let fullMbend = false;
     const currentHasFid = !!values.fid && values.fid.trim() !== '';
     const currentIsOk = currentHasFid && !values.active_rejection_type;
 
     if (currentIsOk) {
-      // Only OK bobbins with valid FID participate in this logic
-      // Rebuild state by scanning all previous OK bobbins (with FID)
+      // Only OK bobbins with valid FID participate in sample/mbend logic
       const prevOkBobbins = ptLogs.filter(log => {
         const hasFid = log.fid && log.fid.trim() !== '';
         const isOk = !log.active_rejection_type;
         return hasFid && isOk;
       });
 
-      // Find if first sample has been identified yet (first OK bobbin with length >= OK_LENGTH)
-      let firstSampleFound = false;
-      let lastSampleIndex = -1;
-
-      for (let i = 0; i < prevOkBobbins.length; i++) {
-        const logLen = parseFloat(prevOkBobbins[i].pt_length) || 0;
-        if (logLen >= OK_LENGTH) {
-          firstSampleFound = true;
-          lastSampleIndex = i;
-          break;
-        }
-      }
-
-      if (!firstSampleFound) {
-        // No previous bobbin reached OK_LENGTH yet
-        // Current bobbin gets full_mbend = true
-        fullMbend = true;
-        // Check if THIS bobbin is the first to reach OK_LENGTH
-        if (ptLen >= OK_LENGTH) {
-          isSample = true;
-        }
+      if (prevOkBobbins.length === 0) {
+        // No previous OK bobbin with FID exists — this is the FIRST sample
+        isSample = true;
       } else {
-        // First sample was already found in previous logs
-        // Now find ALL sample positions by replaying the cycle logic
-        let sampleIndices = [];
-        // Pass 1: find first sample
-        let firstSampleIdx = -1;
-        for (let i = 0; i < prevOkBobbins.length; i++) {
+        // Find all previous sample positions by replaying the cycle logic
+        // First OK bobbin is always a sample (index 0)
+        let sampleIndices = [0];
+        let cumulativeLength = 0;
+
+        for (let i = 1; i < prevOkBobbins.length; i++) {
           const logLen = parseFloat(prevOkBobbins[i].pt_length) || 0;
-          if (logLen >= OK_LENGTH) {
-            firstSampleIdx = i;
+          cumulativeLength += logLen;
+          if (cumulativeLength >= SAMPLE_CYCLE_KM) {
+            // This bobbin is the first FID bobbin after 200km — it's a sample
             sampleIndices.push(i);
-            break;
+            cumulativeLength = 0;
           }
         }
 
-        // Pass 2: find subsequent samples using 200km cycle
-        if (firstSampleIdx >= 0) {
-          let cumulativeLength = 0;
-          let reached200 = false;
-          for (let i = firstSampleIdx + 1; i < prevOkBobbins.length; i++) {
-            const logLen = parseFloat(prevOkBobbins[i].pt_length) || 0;
-            cumulativeLength += logLen;
-            if (cumulativeLength >= SAMPLE_CYCLE_KM) {
-              reached200 = true;
-            }
-            if (reached200 && logLen >= OK_LENGTH) {
-              sampleIndices.push(i);
-              cumulativeLength = 0;
-              reached200 = false;
-            }
-          }
-        }
-
-        // Determine state for current bobbin
-        // Find the last sample index in previous logs
-        const lastSamplePos = sampleIndices.length > 0 ? sampleIndices[sampleIndices.length - 1] : firstSampleIdx;
-
-        // Calculate cumulative OK length since last sample (not including last sample itself)
+        // Calculate cumulative OK length since last sample
+        const lastSampleIdx = sampleIndices[sampleIndices.length - 1];
         let cumulativeSinceLastSample = 0;
-        let reached200ForCurrent = false;
-        for (let i = lastSamplePos + 1; i < prevOkBobbins.length; i++) {
+        for (let i = lastSampleIdx + 1; i < prevOkBobbins.length; i++) {
           const logLen = parseFloat(prevOkBobbins[i].pt_length) || 0;
           cumulativeSinceLastSample += logLen;
         }
 
-        if (cumulativeSinceLastSample >= SAMPLE_CYCLE_KM) {
-          reached200ForCurrent = true;
-        }
-
-        if (reached200ForCurrent) {
-          // We've passed 200km since last sample, looking for next sample
-          fullMbend = true;
-          if (ptLen >= OK_LENGTH) {
-            isSample = true;
-          }
-        } else {
-          // Still accumulating towards 200km — check if adding current pushes over
-          const newCumulative = cumulativeSinceLastSample + ptLen;
-          if (newCumulative >= SAMPLE_CYCLE_KM) {
-            // Current bobbin pushes cumulative past 200km
-            // But it only becomes sample if its own length >= OK_LENGTH
-            // For now it gets full_mbend = true (in the "scanning for sample" phase)
-            fullMbend = true;
-            if (ptLen >= OK_LENGTH) {
-              isSample = true;
-            }
-          } else {
-            // Still under 200km, normal OK bobbin
-            fullMbend = false;
-          }
+        // Add current bobbin's length to check if we've crossed 200km
+        const newCumulative = cumulativeSinceLastSample + ptLen;
+        if (newCumulative >= SAMPLE_CYCLE_KM) {
+          // Crossed 200km — this bobbin is the next sample (any length with FID is enough)
+          isSample = true;
         }
       }
+
+      // full_mbend = true ONLY for sample bobbins
+      fullMbend = isSample;
     }
     // Non-OK bobbins (rejections, no FID) get is_sample=false, full_mbend=false by default
 

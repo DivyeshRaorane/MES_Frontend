@@ -57,7 +57,7 @@ const SpecList = ({ onCreateNew, onEdit }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 text-white z-10">
               <tr>
-                {['Customer', 'Spec Name', 'PO No', 'PT Strain', 'Product', 'Coating', 'Color', 'Priority', 'Qty (KM)', 'Created', 'Actions'].map(h => (
+                {['Customer', 'Spec Name', 'PO No', 'PT Strain', 'Product', 'Coating', 'Priority', 'Qty (KM)', 'Created', 'Actions'].map(h => (
                   <th key={h} className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -71,7 +71,6 @@ const SpecList = ({ onCreateNew, onEdit }) => {
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.pt_strain || '—'}</td>
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.product_type || '—'}</td>
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.coating_type || '—'}</td>
-                  <td className="px-3 py-2 text-[10px] text-slate-600">{s.color || '—'}</td>
                   <td className="px-3 py-2 text-[10px] text-center font-bold text-amber-700">{s.priority}</td>
                   <td className="px-3 py-2 text-[10px] font-mono text-emerald-700">{s.quantity_km || '—'}</td>
                   <td className="px-3 py-2 text-[9px] text-slate-400">{s.created_at ? s.created_at.split('T')[0] : '—'}</td>
