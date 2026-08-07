@@ -343,17 +343,10 @@ const PTEntry = () => {
     const isPtBreak = values.pt_break === true || ptBreakRef.current === true;
 
     // Validate: PT length should not exceed balance
-    // When pt_break is true, backend will also auto-book 180m scrap — account for that here
+    // Backend handles PT break scrap dynamically (books remaining balance if < 0.180, or skips if balance = 0)
     const ptLen = parseFloat(values.pt_length) || 0;
-    const breakScrapDeduction = isPtBreak ? 0.180 : 0;
-    const effectiveBalance = balanceLength - breakScrapDeduction;
-    const remaining = effectiveBalance - ptLen;
-    if (remaining < 0) {
-      if (isPtBreak) {
-        showError(`PT Length (${ptLen} km) + PT Break scrap (0.180 km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
-      } else {
-        showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
-      }
+    if (ptLen > balanceLength) {
+      showError(`PT Length (${ptLen} km) exceeds available balance (${balanceLength} km). Entry not allowed.`);
       return;
     }
 
