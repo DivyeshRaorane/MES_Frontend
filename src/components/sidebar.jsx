@@ -115,6 +115,7 @@ const MENU = [
       { label: 'Quality Admin',    path: '/admin/quality' },
       { label: 'FG / Tray Mgmt',  path: '/admin/traymanagement' },
       { label: 'Report Builder',   path: '/admin/reportbuilder' },
+      { label: 'Function Reports', path: '/admin/functionreports' },
     ],
   },
   {
@@ -125,6 +126,7 @@ const MENU = [
     path: '/dynamicreports',
     color: 'text-cyan-400',
   },
+
 ];
 
 /* ── Department → Menu Key Mapping ── */

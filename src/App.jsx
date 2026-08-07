@@ -77,6 +77,10 @@ import ReportViewer from './pages/DynamicReports/ui/ReportViewer'
 import ReportBuilderList from './pages/DynamicReports/ui/ReportBuilder/ReportBuilderList'
 import ReportBuilderWizard from './pages/DynamicReports/ui/ReportBuilder/ReportBuilderWizard'
 
+// Function Reports Module
+import FunctionReportAdmin from './pages/FunctionReports/ui/FunctionReportAdmin'
+import FunctionReportViewer from './pages/FunctionReports/ui/FunctionReportViewer'
+
 
 function App() {
 
@@ -147,8 +151,10 @@ function App() {
         <Route path='admin/traymanagement' element={<TrayManagement/>}/>
         <Route path='admin/reportbuilder' element={<ReportBuilderList/>}/>
         <Route path='admin/reportbuilder/wizard' element={<ReportBuilderWizard/>}/>
+        <Route path='admin/functionreports' element={<FunctionReportAdmin/>}/>
         <Route path='dynamicreports' element={<DynamicReportsList/>}/>
         <Route path='dynamicreports/view/:reportId' element={<ReportViewer/>}/>
+        <Route path='dynamicreports/function/:reportId' element={<FunctionReportViewer/>}/>
         <Route path='/*' element={<PageNotFound/>}/>
         </Route>
         </Routes>  

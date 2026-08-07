@@ -1,15 +1,18 @@
 /**
  * Dynamic Reports List - User Facing
  * Shows all reports accessible by the current user (light theme)
+ * Also includes Function Reports assigned to the "General" section
  */
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   FileBarChart2, Search, RefreshCw, Play, Clock, Tag,
-  LayoutGrid, List, Filter,
+  LayoutGrid, List, Filter, Database,
 } from 'lucide-react';
 import { getUserReportsBySection, setActiveReport } from '../controller/dynamicReports.slice';
+import { fetchUserFunctionReports } from '../../FunctionReports/services/functionReports.api';
+import { setActiveReport as setActiveFnReport } from '../../FunctionReports/controller/functionReports.slice';
 
 const DynamicReportsList = () => {
   const dispatch = useDispatch();
@@ -19,10 +22,25 @@ const DynamicReportsList = () => {
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+  const [functionReports, setFunctionReports] = useState([]);
+  const [fnLoading, setFnLoading] = useState(false);
 
   useEffect(() => {
     dispatch(getUserReportsBySection('DYNAMIC_REPORTS'));
+    loadFunctionReports();
   }, [dispatch]);
+
+  const loadFunctionReports = async () => {
+    setFnLoading(true);
+    try {
+      const data = await fetchUserFunctionReports('General');
+      const list = Array.isArray(data) ? data : (data?.data || []);
+      setFunctionReports(list);
+    } catch (e) {
+      setFunctionReports([]);
+    }
+    setFnLoading(false);
+  };
 
   const modules = [...new Set(reports.map((r) => r.module).filter(Boolean))];
 
@@ -34,14 +52,33 @@ const DynamicReportsList = () => {
     return matchSearch && matchModule;
   });
 
+  const filteredFnReports = functionReports.filter((r) => {
+    const matchSearch = !search ||
+      r.report_name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.description?.toLowerCase().includes(search.toLowerCase());
+    // Function reports show when moduleFilter is empty or 'General'
+    const matchModule = !moduleFilter || moduleFilter === 'General';
+    return matchSearch && matchModule;
+  });
+
+  const totalCount = filtered.length + filteredFnReports.length;
+
   const handleOpenReport = (report) => {
     dispatch(setActiveReport(report));
     navigate(`/dynamicreports/view/${report.id}`);
   };
 
+  const handleOpenFunctionReport = (report) => {
+    dispatch(setActiveFnReport(report));
+    navigate(`/dynamicreports/function/${report.id}`);
+  };
+
   const handleRefresh = () => {
     dispatch(getUserReportsBySection('DYNAMIC_REPORTS'));
+    loadFunctionReports();
   };
+
+  const isLoading = loading.list || fnLoading;
 
   return (
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
@@ -54,16 +91,16 @@ const DynamicReportsList = () => {
             </div>
             <div>
               <h1 className="text-sm font-extrabold text-slate-900">Dynamic Reports</h1>
-              <p className="text-[10px] text-slate-600 font-medium">{filtered.length} report(s) available</p>
+              <p className="text-[10px] text-slate-600 font-medium">{totalCount} report(s) available</p>
             </div>
           </div>
           <button
             onClick={handleRefresh}
-            disabled={loading.list}
+            disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold
               text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
           >
-            <RefreshCw size={12} className={loading.list ? 'animate-spin' : ''} />
+            <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
             Refresh
           </button>
         </div>
@@ -113,12 +150,12 @@ const DynamicReportsList = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5">
-        {loading.list ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <RefreshCw size={20} className="animate-spin text-blue-500" />
             <span className="ml-3 text-sm text-slate-500">Loading reports...</span>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : totalCount === 0 ? (
           <div className="text-center py-16">
             <FileBarChart2 size={40} className="mx-auto text-slate-300 mb-3" />
             <p className="text-sm text-slate-500 mb-1">No reports found</p>
@@ -128,12 +165,18 @@ const DynamicReportsList = () => {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {filteredFnReports.map((report) => (
+              <FunctionReportCard key={`fn-${report.id}`} report={report} onOpen={handleOpenFunctionReport} />
+            ))}
             {filtered.map((report) => (
               <ReportCard key={report.id} report={report} onOpen={handleOpenReport} />
             ))}
           </div>
         ) : (
           <div className="space-y-2">
+            {filteredFnReports.map((report) => (
+              <FunctionReportListItem key={`fn-${report.id}`} report={report} onOpen={handleOpenFunctionReport} />
+            ))}
             {filtered.map((report) => (
               <ReportListItem key={report.id} report={report} onOpen={handleOpenReport} />
             ))}
@@ -198,6 +241,63 @@ const ReportListItem = ({ report, onOpen }) => {
       </span>
       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500 transition-all">
         <Play size={10} className="text-slate-400 group-hover:text-white transition-colors" />
+      </div>
+    </button>
+  );
+};
+
+const FunctionReportCard = ({ report, onOpen }) => {
+  return (
+    <button
+      onClick={() => onOpen(report)}
+      className="text-left p-4 rounded-xl bg-white border-2 border-slate-300 hover:border-violet-400
+        hover:shadow-xl hover:shadow-violet-100/60 hover:-translate-y-0.5 transition-all duration-200 group"
+    >
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-violet-50 text-violet-700 border-2 border-violet-300">
+          Function Report
+        </span>
+        <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center group-hover:bg-violet-500 transition-all">
+          <Database size={10} className="text-violet-500 group-hover:text-white transition-colors" />
+        </div>
+      </div>
+      <h3 className="text-[12px] font-extrabold text-slate-900 mb-1 line-clamp-2 group-hover:text-violet-600 transition-colors">
+        {report.report_name}
+      </h3>
+      {report.description && (
+        <p className="text-[11px] text-slate-600 line-clamp-2 mb-2.5">{report.description}</p>
+      )}
+      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-medium pt-2.5 border-t-2 border-slate-200">
+        <span className="flex items-center gap-1 font-mono">
+          <Database size={10} className="text-slate-400" />
+          {report.schema_name}.{report.function_name}
+        </span>
+      </div>
+    </button>
+  );
+};
+
+const FunctionReportListItem = ({ report, onOpen }) => {
+  return (
+    <button
+      onClick={() => onOpen(report)}
+      className="w-full text-left flex items-center gap-4 p-3.5 rounded-xl bg-white border-2 border-slate-300
+        hover:border-violet-400 hover:shadow-lg hover:shadow-violet-100/50 transition-all duration-200 group"
+    >
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-50 to-purple-100 border-2 border-violet-300 flex items-center justify-center flex-shrink-0">
+        <Database size={14} className="text-violet-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-[12px] font-extrabold text-slate-900 group-hover:text-violet-600 transition-colors truncate">
+          {report.report_name}
+        </h3>
+        <p className="text-[11px] text-slate-600 truncate">{report.description || `${report.schema_name}.${report.function_name}`}</p>
+      </div>
+      <span className="text-[10px] px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 font-bold border-2 border-violet-300 flex-shrink-0">
+        Function Report
+      </span>
+      <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-500 transition-all">
+        <Play size={10} className="text-violet-400 group-hover:text-white transition-colors" />
       </div>
     </button>
   );

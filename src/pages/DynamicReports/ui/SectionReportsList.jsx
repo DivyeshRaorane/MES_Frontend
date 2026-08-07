@@ -7,26 +7,46 @@
  * 
  * This component fetches reports mapped to the given section and displays them
  * as clickable cards. Clicking a report navigates to the ReportViewer.
+ * 
+ * Also fetches Function Reports registered to the matching section.
  */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { FileBarChart2, Search, RefreshCw, Play, Clock, Tag } from 'lucide-react';
+import { FileBarChart2, Database, Search, RefreshCw, Play, Clock, Tag } from 'lucide-react';
 import { fetchUserReportsBySection } from '../services/reportBuilder.api';
+import { fetchUserFunctionReports } from '../../FunctionReports/services/functionReports.api';
 import { setActiveReport } from '../controller/dynamicReports.slice';
+import { setActiveReport as setActiveFnReport } from '../../FunctionReports/controller/functionReports.slice';
 
 const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'blue' }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [reports, setReports] = useState([]);
+  const [functionReports, setFunctionReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
+
+  // Map section keys used in Dynamic Reports to Function Report section names
+  const SECTION_KEY_MAP = {
+    'DRAW_MANAGEMENT': 'Draw',
+    'PROOF_TESTING': 'Proof Testing',
+    'QUALITY': 'Quality',
+    'QC': 'Quality',
+    'QA': 'Quality Assurance',
+    'QUALITY_ASSURANCE': 'Quality Assurance',
+    'FG': 'Finish Goods',
+    'FINISH_GOODS': 'Finish Goods',
+    'DYNAMIC_REPORTS': 'General', // General function reports show in Dynamic Reports page
+    'GENERAL': 'General',
+  };
 
   const loadReports = async () => {
     setLoading(true);
     setError(null);
     try {
+      // Load Dynamic Reports
       const data = await fetchUserReportsBySection(sectionKey);
       const list = Array.isArray(data) ? data : (data?.data || data?.rows || data?.reports || []);
       setReports(list);
@@ -34,6 +54,18 @@ const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'bl
       setError(e?.response?.data?.message || e.message || 'Failed to load reports');
       setReports([]);
     }
+
+    // Load Function Reports for the matching section
+    try {
+      const fnSection = SECTION_KEY_MAP[sectionKey] || sectionKey;
+      const fnData = await fetchUserFunctionReports(fnSection);
+      const fnList = Array.isArray(fnData) ? fnData : (fnData?.data || []);
+      setFunctionReports(fnList);
+    } catch (e) {
+      // Silently fail — function reports backend might not be ready yet
+      setFunctionReports([]);
+    }
+
     setLoading(false);
   };
 
@@ -49,9 +81,24 @@ const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'bl
     );
   });
 
+  const filteredFnReports = functionReports.filter((r) => {
+    if (!search) return true;
+    return (
+      r.report_name?.toLowerCase().includes(search.toLowerCase()) ||
+      r.description?.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  const totalCount = filtered.length + filteredFnReports.length;
+
   const handleOpenReport = (report) => {
     dispatch(setActiveReport(report));
     navigate(`/dynamicreports/view/${report.id}`);
+  };
+
+  const handleOpenFunctionReport = (report) => {
+    dispatch(setActiveFnReport(report));
+    navigate(`/dynamicreports/function/${report.id}`);
   };
 
   const colorMap = {
@@ -74,7 +121,7 @@ const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'bl
             </div>
             <div>
               <h2 className="text-xs font-extrabold text-slate-900">{title}</h2>
-              <p className="text-[9px] text-slate-500 font-medium">{filtered.length} report(s) available</p>
+              <p className="text-[9px] text-slate-500 font-medium">{totalCount} report(s) available</p>
             </div>
           </div>
           <button
@@ -114,7 +161,7 @@ const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'bl
             <p className="text-[11px] text-red-500 mb-2">{error}</p>
             <button onClick={loadReports} className="text-[10px] text-blue-600 hover:underline">Retry</button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && filteredFnReports.length === 0 ? (
           <div className="text-center py-12">
             <FileBarChart2 size={32} className="mx-auto text-slate-300 mb-2" />
             <p className="text-[11px] text-slate-500 mb-1">No reports found</p>
@@ -124,6 +171,37 @@ const SectionReportsList = ({ sectionKey, title = 'Dynamic Reports', color = 'bl
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Function Reports */}
+            {filteredFnReports.map((report) => (
+              <button
+                key={`fn-${report.id}`}
+                onClick={() => handleOpenFunctionReport(report)}
+                className={`text-left p-3.5 rounded-xl bg-white border-2 border-slate-200 hover:border-violet-400
+                  hover:shadow-lg hover:shadow-violet-100/60 hover:-translate-y-0.5 transition-all duration-200 group`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold bg-violet-50 text-violet-700 border border-violet-300">
+                    Function Report
+                  </span>
+                  <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center group-hover:bg-violet-500 transition-all">
+                    <Database size={8} className="text-violet-500 group-hover:text-white transition-colors" />
+                  </div>
+                </div>
+                <h3 className="text-[11px] font-extrabold text-slate-900 mb-0.5 line-clamp-2 group-hover:text-violet-600 transition-colors">
+                  {report.report_name}
+                </h3>
+                {report.description && (
+                  <p className="text-[9px] text-slate-500 line-clamp-2 mb-2">{report.description}</p>
+                )}
+                <div className="flex items-center gap-2 text-[8px] text-slate-400 font-medium pt-2 border-t border-slate-100">
+                  <span className="flex items-center gap-0.5 font-mono">
+                    <Database size={8} /> {report.schema_name}.{report.function_name}
+                  </span>
+                </div>
+              </button>
+            ))}
+
+            {/* Dynamic Reports */}
             {filtered.map((report) => (
               <button
                 key={report.id}

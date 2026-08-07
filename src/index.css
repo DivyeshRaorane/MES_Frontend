@@ -65,6 +65,11 @@ input[type="number"] {
   appearance: textfield;
 }
 
+/* Force dark navy background on ALL table headers */
+thead {
+  background: #0f172a !important;
+}
+
 /* Make table header text white on dark backgrounds for readability */
 thead th {
   color: #ffffff !important;
