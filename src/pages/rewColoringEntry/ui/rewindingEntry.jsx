@@ -5,18 +5,23 @@ import { Layers, Ruler, Clock, Scan, ListChecks } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { scanBobbinForRewinding, saveRewindingEntry, getPTUsers } from '../services/rewinding.api';
+import { scanBobbinForRewinding, saveRewindingEntry, getPTUsers, getRewMachines } from '../services/rewinding.api';
 import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
 import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/service/bobbin_type.api';
 
-const MACHINES = [{ label: '1', value: '1' }, { label: '2', value: '2' }, { label: '3', value: '3' }, { label: '4', value: '4' }];
 const REW_REASONS = ['Select', 'Attn High', 'MFD Fail', 'Customer Req', 'Break', 'Other'];
 const REW_TYPES = ['Standard', 'Premium', 'Custom'];
 
 const validationSchema = Yup.object({
-  fiber_length: Yup.number().typeError('Must be a number').required('Length is required').min(0.001, 'Must be > 0'),
-  machine_no: Yup.mixed().required('Machine is required'),
+  bobbin_no: Yup.string().when('is_scrap', {
+    is: false,
+    then: (schema) => schema.required('Bobbin No is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  fiber_length: Yup.number().typeError('Must be a number').required('Rewind Length is required').min(0.001, 'Must be > 0'),
+  machine_no: Yup.mixed().required('Machine No is required'),
   operator: Yup.string().required('Operator is required'),
+  rew_reason: Yup.string().required('Rew Reason is required').notOneOf(['Select'], 'Please select a reason'),
 });
 
 /* ── Confirm Dialog ── */
@@ -46,6 +51,7 @@ const RewindingEntry = () => {
   const [ptUsers, setPtUsers] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
+  const [rewMachines, setRewMachines] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [generatedFid, setGeneratedFid] = useState('');
   const [confirmDialog, setConfirmDialog] = useState(false);
@@ -55,10 +61,11 @@ const RewindingEntry = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [uRes, tRes, cRes] = await Promise.all([getPTUsers(), getBobbinTypes(), getBobbinColors()]);
+        const [uRes, tRes, cRes, mRes] = await Promise.all([getPTUsers(), getBobbinTypes(), getBobbinColors(), getRewMachines()]);
         setPtUsers(uRes?.data || []);
         setBobbinTypes(tRes?.data || []);
         setBobbinColors(cRes?.data || []);
+        setRewMachines((mRes?.data || []).filter(m => m.is_active));
       } catch (_) {}
     })();
   }, []);
@@ -66,6 +73,7 @@ const RewindingEntry = () => {
   const operatorOptions = ptUsers.map(u => ({ label: u.pt_user_name || u.draw_user_name, value: u.pt_user_name || u.draw_user_name }));
   const bobbinTypeOptions = bobbinTypes.map(t => ({ label: t.bobbin_type_name, value: t.bobbin_type_name }));
   const bobbinColorOptions = bobbinColors.map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_name }));
+  const machineOptions = rewMachines.map(m => ({ label: m.rew_machine_no, value: m.rew_machine_no }));
 
   const nextInstruction = instructions.find(i => !i.is_done);
 
@@ -109,7 +117,12 @@ const RewindingEntry = () => {
 
   /* ── Toggle instruction ── */
   const toggleInstr = (instrId) => {
-    setSelectedInstr(prev => prev.includes(instrId) ? prev.filter(id => id !== instrId) : [...prev, instrId]);
+    setSelectedInstr(prev => {
+      const updated = prev.includes(instrId) ? prev.filter(id => id !== instrId) : [...prev, instrId];
+      // Clear FID when any instruction is selected (cut)
+      if (updated.length > 0) { setGeneratedFid(''); }
+      return updated;
+    });
   };
 
   /* ── Submit (called after confirmation if needed) ── */
@@ -225,13 +238,28 @@ const RewindingEntry = () => {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Formik initialValues={initialValues} validationSchema={validationSchema} validateOnChange={false} validateOnBlur={true}
           onSubmit={(v, helpers) => handleSubmit(v, helpers)}>
-          {({ values, setValues, setFieldValue, resetForm }) => {
+          {({ values, setValues, setFieldValue, resetForm, errors, touched, submitCount }) => {
             const len = parseFloat(values.fiber_length) || 0;
             const available = parseFloat(values.balance_length) || 0;
             const remaining = available - len;
 
+            // Show errors after first submit attempt
+            const showErrors = submitCount > 0 && Object.keys(errors).length > 0;
+
             return (
               <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
+
+                {/* Validation Errors Alert */}
+                {showErrors && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex-shrink-0">
+                    <p className="text-[9px] font-bold text-red-700 uppercase mb-1">Please fill required fields:</p>
+                    <ul className="flex flex-wrap gap-x-4 gap-y-0.5">
+                      {Object.values(errors).map((err, i) => (
+                        <li key={i} className="text-[9px] text-red-600 font-medium">• {err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* ── Row 1: 3 Cards ── */}
                 <div className="grid grid-cols-3 gap-2 flex-shrink-0">
@@ -252,20 +280,49 @@ const RewindingEntry = () => {
                           Fetch
                         </button>
                       </div>
-                      <FormikInput compact label="Bobbin No" name="bobbin_no" />
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-800 uppercase ml-0.5 block mb-0.5">Bobbin No *</label>
+                        <Field name="bobbin_no">
+                          {({ field, form, meta }) => (
+                            <>
+                              <input
+                                {...field}
+                                placeholder="Enter bobbin no..."
+                                className={`w-full bg-slate-100 border rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20 ${meta.touched && meta.error ? 'border-red-500' : 'border-slate-200'}`}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  form.setFieldValue('bobbin_no', val);
+                                  if (val.trim().length >= 10 && fgRewind && !form.values.is_scrap) {
+                                    handleGenerateFid();
+                                  } else if (val.trim().length < 10) {
+                                    setGeneratedFid('');
+                                  }
+                                }}
+                              />
+                              {meta.touched && meta.error && <p className="text-red-500 text-[9px] mt-0.5">{meta.error}</p>}
+                            </>
+                          )}
+                        </Field>
+                      </div>
                       <FormikInput compact label="Parent FID" name="bobbin_fid" readOnly />
                       <FormikInput compact label="Total Length" name="total_length" readOnly />
                       <FormikInput compact label="Balance Length" name="balance_length" readOnly />
                       <FormikInput compact label="Rew Type" name="rewinding_type" readOnly />
-                      <FormikSelect compact label="Rew Reason" name="rew_reason" options={REW_REASONS} />
+                      <FormikSelect compact label="Rew Reason *" name="rew_reason" options={REW_REASONS} />
                       <div className="col-span-2 flex items-end gap-2">
                         <div className="flex-1"><FormikInput compact label="Rewind Length *" name="fiber_length" type="number" step="0.001" placeholder="0.000" /></div>
                         <label className={`flex items-center gap-1.5 px-2 py-1.5 rounded border cursor-pointer transition-all ${values.is_scrap ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-slate-500'}`}>
-                          <Field type="checkbox" name="is_scrap" className="w-3 h-3 accent-rose-600" />
+                          <Field type="checkbox" name="is_scrap" className="w-3 h-3 accent-rose-600"
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setFieldValue('is_scrap', checked);
+                              if (checked) { setGeneratedFid(''); }
+                            }}
+                          />
                           <span className="text-[8px] font-bold uppercase">Scrap</span>
                         </label>
                       </div>
-                      <FormikSelect compact label="Machine No *" name="machine_no" options={MACHINES} />
+                      <FormikSelect compact label="Machine No *" name="machine_no" options={machineOptions} />
                       <FormikSelect compact label="Rew Type" name="rew_type" options={REW_TYPES} />
                     </div>
                   </ModuleCard>
@@ -276,13 +333,9 @@ const RewindingEntry = () => {
                       <div className="col-span-2 flex items-end gap-1.5">
                         <div className="flex-1">
                           <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5 block mb-0.5">Generated FID</label>
-                          <input readOnly value={generatedFid || ''} placeholder="Click Generate..."
+                          <input readOnly value={generatedFid || ''} placeholder="Auto-generates after 10 char bobbin no"
                             className="w-full bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none font-mono font-bold text-indigo-700" />
                         </div>
-                        <button type="button" onClick={handleGenerateFid} disabled={values.is_scrap}
-                          className="px-3 py-1.5 bg-amber-500 text-white text-[8px] font-bold rounded uppercase hover:bg-amber-600 h-[28px] whitespace-nowrap disabled:opacity-40">
-                          Gen FID
-                        </button>
                       </div>
                       <FormikSelect compact label="Bobbin Type" name="bobbin_type" options={bobbinTypeOptions} />
                       <FormikSelect compact label="Operator *" name="operator" options={operatorOptions} />

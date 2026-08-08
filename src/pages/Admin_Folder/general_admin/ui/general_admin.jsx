@@ -14,6 +14,7 @@ import MaterialMasterPanel from './MaterialMasterPanel';
 import ProcessTypePanel from './ProcessTypePanel';
 import BomMasterPanel from '../bom_master/ui/BomMasterPanel';
 import ProcessOrderPanel from '../process_order/ui/ProcessOrderPanel';
+import MesConfigPanel from '../mes_config/ui/MesConfigPanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -102,6 +103,14 @@ const ADMIN_CARDS = [
     color: 'text-cyan-600 bg-cyan-100',
     component: 'preform_vendor',
   },
+  {
+    key: 'mes_config',
+    title: 'MES Config',
+    desc: 'Manage application configurations',
+    icon: Settings,
+    color: 'text-purple-600 bg-purple-100',
+    component: 'mes_config',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -158,6 +167,10 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'preform_vendor') {
     return <PreformVendorPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'mes_config') {
+    return <MesConfigPanel onBack={() => setActiveCard(null)} />;
   }
 
   return (

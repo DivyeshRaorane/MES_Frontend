@@ -23,3 +23,9 @@ export const getPTUsers = async () => {
   const res = await axios.get(`${API}/api/getptusers`);
   return res.data;
 };
+
+/* ── Get Rewinding Machines (active) ── */
+export const getRewMachines = async () => {
+  const res = await axios.get(`${API}/api/admin/rewmachines`);
+  return res.data;
+};

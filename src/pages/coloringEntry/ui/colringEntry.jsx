@@ -5,14 +5,18 @@ import { Layers, Ruler, Clock, Scan } from 'lucide-react';
 import { FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { scanBobbinForColoring, saveColourEntry, getPTUsers } from '../services/coloring.api';
+import { scanBobbinForColoring, saveColourEntry, getPTUsers, getColorMachines } from '../services/coloring.api';
 import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
 import { getBobbinTypes } from '../../Admin_Folder/proof_testing/bobbin_type/service/bobbin_type.api';
 
-const MACHINES = [{ label: '1', value: '1' }, { label: '2', value: '2' }, { label: '3', value: '3' }, { label: '4', value: '4' }];
 const BATCH_CODES = ['Select', 'CBC-001', 'CBC-002', 'CBC-003', 'CBC-004'];
 
 const validationSchema = Yup.object({
+  bobbin_no: Yup.string().when('is_scrap', {
+    is: false,
+    then: (schema) => schema.required('Bobbin No is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
   fiber_length: Yup.number().typeError('Must be a number').required('Length is required').min(0.001, 'Must be > 0'),
   machine_no: Yup.mixed().required('Machine is required'),
   operator: Yup.string().required('Operator is required'),
@@ -26,6 +30,7 @@ const ColoringEntry = () => {
   const [ptUsers, setPtUsers] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
+  const [colorMachines, setColorMachines] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [generatedFid, setGeneratedFid] = useState('');
   const scanRef = useRef(null);
@@ -33,10 +38,11 @@ console.log("fgcolor:", fgColor)
   useEffect(() => {
     (async () => {
       try {
-        const [uRes, tRes, cRes] = await Promise.all([getPTUsers(), getBobbinTypes(), getBobbinColors()]);
+        const [uRes, tRes, cRes, mRes] = await Promise.all([getPTUsers(), getBobbinTypes(), getBobbinColors(), getColorMachines()]);
         setPtUsers(uRes?.data || []);
         setBobbinTypes(tRes?.data || []);
         setBobbinColors(cRes?.data || []);
+        setColorMachines((mRes?.data || []).filter(m => m.is_active));
       } catch (_) {}
     })();
   }, []);
@@ -44,6 +50,7 @@ console.log("fgcolor:", fgColor)
   const operatorOptions = ptUsers.map(u => ({ label: u.pt_user_name || u.draw_user_name, value: u.pt_user_name || u.draw_user_name }));
   const bobbinTypeOptions = bobbinTypes.map(t => ({ label: t.bobbin_type_name, value: t.bobbin_type_name }));
   const bobbinColorOptions = bobbinColors.map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_name }));
+  const machineOptions = colorMachines.map(m => ({ label: m.color_machine_no, value: m.color_machine_no }));
 
   /* ── Scan ── */
   const handleScan = async (setValues) => {
@@ -55,7 +62,7 @@ console.log("fgcolor:", fgColor)
       if (!res?.success) {
         showError(res?.message || 'No pending coloring request found for this bobbin.');
         setFgColor(null); setHistory([]); setGeneratedFid('');
-        setValues(prev => ({ ...prev, bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
+        setValues(prev => ({ ...prev, bobbin_no: '', parent_bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
         return;
       }
       setFgColor(res.data.fg_color);
@@ -63,7 +70,8 @@ console.log("fgcolor:", fgColor)
       setGeneratedFid('');
       setValues(prev => ({
         ...prev,
-        bobbin_no: res.data.fg_color.bobbin_no,
+        bobbin_no: '',
+        parent_bobbin_no: res.data.fg_color.bobbin_no,
         original_color: res.data.fg_color.current_color || '',
         require_color: res.data.fg_color.require_color || '',
         total_length: res.data.fg_color.total_length || '',
@@ -76,7 +84,7 @@ console.log("fgcolor:", fgColor)
     } catch (e) {
       showError(e?.response?.data?.message || 'Scan failed');
       setFgColor(null); setHistory([]); setGeneratedFid('');
-      setValues(prev => ({ ...prev, bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
+      setValues(prev => ({ ...prev, bobbin_no: '', parent_bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '', qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '', die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '' }));
     }
   };
 
@@ -111,7 +119,8 @@ console.log("fgcolor:", fgColor)
     setSubmitting(true);
     try {
       const payload = {
-        bobbin_no: values.bobbin_no, fg_color_id: fgColor.fg_color_id,
+        bobbin_no: isScrap ? '' : values.bobbin_no, parent_bobbin_no: values.parent_bobbin_no,
+        fg_color_id: fgColor.fg_color_id,
         original_color: values.original_color, require_color: values.require_color,
         color_batch_code: values.color_batch_code,
         fiber_length: len,
@@ -133,13 +142,14 @@ console.log("fgcolor:", fgColor)
         setFieldValue('balance_length', remaining.toFixed(3));
         setFieldValue('fiber_length', ''); setFieldValue('is_scrap', false);
         setFieldValue('color_batch_code', ''); setFieldValue('remark', '');
+        setFieldValue('bobbin_no', '');
       } else showError(res?.message || 'Save failed');
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
     setSubmitting(false);
   };
 
   const initialValues = {
-    bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '',
+    bobbin_no: '', parent_bobbin_no: '', original_color: '', require_color: '', total_length: '', balance_length: '',
     qc_remark: '', fiber_length: '', is_scrap: false, color_batch_code: '', machine_no: '',
     die_change: 'No', bobbin_type: '', operator: '', bobbin_color: '', remark: '',
   };
@@ -195,7 +205,7 @@ console.log("fgcolor:", fgColor)
                         <span className="text-[9px] font-bold text-blue-800 uppercase tracking-wider">Request Info</span>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <FormikInput compact label="Bobbin No" name="bobbin_no" readOnly />
+                        <FormikInput compact label="Parent Bobbin No" name="parent_bobbin_no" readOnly />
                         <FormikInput compact label="Original Color" name="original_color" readOnly />
                         <FormikInput compact label="Required Color" name="require_color" readOnly />
                         <FormikInput compact label="Total Length (KM)" name="total_length" readOnly />
@@ -223,6 +233,27 @@ console.log("fgcolor:", fgColor)
                         <span className="text-[9px] font-bold text-indigo-800 uppercase tracking-wider">Entry Details</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
+                        {/* Bobbin No — user fills this, auto-generates FID at 10 chars */}
+                        <div className="col-span-2">
+                          <label className="block text-[9px] font-bold text-slate-600 mb-0.5">Bobbin No *</label>
+                          <Field name="bobbin_no">
+                            {({ field, form }) => (
+                              <input
+                                {...field}
+                                placeholder="Enter bobbin no..."
+                                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 font-medium"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  form.setFieldValue('bobbin_no', val);
+                                  // Auto-generate FID when 10 characters are entered and not scrap
+                                  if (val.trim().length >= 10 && fgColor && !form.values.is_scrap) {
+                                    handleGenerateFid();
+                                  }
+                                }}
+                              />
+                            )}
+                          </Field>
+                        </div>
                         {/* Single length field + scrap checkbox */}
                         <div className="col-span-2 flex items-end gap-2">
                           <div className="flex-1">
@@ -231,7 +262,13 @@ console.log("fgcolor:", fgColor)
                           <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${
                             values.is_scrap ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                           }`}>
-                            <Field type="checkbox" name="is_scrap" className="w-3.5 h-3.5 accent-rose-600" />
+                            <Field type="checkbox" name="is_scrap" className="w-3.5 h-3.5 accent-rose-600"
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setFieldValue('is_scrap', checked);
+                                if (checked) { setGeneratedFid(''); }
+                              }}
+                            />
                             <span className="text-[9px] font-bold uppercase">Scrap</span>
                           </label>
                         </div>
@@ -241,7 +278,7 @@ console.log("fgcolor:", fgColor)
                           </div>
                         )}
                         <FormikSelect compact label="Color Batch Code" name="color_batch_code" options={BATCH_CODES} />
-                        <FormikSelect compact label="Machine No *" name="machine_no" options={MACHINES} />
+                        <FormikSelect compact label="Machine No *" name="machine_no" options={machineOptions} />
                         <FormikSelect compact label="Die Change" name="die_change" options={[{ label: 'Yes', value: 'Yes' }, { label: 'No', value: 'No' }]} />
                         <FormikSelect compact label="Bobbin Type" name="bobbin_type" options={bobbinTypeOptions} />
                         <FormikSelect compact label="Operator *" name="operator" options={operatorOptions} />
@@ -254,15 +291,9 @@ console.log("fgcolor:", fgColor)
                       {/* FID Generation — only when NOT scrap */}
                       {fgColor && !values.is_scrap && (
                         <div className="mt-3 bg-white rounded-lg border border-slate-200 p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-[8px] font-bold text-slate-400 uppercase">Generated FID</p>
-                              <p className="text-sm font-mono font-bold text-indigo-700 mt-0.5">{generatedFid || '— not generated —'}</p>
-                            </div>
-                            <button type="button" onClick={handleGenerateFid}
-                              className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[9px] font-bold rounded-lg hover:shadow-lg hover:shadow-amber-200 transition-all">
-                              Generate FID
-                            </button>
+                          <div>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase">Generated FID</p>
+                            <p className="text-sm font-mono font-bold text-indigo-700 mt-0.5">{generatedFid || '— auto-generates after 10 char bobbin no —'}</p>
                           </div>
                         </div>
                       )}

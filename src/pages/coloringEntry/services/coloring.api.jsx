@@ -24,6 +24,12 @@ export const getPTUsers = async () => {
   return res.data;
 };
 
+/* ── Get Color Machines (active) ── */
+export const getColorMachines = async () => {
+  const res = await axios.get(`${API}/api/admin/colormachines`);
+  return res.data;
+};
+
 /* ── Get Job Card list summary (for Color Job Cards tab) ── */
 export const getColorJobCards = async () => {
   const res = await axios.get(`${API}/api/colouring/jobcards`, { headers: authHeaders() });

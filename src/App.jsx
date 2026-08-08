@@ -56,6 +56,7 @@ import CustomerComplaint from './pages/customer_complaint/ui/customer_complaint'
 import { ToastContainer } from 'react-toastify'
 import PreformEntryForm from './pages/preform_enrty_SAP/ui/Preform_entry_SAP'
 import DrawManagementAdmin from './pages/Admin_Folder/draw_management/ui/draw_management_admin'
+import PTAdmin from './pages/Admin_Folder/proof_testing/ui/pt_admin'
 import GeneralAdmin from './pages/Admin_Folder/general_admin/ui/general_admin'
 import QualityAdmin from './pages/Admin_Folder/quality_admin/ui/quality_admin'
 import TrayManagement from './pages/Admin_Folder/FG/tray_management/ui/tray_management'
@@ -147,6 +148,7 @@ function App() {
         <Route path='admin/general' element={<GeneralAdmin/>}/>
         <Route path='admin/usercreation' element={<UserCreationForm onSubmit={(v) => console.log('Create:', v)} title="Create New User" />}/>
         <Route path='admin/drawmanagement' element={<DrawManagementAdmin/>}/>
+        <Route path='admin/prooftesting' element={<PTAdmin/>}/>
         <Route path='admin/quality' element={<QualityAdmin/>}/>
         <Route path='admin/traymanagement' element={<TrayManagement/>}/>
         <Route path='admin/reportbuilder' element={<ReportBuilderList/>}/>

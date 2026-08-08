@@ -112,6 +112,7 @@ const MENU = [
     children: [
       { label: 'General Admin',    path: '/admin/general' },
       { label: 'Draw Management',  path: '/admin/drawmanagement' },
+      { label: 'Proof Testing',    path: '/admin/prooftesting' },
       { label: 'Quality Admin',    path: '/admin/quality' },
       { label: 'FG / Tray Mgmt',  path: '/admin/traymanagement' },
       { label: 'Report Builder',   path: '/admin/reportbuilder' },

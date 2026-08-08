@@ -1,7 +1,9 @@
 import { useState, useEffect, Fragment } from 'react';
-import { ChevronDown, ChevronRight, RefreshCw, ClipboardList } from 'lucide-react';
+import { ChevronDown, ChevronRight, RefreshCw, ClipboardList, Download } from 'lucide-react';
 import { getColorJobCards, getColorJobCardBobbins } from '../services/coloring.api';
-import { showError } from '../../../utils/toastService';
+import { showError, showSuccess } from '../../../utils/toastService';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 /* ══════════════════════════════════════════════════════════
    COLOR JOB CARD LIST
@@ -36,6 +38,40 @@ const ColorJobCardList = () => {
       else { showError(res?.message || 'Failed to load bobbins'); setBobbins([]); }
     } catch (e) { showError(e?.response?.data?.message || 'Failed to load bobbins'); setBobbins([]); }
     setBobbinLoading(false);
+  };
+
+  /* Export bobbins for a job card to Excel */
+  const handleExportExcel = async (e, col_jcard_no) => {
+    e.stopPropagation(); // prevent row expand/collapse
+    try {
+      const res = await getColorJobCardBobbins(col_jcard_no);
+      if (!res?.success || !res.data?.length) {
+        showError('No bobbin data available to export');
+        return;
+      }
+      const bobbinData = res.data;
+      const headers = ['#', 'Bobbin No', 'Bobbin FID', 'Current Color', 'Require Color', 'Total Length', 'Balance Length', 'Status'];
+      const rows = bobbinData.map((b, i) => [
+        i + 1,
+        b.bobbin_no || '',
+        b.bobbin_fid || '',
+        b.current_color || '',
+        b.require_color || '',
+        b.total_length || '',
+        b.balance_length ?? b.total_length ?? '',
+        b.is_done ? 'Done' : 'Pending',
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 2, 14) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Bobbins');
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `${col_jcard_no}_Bobbins.xlsx`);
+      showSuccess('Excel exported successfully');
+    } catch (err) {
+      showError(err?.response?.data?.message || 'Failed to export Excel');
+    }
   };
 
   /* Progress bar renderer */
@@ -97,6 +133,7 @@ const ColorJobCardList = () => {
                 <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase text-center">Pending</th>
                 <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase w-48">Progress</th>
                 <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">Status</th>
+                <th className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase text-center">Export</th>
               </tr>
             </thead>
             <tbody>
@@ -128,12 +165,22 @@ const ColorJobCardList = () => {
                           {isComplete ? 'Completed' : 'In Progress'}
                         </span>
                       </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => handleExportExcel(e, jc.col_jcard_no)}
+                          title="Export bobbins to Excel"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded-md border border-emerald-200 transition-all"
+                        >
+                          <Download size={10} /> Excel
+                        </button>
+                      </td>
                     </tr>
 
                     {/* Expanded bobbin detail */}
                     {isExpanded && (
                       <tr>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="bg-slate-50 border-b border-indigo-200 px-6 py-3">
                             {bobbinLoading ? (
                               <p className="text-[10px] text-slate-400 py-2">Loading bobbins...</p>
