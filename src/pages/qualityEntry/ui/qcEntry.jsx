@@ -307,7 +307,7 @@ const QCEntryScreen = () => {
 
       // Set mbend remark from qc_entry_temp data
       setMbendRemark(data.remark || '');
-      console.log("Remark:", mbendRemark)
+      console.log("Remark:", data)
 
       // Execute MBEnd copy + MAC calculation (backend handles all logic)
       if (res.source !== 'final') {

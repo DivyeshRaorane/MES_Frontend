@@ -196,7 +196,7 @@ const GradeManagement = ({ onBack }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 z-10">
               <tr>
-                {['ID','Grade','product_type','Min OL','Max OL','Priority','Status','Actions'].map(h => (
+                {['ID','Grade','product_type','Min OL','Max OL','Color Type','Status','Actions'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-[9px] font-bold text-slate-300 uppercase border-r border-slate-700 last:border-0">{h}</th>
                 ))}
               </tr>
@@ -211,7 +211,7 @@ const GradeManagement = ({ onBack }) => {
                   <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.product_type || '—'}</td>
                   <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.min_optical_length ?? '—'}</td>
                   <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">{g.max_optical_length ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-xs font-bold text-indigo-700 border-r border-slate-100">{g.priority}</td>
+                  <td className="px-4 py-2.5 text-xs font-bold text-indigo-700 border-r border-slate-100">{g.color_type}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${g.status ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                       {g.status ? 'Active' : 'Inactive'}
