@@ -155,7 +155,23 @@ const functionReportsSlice = createSlice({
       .addCase(getAllFunctionReports.fulfilled, (state, action) => {
         state.loading.list = false;
         const payload = action.payload;
-        state.registeredReports = Array.isArray(payload) ? payload : (payload?.data || []);
+        const reports = Array.isArray(payload) ? payload : (payload?.data || []);
+        // Ensure param_config is always a parsed array
+        state.registeredReports = reports.map(r => {
+          let config = r.param_config;
+          if (typeof config === 'string') {
+            try { config = JSON.parse(config); } catch { config = []; }
+          }
+          if (!Array.isArray(config)) config = [];
+          config = config.map(p => {
+            let opts = p.dropdown_options;
+            if (typeof opts === 'string') {
+              try { opts = JSON.parse(opts); } catch { opts = []; }
+            }
+            return { ...p, dropdown_options: opts };
+          });
+          return { ...r, param_config: config };
+        });
       })
       .addCase(getAllFunctionReports.rejected, (state, action) => {
         state.loading.list = false;
@@ -212,7 +228,24 @@ const functionReportsSlice = createSlice({
       .addCase(getUserFunctionReports.fulfilled, (state, action) => {
         state.loading.userList = false;
         const payload = action.payload;
-        state.userReports = Array.isArray(payload) ? payload : (payload?.data || []);
+        const reports = Array.isArray(payload) ? payload : (payload?.data || []);
+        // Ensure param_config is always a parsed array (may come as JSON string from API)
+        state.userReports = reports.map(r => {
+          let config = r.param_config;
+          if (typeof config === 'string') {
+            try { config = JSON.parse(config); } catch { config = []; }
+          }
+          if (!Array.isArray(config)) config = [];
+          // Parse dropdown_options within each param if stored as string
+          config = config.map(p => {
+            let opts = p.dropdown_options;
+            if (typeof opts === 'string') {
+              try { opts = JSON.parse(opts); } catch { opts = []; }
+            }
+            return { ...p, dropdown_options: opts };
+          });
+          return { ...r, param_config: config };
+        });
       })
       .addCase(getUserFunctionReports.rejected, (state, action) => {
         state.loading.userList = false;

@@ -205,6 +205,9 @@ const initialWizardState = {
   // Permissions
   permissions: [], // [{ type: 'role'|'user', id, view, create, update, delete, export }]
 
+  // Excel Heading (applies to single-sheet and multi-sheet)
+  heading: { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 },
+
   // Multi-Sheet mode (when true, steps 2-9 become sheet/table management)
   isMultiSheet: false,
   sheets: [],             // [{ id, sheetName, displayOrder, tables: [] }]
@@ -462,6 +465,14 @@ const reportBuilderSlice = createSlice({
       state.wizard.permissions.splice(action.payload, 1);
     },
 
+    // ── Report Heading (single-sheet mode) ──────────────────────────────
+    updateReportHeading: (state, action) => {
+      if (!state.wizard.heading) {
+        state.wizard.heading = { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 };
+      }
+      Object.assign(state.wizard.heading, action.payload);
+    },
+
     // ── Multi-Sheet Mode Toggle ─────────────────────────────────────────
     setMultiSheetMode: (state, action) => {
       state.wizard.isMultiSheet = action.payload;
@@ -472,6 +483,7 @@ const reportBuilderSlice = createSlice({
           sheetName: 'Sheet 1',
           displayOrder: 1,
           tables: [],
+          heading: { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 },
         }];
         state.wizard.activeSheetIndex = 0;
       }
@@ -485,6 +497,7 @@ const reportBuilderSlice = createSlice({
         sheetName: `Sheet ${newOrder}`,
         displayOrder: newOrder,
         tables: [],
+        heading: { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 },
       });
       state.wizard.activeSheetIndex = state.wizard.sheets.length - 1;
     },
@@ -516,6 +529,16 @@ const reportBuilderSlice = createSlice({
       state.wizard.activeSheetIndex = action.payload;
       state.wizard.activeTableIndex = null;
       state.wizard.editingTableConfig = null;
+    },
+
+    // ── Sheet Heading ────────────────────────────────────────────────────
+    msUpdateSheetHeading: (state, action) => {
+      const sheet = state.wizard.sheets[state.wizard.activeSheetIndex];
+      if (!sheet) return;
+      if (!sheet.heading) {
+        sheet.heading = { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 };
+      }
+      Object.assign(sheet.heading, action.payload);
     },
 
     // ── Table Management ─────────────────────────────────────────────────
@@ -746,6 +769,8 @@ const reportBuilderSlice = createSlice({
         aggregates: parseJson(report.aggregates, []),
         having: parseJson(report.having, []),
         permissions: parseJson(report.permissions, []),
+        // Report-level heading (for single-sheet export)
+        heading: parseJson(report.heading, { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 }),
         // Section visibility (Display In)
         selectedSections: report.sections 
           ? report.sections.map(s => s.section_id) 
@@ -758,6 +783,7 @@ const reportBuilderSlice = createSlice({
           id: sheet.id || `temp_${Date.now()}_${idx}`,
           sheetName: sheet.sheet_name || sheet.sheetName || `Sheet ${idx + 1}`,
           displayOrder: sheet.display_order || sheet.displayOrder || idx + 1,
+          heading: parseJson(sheet.heading, { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 }),
           tables: parseJson(sheet.tables, []).map((table, tIdx) => ({
             id: table.id || `temp_${Date.now()}_${idx}_${tIdx}`,
             tableName: table.table_name || table.tableName || `Table ${tIdx + 1}`,
@@ -911,11 +937,13 @@ export const {
   addAggregate, updateAggregate, removeAggregate,
   addHaving, updateHaving, removeHaving,
   setPermissions, addPermission, updatePermission, removePermission,
+  updateReportHeading,
   resetWizard, setEditingReport, loadReportIntoWizard,
   clearError, clearPreview,
   // Multi-sheet actions
   setMultiSheetMode,
   msAddSheet, msRemoveSheet, msRenameSheet, msReorderSheets, msSetActiveSheet,
+  msUpdateSheetHeading,
   msAddTable, msRemoveTable, msDuplicateTable, msReorderTables,
   msStartEditingTable, msCancelEditingTable, msSaveEditingTable,
   msUpdateTableField, msSetTableMainTable,

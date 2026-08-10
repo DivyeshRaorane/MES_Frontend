@@ -1,12 +1,22 @@
 /**
  * Step 1 - Report Information
- * Report name, description, module, status, display sections, report type
+ * Report name, description, module, status, display sections, report type, excel heading
  */
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateWizardField, setMultiSheetMode, getReportSections } from '../../../controller/reportBuilder.slice';
-import { fetchReportSectionMappings } from '../../../services/reportBuilder.api';
-import { FileText, Layers, Table2, LayoutGrid } from 'lucide-react';
+import { updateWizardField, setMultiSheetMode, updateReportHeading } from '../../../controller/reportBuilder.slice';
+import { FileText, Layers, Table2, LayoutGrid, Type, ChevronDown, ChevronRight } from 'lucide-react';
+
+/* Static sections matching sidebar navigation - NOT dependent on database */
+const SIDEBAR_SECTIONS = [
+  { section_id: 'DRAW_MANAGEMENT', section_name: 'Draw Management' },
+  { section_id: 'PROOF_TESTING', section_name: 'Proof Testing' },
+  { section_id: 'QUALITY', section_name: 'Quality' },
+  { section_id: 'QUALITY_ASSURANCE', section_name: 'Quality Assurance' },
+  { section_id: 'FINISH_GOODS', section_name: 'Finish Goods' },
+  { section_id: 'DISPATCH', section_name: 'Dispatch' },
+  { section_id: 'DYNAMIC_REPORTS', section_name: 'Dynamic Reports' },
+];
 
 const MODULES = [
   'Draw Management',
@@ -21,35 +31,16 @@ const MODULES = [
 
 const StepReportInfo = () => {
   const dispatch = useDispatch();
-  const { reportName, description, module, status, isMultiSheet, selectedSections } = useSelector(
+  const { reportName, description, module, status, isMultiSheet, selectedSections, heading } = useSelector(
     (state) => state.reportBuilder.wizard
   );
-  const sections = useSelector((state) => state.reportBuilder.sections);
   const editingReportId = useSelector((state) => state.reportBuilder.editingReportId);
+  const [showHeadingConfig, setShowHeadingConfig] = useState(false);
 
-  // Fetch sections on mount if not already loaded
-  useEffect(() => {
-    if (!sections || sections.length === 0) {
-      dispatch(getReportSections());
-    }
-  }, [dispatch, sections]);
+  const headingConfig = heading || { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 };
 
-  // Fetch section mappings for the report being edited (if not already loaded)
-  useEffect(() => {
-    if (editingReportId && (!selectedSections || selectedSections.length === 0)) {
-      fetchReportSectionMappings(editingReportId)
-        .then((data) => {
-          const mappings = Array.isArray(data) ? data : (data?.sections || data?.data || []);
-          if (mappings.length > 0) {
-            const ids = mappings.map((s) => s.section_id);
-            dispatch(updateWizardField({ field: 'selectedSections', value: ids }));
-          }
-        })
-        .catch(() => {
-          // Backend may not support this endpoint yet - ignore
-        });
-    }
-  }, [editingReportId, selectedSections, dispatch]);
+  // Use static sections from sidebar - no database dependency
+  const sections = SIDEBAR_SECTIONS;
 
   const handleChange = (field, value) => {
     dispatch(updateWizardField({ field, value }));
@@ -172,38 +163,32 @@ const StepReportInfo = () => {
 
         {/* Section checkboxes */}
         <div className="grid grid-cols-2 gap-2">
-          {sections && sections.length > 0 ? (
-            sections.map((section) => {
-              const isChecked = (selectedSections || []).includes(section.section_id);
-              return (
-                <label
-                  key={section.section_id}
-                  className={`flex items-center gap-2.5 p-2.5 rounded-lg border-2 cursor-pointer transition-all
-                    ${isChecked
-                      ? 'bg-indigo-50 border-indigo-400 text-indigo-800'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => handleSectionToggle(section.section_id)}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 
-                      focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
-                  />
-                  <span className="text-[11px] font-bold">{section.section_name}</span>
-                </label>
-              );
-            })
-          ) : (
-            <div className="col-span-2 text-center py-4">
-              <p className="text-[10px] text-slate-400">Loading sections...</p>
-            </div>
-          )}
+          {sections.map((section) => {
+            const isChecked = (selectedSections || []).includes(section.section_id);
+            return (
+              <label
+                key={section.section_id}
+                className={`flex items-center gap-2.5 p-2.5 rounded-lg border-2 cursor-pointer transition-all
+                  ${isChecked
+                    ? 'bg-indigo-50 border-indigo-400 text-indigo-800'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => handleSectionToggle(section.section_id)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 
+                    focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span className="text-[11px] font-bold">{section.section_name}</span>
+              </label>
+            );
+          })}
         </div>
 
         {/* Validation: at least one section */}
-        {(selectedSections || []).length === 0 && sections && sections.length > 0 && (
+        {(selectedSections || []).length === 0 && (
           <p className="text-[10px] text-amber-600 font-semibold mt-1">
             At least one section must be selected
           </p>
@@ -284,6 +269,144 @@ const StepReportInfo = () => {
           </p>
         </div>
       )}
+
+      {/* Excel Heading Configuration */}
+      <div className="space-y-1.5">
+        <button
+          type="button"
+          onClick={() => setShowHeadingConfig(!showHeadingConfig)}
+          className="flex items-center gap-2 w-full text-left"
+        >
+          {showHeadingConfig ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
+          <Type size={14} className="text-indigo-500" />
+          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Excel Heading (Optional)</span>
+          {headingConfig.text && (
+            <span className="text-[10px] text-slate-400 ml-2 truncate max-w-[200px]">— {headingConfig.text}</span>
+          )}
+        </button>
+        <p className="text-[10px] text-slate-500 ml-7">
+          Configure a styled heading that appears at the top of exported Excel file
+        </p>
+
+        {showHeadingConfig && (
+          <div className="ml-2 mt-2 p-4 rounded-xl border-2 border-slate-200 bg-slate-50/50 space-y-4">
+            {/* Heading Text */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Heading Text</label>
+              <input
+                type="text"
+                value={headingConfig.text}
+                onChange={(e) => dispatch(updateReportHeading({ text: e.target.value }))}
+                placeholder="e.g. Draw Entry Report"
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                  placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Font Size */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Font Size</label>
+                <input
+                  type="number" min="8" max="36" value={headingConfig.fontSize}
+                  onChange={(e) => dispatch(updateReportHeading({ fontSize: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                    focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+
+              {/* Start Cell */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Start Cell</label>
+                <input
+                  type="text" value={headingConfig.startCell}
+                  onChange={(e) => dispatch(updateReportHeading({ startCell: e.target.value.toUpperCase() }))}
+                  placeholder="B2"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                    placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                />
+                <p className="text-[9px] text-slate-400 mt-0.5">e.g. A1, B2, C3</p>
+              </div>
+
+              {/* Merge Rows */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Merge Rows</label>
+                <input
+                  type="number" min="1" max="10" value={headingConfig.mergeRows}
+                  onChange={(e) => dispatch(updateReportHeading({ mergeRows: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                    focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+
+              {/* Merge Cols */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Merge Columns</label>
+                <input
+                  type="number" min="1" max="20" value={headingConfig.mergeCols}
+                  onChange={(e) => dispatch(updateReportHeading({ mergeCols: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                    focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Background Color */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Background Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color" value={headingConfig.bgColor}
+                    onChange={(e) => dispatch(updateReportHeading({ bgColor: e.target.value }))}
+                    className="w-9 h-9 rounded-lg border-2 border-slate-300 cursor-pointer"
+                  />
+                  <input
+                    type="text" value={headingConfig.bgColor}
+                    onChange={(e) => dispatch(updateReportHeading({ bgColor: e.target.value }))}
+                    className="flex-1 px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                      focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              {/* Text Color */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Text Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color" value={headingConfig.textColor}
+                    onChange={(e) => dispatch(updateReportHeading({ textColor: e.target.value }))}
+                    className="w-9 h-9 rounded-lg border-2 border-slate-300 cursor-pointer"
+                  />
+                  <input
+                    type="text" value={headingConfig.textColor}
+                    onChange={(e) => dispatch(updateReportHeading({ textColor: e.target.value }))}
+                    className="flex-1 px-3 py-2 rounded-lg border-2 border-slate-300 text-sm text-slate-900
+                      focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {headingConfig.text && (
+              <div className="p-3 rounded-lg border-2 border-slate-200 bg-white">
+                <p className="text-[9px] text-slate-400 mb-1.5 uppercase font-bold">Preview</p>
+                <div
+                  className="inline-block px-4 py-2 rounded-md"
+                  style={{ backgroundColor: headingConfig.bgColor, color: headingConfig.textColor, fontSize: `${Math.min(headingConfig.fontSize, 22)}px`, fontWeight: 'bold' }}
+                >
+                  {headingConfig.text}
+                </div>
+                <p className="text-[9px] text-slate-400 mt-1.5">
+                  Cell {headingConfig.startCell} • Spanning {headingConfig.mergeRows} row(s) x {headingConfig.mergeCols} column(s)
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

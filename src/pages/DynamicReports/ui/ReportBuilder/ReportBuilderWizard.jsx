@@ -150,6 +150,7 @@ const ReportBuilderWizard = () => {
           id: sheet.id?.startsWith?.('temp_') ? null : sheet.id,
           sheet_name: sheet.sheetName,
           display_order: sheet.displayOrder,
+          heading: sheet.heading || null,
           tables: sheet.tables.map(table => ({
             id: table.id?.startsWith?.('temp_') ? null : table.id,
             table_name: table.tableName,
@@ -202,6 +203,7 @@ const ReportBuilderWizard = () => {
         aggregates: wizard.aggregates,
         having: wizard.having,
         permissions: wizard.permissions,
+        heading: wizard.heading || null,
         section_ids: wizard.selectedSections || [],
       };
 

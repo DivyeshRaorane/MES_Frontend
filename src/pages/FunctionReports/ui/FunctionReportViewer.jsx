@@ -59,7 +59,20 @@ const FunctionReportViewer = () => {
         .then(res => {
           const report = res?.data || res;
           if (report && report.id) {
-            dispatch(setActiveReport(report));
+            // Parse param_config if it comes as a JSON string
+            let config = report.param_config;
+            if (typeof config === 'string') {
+              try { config = JSON.parse(config); } catch { config = []; }
+            }
+            if (!Array.isArray(config)) config = [];
+            config = config.map(p => {
+              let opts = p.dropdown_options;
+              if (typeof opts === 'string') {
+                try { opts = JSON.parse(opts); } catch { opts = []; }
+              }
+              return { ...p, dropdown_options: opts };
+            });
+            dispatch(setActiveReport({ ...report, param_config: config }));
           }
         })
         .catch(() => {})
@@ -199,7 +212,22 @@ const ReportExecutionPanel = ({ report, onBack }) => {
   const dispatch = useDispatch();
   const { reportResult, resultColumns, totalRows, executionTime, loading } = useSelector(state => state.functionReports);
 
-  const paramConfig = report.param_config || [];
+  // Parse param_config — it may come as a JSON string from the API
+  const paramConfig = (() => {
+    let config = report.param_config || [];
+    if (typeof config === 'string') {
+      try { config = JSON.parse(config); } catch { config = []; }
+    }
+    if (!Array.isArray(config)) config = [];
+    // Ensure dropdown_options is properly parsed for each param
+    return config.map(p => {
+      let opts = p.dropdown_options;
+      if (typeof opts === 'string') {
+        try { opts = JSON.parse(opts); } catch { opts = []; }
+      }
+      return { ...p, dropdown_options: Array.isArray(opts) ? opts : [] };
+    });
+  })();
   const [paramValues, setParamValues] = useState(() => {
     const initial = {};
     paramConfig.forEach(p => {
@@ -403,7 +431,14 @@ const ParamInput = ({ param, value, onChange }) => {
         </select>
       );
     case 'select':
-      return <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value" className={`${baseClass} w-40`} />;
+      return (
+        <select value={value} onChange={e => onChange(e.target.value)} className={`${baseClass} w-40 appearance-none cursor-pointer`}>
+          <option value="">— Select —</option>
+          {(param.dropdown_options || []).map((opt, i) => (
+            <option key={i} value={opt.value}>{opt.label || opt.value}</option>
+          ))}
+        </select>
+      );
     default:
       return <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder="Enter value" className={`${baseClass} w-40`} />;
   }

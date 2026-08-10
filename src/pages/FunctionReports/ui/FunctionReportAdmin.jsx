@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Search, Plus, Edit2, Power, Trash2, Loader2,
-  Database, FileText, Settings, X, RefreshCw, Info,
+  Database, FileText, Settings, X, RefreshCw, Info, PlusCircle, MinusCircle,
 } from 'lucide-react';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
@@ -67,10 +67,27 @@ const FunctionReportAdmin = () => {
       const res = await fetchAllFunctionReports();
       const list = Array.isArray(res) ? res : res?.data || [];
       // Normalize: ensure section_ids exists on each report (backward compat)
-      const normalized = list.map(r => ({
-        ...r,
-        section_ids: r.section_ids || (r.section ? [r.section] : []),
-      }));
+      // Also parse param_config if it comes as a JSON string
+      const normalized = list.map(r => {
+        let config = r.param_config;
+        if (typeof config === 'string') {
+          try { config = JSON.parse(config); } catch { config = []; }
+        }
+        if (!Array.isArray(config)) config = [];
+        // Parse dropdown_options within each param if stored as string
+        config = config.map(p => {
+          let opts = p.dropdown_options;
+          if (typeof opts === 'string') {
+            try { opts = JSON.parse(opts); } catch { opts = []; }
+          }
+          return { ...p, dropdown_options: opts };
+        });
+        return {
+          ...r,
+          param_config: config,
+          section_ids: r.section_ids || (r.section ? [r.section] : []),
+        };
+      });
       setReports(normalized);
     } catch (e) {
       console.error('Failed to load function reports:', e);
@@ -342,7 +359,22 @@ const validationSchema = Yup.object().shape({
 const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, onSaved }) => {
   const [functionParams, setFunctionParams] = useState([]);
   const [loadingParams, setLoadingParams] = useState(false);
-  const [paramConfig, setParamConfig] = useState(item?.param_config || []);
+  const [paramConfig, setParamConfig] = useState(() => {
+    // Parse param_config — it may come as a JSON string from the API
+    let config = item?.param_config || [];
+    if (typeof config === 'string') {
+      try { config = JSON.parse(config); } catch { config = []; }
+    }
+    if (!Array.isArray(config)) config = [];
+    // Ensure dropdown_options is properly parsed for each param
+    return config.map(p => {
+      let opts = p.dropdown_options;
+      if (typeof opts === 'string') {
+        try { opts = JSON.parse(opts); } catch { opts = []; }
+      }
+      return { ...p, dropdown_options: Array.isArray(opts) ? opts : undefined };
+    });
+  });
   const [selectedSections, setSelectedSections] = useState(() => {
     // Support both old single-section and new multi-section format
     if (item?.section_ids && Array.isArray(item.section_ids)) return item.section_ids;
@@ -472,6 +504,42 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
     setParamConfig(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
+      // Initialize dropdown_options when switching to 'select' type
+      if (field === 'input_type' && value === 'select' && (!updated[index].dropdown_options || updated[index].dropdown_options.length === 0)) {
+        updated[index].dropdown_options = [{ label: '', value: '' }];
+      }
+      return updated;
+    });
+  };
+
+  const addDropdownOption = (paramIndex) => {
+    setParamConfig(prev => {
+      const updated = [...prev];
+      const options = updated[paramIndex].dropdown_options || [];
+      updated[paramIndex] = {
+        ...updated[paramIndex],
+        dropdown_options: [...options, { label: '', value: '' }],
+      };
+      return updated;
+    });
+  };
+
+  const removeDropdownOption = (paramIndex, optionIndex) => {
+    setParamConfig(prev => {
+      const updated = [...prev];
+      const options = [...(updated[paramIndex].dropdown_options || [])];
+      options.splice(optionIndex, 1);
+      updated[paramIndex] = { ...updated[paramIndex], dropdown_options: options };
+      return updated;
+    });
+  };
+
+  const updateDropdownOption = (paramIndex, optionIndex, field, value) => {
+    setParamConfig(prev => {
+      const updated = [...prev];
+      const options = [...(updated[paramIndex].dropdown_options || [])];
+      options[optionIndex] = { ...options[optionIndex], [field]: value };
+      updated[paramIndex] = { ...updated[paramIndex], dropdown_options: options };
       return updated;
     });
   };
@@ -662,6 +730,49 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
                               <span className="text-[8px] font-bold text-slate-500">Required</span>
                             </label>
                           </div>
+
+                          {/* Dropdown Options — only shown when input_type is 'select' */}
+                          {param.input_type === 'select' && (
+                            <div className="col-span-12 mt-2 p-2.5 bg-violet-50/50 rounded-lg border border-violet-100">
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-[9px] font-bold text-violet-700 uppercase">
+                                  Dropdown Options
+                                </label>
+                                <button type="button" onClick={() => addDropdownOption(idx)}
+                                  className="flex items-center gap-1 px-2 py-0.5 text-[8px] font-bold text-violet-600 bg-violet-100 border border-violet-200 rounded hover:bg-violet-200 transition-all">
+                                  <PlusCircle size={10} /> Add Option
+                                </button>
+                              </div>
+                              {(!param.dropdown_options || param.dropdown_options.length === 0) ? (
+                                <p className="text-[9px] text-slate-400 text-center py-2">
+                                  No options added. Click "Add Option" to define dropdown values.
+                                </p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {param.dropdown_options.map((opt, optIdx) => (
+                                    <div key={optIdx} className="flex items-center gap-2">
+                                      <input
+                                        value={opt.label}
+                                        onChange={(e) => updateDropdownOption(idx, optIdx, 'label', e.target.value)}
+                                        placeholder="Display Label"
+                                        className="flex-1 px-2 py-1.5 text-[10px] bg-white border border-slate-200 rounded outline-none focus:ring-1 focus:ring-violet-500/20"
+                                      />
+                                      <input
+                                        value={opt.value}
+                                        onChange={(e) => updateDropdownOption(idx, optIdx, 'value', e.target.value)}
+                                        placeholder="Value"
+                                        className="flex-1 px-2 py-1.5 text-[10px] bg-white border border-slate-200 rounded outline-none focus:ring-1 focus:ring-violet-500/20"
+                                      />
+                                      <button type="button" onClick={() => removeDropdownOption(idx, optIdx)}
+                                        className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-50 rounded transition-all">
+                                        <MinusCircle size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

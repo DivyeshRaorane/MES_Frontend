@@ -4,6 +4,7 @@
  * Columns have: { key, field, label }
  */
 import * as XLSX from 'xlsx';
+import XLSX_STYLE from 'xlsx-js-style';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -18,25 +19,150 @@ function getCellValue(row, col) {
 }
 
 /**
- * Export data to Excel (.xlsx)
+ * Parse a cell reference like "B2" into { r: row(0-indexed), c: col(0-indexed) }
  */
-export const exportToExcel = (data, columns, title = 'Report') => {
+function parseCellRef(cellRef) {
+  const match = String(cellRef || 'A1').match(/^([A-Z]+)(\d+)$/i);
+  if (!match) return { r: 0, c: 0 };
+  const colStr = match[1].toUpperCase();
+  const row = parseInt(match[2], 10) - 1; // 0-indexed
+  let col = 0;
+  for (let i = 0; i < colStr.length; i++) {
+    col = col * 26 + (colStr.charCodeAt(i) - 64);
+  }
+  return { r: row, c: col - 1 }; // 0-indexed
+}
+
+/**
+ * Convert hex color string (#1e40af) to RGB string without hash (1E40AF)
+ */
+function hexToRgbStr(hex) {
+  return String(hex || '#000000').replace('#', '').toUpperCase();
+}
+
+/**
+ * Export data to Excel (.xlsx) with optional styled heading
+ */
+export const exportToExcel = (data, columns, title = 'Report', heading = null) => {
   if (!data || data.length === 0 || !columns || columns.length === 0) return;
 
   const headers = columns.map((col) => col.label);
   const rows = data.map((row) => columns.map((col) => getCellValue(row, col)));
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws['!cols'] = columns.map((col) => ({ wch: Math.max(col.label.length + 2, 15) }));
+  // If heading is provided, use xlsx-js-style for full styling support
+  if (heading && heading.text) {
+    const startPos = parseCellRef(heading.startCell || 'A1');
+    const mergeRows = Math.max(1, heading.mergeRows || 1);
+    const mergeCols = Math.max(1, heading.mergeCols || 1);
+    const headingRowOffset = startPos.r + mergeRows + 1; // heading area + 1 blank row
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+    // Build aoa with heading space
+    const aoa = [];
+    for (let i = 0; i < headingRowOffset; i++) {
+      aoa.push([]);
+    }
+    aoa.push(headers);
+    rows.forEach((r) => aoa.push(r));
 
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const ws = XLSX_STYLE.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = columns.map((col) => ({ wch: Math.max(col.label.length + 2, 15) }));
 
-  const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${formatDate(new Date())}.xlsx`;
-  saveAs(blob, fileName);
+    // Apply heading
+    const fontSize = heading.fontSize || 15;
+    const bgColor = hexToRgbStr(heading.bgColor || '#1e40af');
+    const textColor = hexToRgbStr(heading.textColor || '#ffffff');
+
+    const cellRef = XLSX_STYLE.utils.encode_cell({ r: startPos.r, c: startPos.c });
+    ws[cellRef] = {
+      v: heading.text,
+      t: 's',
+      s: {
+        font: { bold: true, sz: fontSize, color: { rgb: textColor } },
+        fill: { fgColor: { rgb: bgColor } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } },
+        },
+      },
+    };
+
+    // Fill merged cells with bg + border
+    for (let r = startPos.r; r < startPos.r + mergeRows; r++) {
+      for (let c = startPos.c; c < startPos.c + mergeCols; c++) {
+        if (r === startPos.r && c === startPos.c) continue;
+        const ref = XLSX_STYLE.utils.encode_cell({ r, c });
+        ws[ref] = {
+          v: '',
+          t: 's',
+          s: {
+            fill: { fgColor: { rgb: bgColor } },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } },
+            },
+          },
+        };
+      }
+    }
+
+    // Merge
+    if (!ws['!merges']) ws['!merges'] = [];
+    ws['!merges'].push({
+      s: { r: startPos.r, c: startPos.c },
+      e: { r: startPos.r + mergeRows - 1, c: startPos.c + mergeCols - 1 },
+    });
+
+    // Style header row (dark bg, white text)
+    for (let c = 0; c < columns.length; c++) {
+      const hRef = XLSX_STYLE.utils.encode_cell({ r: headingRowOffset, c });
+      if (ws[hRef]) {
+        ws[hRef].s = {
+          font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '1E293B' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          },
+        };
+      }
+    }
+
+    // Update sheet range
+    const range = XLSX_STYLE.utils.decode_range(ws['!ref'] || 'A1');
+    range.s.r = Math.min(range.s.r, startPos.r);
+    range.s.c = Math.min(range.s.c, startPos.c);
+    range.e.r = Math.max(range.e.r, startPos.r + mergeRows - 1);
+    range.e.c = Math.max(range.e.c, startPos.c + mergeCols - 1);
+    ws['!ref'] = XLSX_STYLE.utils.encode_range(range);
+
+    const wb = XLSX_STYLE.utils.book_new();
+    XLSX_STYLE.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+
+    const wbout = XLSX_STYLE.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${formatDate(new Date())}.xlsx`;
+    saveAs(blob, fileName);
+  } else {
+    // No heading - plain export using standard xlsx
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = columns.map((col) => ({ wch: Math.max(col.label.length + 2, 15) }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const fileName = `${title.replace(/[^a-z0-9]/gi, '_')}_${formatDate(new Date())}.xlsx`;
+    saveAs(blob, fileName);
+  }
 };
 
 /**
@@ -158,24 +284,36 @@ function formatDate(date) {
 // ─── Multi-Sheet/Multi-Table Excel Export ───────────────────────────────────
 
 /**
- * Export a multi-sheet report to Excel (.xlsx)
- * Each sheet contains multiple tables, placed sequentially with configurable spacing.
+ * Export a multi-sheet report to Excel (.xlsx) with full styling support.
+ * Each sheet can have a heading (merged cells, font size, bg color) and multiple tables.
  *
  * @param {Object} reportData - The execution result from the backend
- *   Shape: { sheets: [{ sheetName, tables: [{ title, columns: [{field, header}], data: [], spacing }] }] }
+ *   Shape: { sheets: [{ sheetName, heading?, tables: [{ title, columns: [{field, header}], data: [], spacing }] }] }
  * @param {string} reportTitle - Report name for the file name
  */
 export const exportMultiSheetToExcel = (reportData, reportTitle = 'Report') => {
   if (!reportData || !reportData.sheets || reportData.sheets.length === 0) return;
 
-  const wb = XLSX.utils.book_new();
+  const wb = XLSX_STYLE.utils.book_new();
 
   reportData.sheets.forEach((sheet) => {
-    // Sanitize sheet name for Excel (max 31 chars, no invalid chars)
     const sheetName = sanitizeSheetName(sheet.sheetName || 'Sheet');
+    const heading = sheet.heading || null;
+
+    // Determine how many rows the heading occupies (for offsetting table data)
+    let headingRowOffset = 0;
+    if (heading && heading.text) {
+      const startPos = parseCellRef(heading.startCell || 'A1');
+      headingRowOffset = startPos.r + (heading.mergeRows || 1) + 1; // heading rows + 1 blank row after
+    }
 
     // Build the sheet content: multiple tables stacked vertically
-    const aoa = []; // Array of arrays for the entire sheet
+    const aoa = [];
+
+    // Add empty rows for heading space at the top
+    for (let i = 0; i < headingRowOffset; i++) {
+      aoa.push([]);
+    }
 
     sheet.tables.forEach((table, tableIdx) => {
       const { title, columns, data, spacing = 2 } = table;
@@ -183,7 +321,6 @@ export const exportMultiSheetToExcel = (reportData, reportTitle = 'Report') => {
       // Write table title row (if provided)
       if (title) {
         aoa.push([title]);
-        // Empty row after title
       }
 
       // Write column headers
@@ -213,20 +350,85 @@ export const exportMultiSheetToExcel = (reportData, reportTitle = 'Report') => {
     });
 
     // Create worksheet from array of arrays
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const ws = XLSX_STYLE.utils.aoa_to_sheet(aoa);
 
     // Apply column widths based on the widest table in this sheet
     const maxCols = Math.max(...sheet.tables.map(t => (t.columns || []).length), 1);
-    ws['!cols'] = Array.from({ length: maxCols }, () => ({ wch: 18 }));
+    const colWidths = calculateColumnWidths(sheet.tables, maxCols);
+    ws['!cols'] = colWidths;
 
-    // Apply basic styling: bold title rows and header rows
-    applyMultiTableStyles(ws, sheet.tables);
+    // ── Apply Sheet Heading ──────────────────────────────────────────────
+    if (heading && heading.text) {
+      const startPos = parseCellRef(heading.startCell || 'A1');
+      const mergeRows = Math.max(1, heading.mergeRows || 1);
+      const mergeCols = Math.max(1, heading.mergeCols || 1);
+      const fontSize = heading.fontSize || 15;
+      const bgColor = hexToRgbStr(heading.bgColor || '#1e40af');
+      const textColor = hexToRgbStr(heading.textColor || '#ffffff');
 
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      // Write heading text into the start cell
+      const cellRef = XLSX_STYLE.utils.encode_cell({ r: startPos.r, c: startPos.c });
+      ws[cellRef] = {
+        v: heading.text,
+        t: 's',
+        s: {
+          font: { bold: true, sz: fontSize, color: { rgb: textColor } },
+          fill: { fgColor: { rgb: bgColor } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border: {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          },
+        },
+      };
+
+      // Apply background + border styling to all cells in the merged range
+      for (let r = startPos.r; r < startPos.r + mergeRows; r++) {
+        for (let c = startPos.c; c < startPos.c + mergeCols; c++) {
+          if (r === startPos.r && c === startPos.c) continue; // skip the main cell
+          const ref = XLSX_STYLE.utils.encode_cell({ r, c });
+          ws[ref] = {
+            v: '',
+            t: 's',
+            s: {
+              fill: { fgColor: { rgb: bgColor } },
+              border: {
+                top: { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left: { style: 'thin', color: { rgb: '000000' } },
+                right: { style: 'thin', color: { rgb: '000000' } },
+              },
+            },
+          };
+        }
+      }
+
+      // Add merge range
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({
+        s: { r: startPos.r, c: startPos.c },
+        e: { r: startPos.r + mergeRows - 1, c: startPos.c + mergeCols - 1 },
+      });
+
+      // Update sheet range to include heading cells
+      const range = XLSX_STYLE.utils.decode_range(ws['!ref'] || 'A1');
+      range.s.r = Math.min(range.s.r, startPos.r);
+      range.s.c = Math.min(range.s.c, startPos.c);
+      range.e.r = Math.max(range.e.r, startPos.r + mergeRows - 1);
+      range.e.c = Math.max(range.e.c, startPos.c + mergeCols - 1);
+      ws['!ref'] = XLSX_STYLE.utils.encode_range(range);
+    }
+
+    // ── Apply Table Header Styling ───────────────────────────────────────
+    applyMultiTableHeaderStyles(ws, sheet.tables, headingRowOffset);
+
+    XLSX_STYLE.utils.book_append_sheet(wb, ws, sheetName);
   });
 
   // Generate and download
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const wbout = XLSX_STYLE.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
@@ -239,7 +441,7 @@ export const exportMultiSheetToExcel = (reportData, reportTitle = 'Report') => {
  * Used when the backend returns all tables' data in one response.
  *
  * @param {Array} sheets - Array of sheet configs from Redux state
- *   Each sheet: { sheetName, tables: [{ tableName, columnOrder, columnDisplayNames, data }] }
+ *   Each sheet: { sheetName, heading?, tables: [{ tableName, columnOrder, columnDisplayNames, data }] }
  * @param {Object} executionResult - Backend response with data per sheet/table
  * @param {string} reportTitle - Report name
  */
@@ -250,6 +452,7 @@ export const exportMultiSheetFromState = (sheets, executionResult, reportTitle =
   const reportData = {
     sheets: executionResult.sheets.map((exSheet) => ({
       sheetName: exSheet.sheetName || exSheet.sheet_name || 'Sheet',
+      heading: exSheet.heading || null,
       tables: (exSheet.tables || []).map((exTable) => ({
         title: exTable.title || exTable.table_name || '',
         columns: exTable.columns || [],
@@ -277,18 +480,13 @@ function sanitizeSheetName(name) {
 }
 
 /**
- * Apply basic cell styles to a worksheet with multiple tables.
- * Since xlsx (SheetJS community edition) doesn't support full styling,
- * this sets column widths intelligently based on content.
+ * Calculate column widths from all tables' content
  */
-function applyMultiTableStyles(ws, tables) {
-  // Calculate maximum column width from all tables
-  let maxCols = 0;
+function calculateColumnWidths(tables, maxCols) {
   const colWidths = [];
 
   tables.forEach((table) => {
     if (!table.columns) return;
-    maxCols = Math.max(maxCols, table.columns.length);
     table.columns.forEach((col, idx) => {
       const headerLen = (col.header || col.label || col.field || '').length;
       const currentMax = colWidths[idx] || 10;
@@ -307,5 +505,72 @@ function applyMultiTableStyles(ws, tables) {
     }
   });
 
-  ws['!cols'] = colWidths.map((w) => ({ wch: w }));
+  // Ensure we have widths for all columns
+  while (colWidths.length < maxCols) {
+    colWidths.push(18);
+  }
+
+  return colWidths.map((w) => ({ wch: w }));
+}
+
+/**
+ * Apply styled headers to table header rows in the worksheet.
+ * Uses xlsx-js-style for bold, bg color, text color, and borders.
+ */
+function applyMultiTableHeaderStyles(ws, tables, headingRowOffset = 0) {
+  let currentRow = headingRowOffset;
+
+  tables.forEach((table, tableIdx) => {
+    const { title, columns, data, spacing = 2 } = table;
+
+    // Title row - bold and slightly larger
+    if (title) {
+      const numCols = (columns || []).length || 1;
+      for (let c = 0; c < numCols; c++) {
+        const cellRef = XLSX_STYLE.utils.encode_cell({ r: currentRow, c });
+        if (ws[cellRef]) {
+          ws[cellRef].s = {
+            font: { bold: true, sz: 12, color: { rgb: '1E293B' } },
+          };
+        }
+      }
+      currentRow++;
+    }
+
+    // Header row - dark background with white bold text
+    if (columns && columns.length > 0) {
+      const formatting = table.formatting || {};
+      const headerBgColor = hexToRgbStr(formatting.headerBgColor || '#1e293b');
+      const headerTextColor = hexToRgbStr(formatting.headerTextColor || '#ffffff');
+      const headerBold = formatting.headerBold !== false;
+
+      for (let c = 0; c < columns.length; c++) {
+        const cellRef = XLSX_STYLE.utils.encode_cell({ r: currentRow, c });
+        if (ws[cellRef]) {
+          ws[cellRef].s = {
+            font: { bold: headerBold, sz: 11, color: { rgb: headerTextColor } },
+            fill: { fgColor: { rgb: headerBgColor } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } },
+            },
+          };
+        }
+      }
+      currentRow++; // past header row
+
+      // Data rows
+      const dataLen = (data || []).length;
+      currentRow += dataLen;
+    }
+
+    // Spacing rows
+    if (tableIdx < tables.length - 1) {
+      const blankRows = Math.max(0, Math.min(spacing || 2, 10));
+      currentRow += blankRows;
+    }
+  });
 }

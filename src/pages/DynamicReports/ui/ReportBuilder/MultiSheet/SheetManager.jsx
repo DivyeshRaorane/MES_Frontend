@@ -2,11 +2,12 @@
  * Sheet Manager Component
  * Provides tab-based UI for managing sheets within a multi-sheet report.
  * Supports: Add, Rename, Delete, Reorder (drag) sheets.
+ * Includes Sheet Heading configuration (text, font, color, merged cells).
  */
 import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Plus, X, GripVertical, Edit3, Check, AlertTriangle,
+  Plus, X, GripVertical, Edit3, Check, AlertTriangle, Type, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import {
   msAddSheet,
@@ -14,6 +15,7 @@ import {
   msRenameSheet,
   msReorderSheets,
   msSetActiveSheet,
+  msUpdateSheetHeading,
 } from '../../../controller/reportBuilder.slice';
 
 const SheetManager = () => {
@@ -25,7 +27,11 @@ const SheetManager = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [dragIndex, setDragIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [showHeadingConfig, setShowHeadingConfig] = useState(false);
   const renameInputRef = useRef(null);
+
+  const activeSheet = sheets[activeSheetIndex];
+  const heading = activeSheet?.heading || { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 };
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -214,6 +220,140 @@ const SheetManager = () => {
           <Plus size={12} />
           <span>Add Sheet</span>
         </button>
+      </div>
+
+      {/* Sheet Heading Configuration */}
+      <div className="border-b border-slate-200 bg-white">
+        <button
+          onClick={() => setShowHeadingConfig(!showHeadingConfig)}
+          className="flex items-center gap-2 px-3 py-1.5 w-full text-left hover:bg-slate-50 transition-colors"
+        >
+          {showHeadingConfig ? <ChevronDown size={12} className="text-slate-400" /> : <ChevronRight size={12} className="text-slate-400" />}
+          <Type size={12} className="text-blue-500" />
+          <span className="text-[11px] font-semibold text-slate-700">Sheet Heading</span>
+          {heading.text && (
+            <span className="text-[10px] text-slate-400 ml-2 truncate max-w-[200px]">— {heading.text}</span>
+          )}
+        </button>
+
+        {showHeadingConfig && (
+          <div className="px-4 pb-3 pt-1 space-y-3">
+            {/* Heading Text */}
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Heading Text</label>
+              <input
+                type="text"
+                value={heading.text}
+                onChange={(e) => dispatch(msUpdateSheetHeading({ text: e.target.value }))}
+                placeholder="e.g. Draw Entry Report"
+                className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                  placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Font Size */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Font Size</label>
+                <input
+                  type="number" min="8" max="36" value={heading.fontSize}
+                  onChange={(e) => dispatch(msUpdateSheetHeading({ fontSize: Number(e.target.value) }))}
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                    focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+
+              {/* Start Cell */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Start Cell</label>
+                <input
+                  type="text" value={heading.startCell}
+                  onChange={(e) => dispatch(msUpdateSheetHeading({ startCell: e.target.value.toUpperCase() }))}
+                  placeholder="B2"
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                    placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                />
+                <p className="text-[9px] text-slate-400 mt-0.5">e.g. A1, B2, C3</p>
+              </div>
+
+              {/* Merge Rows */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Merge Rows</label>
+                <input
+                  type="number" min="1" max="10" value={heading.mergeRows}
+                  onChange={(e) => dispatch(msUpdateSheetHeading({ mergeRows: Number(e.target.value) }))}
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                    focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+
+              {/* Merge Cols */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Merge Columns</label>
+                <input
+                  type="number" min="1" max="20" value={heading.mergeCols}
+                  onChange={(e) => dispatch(msUpdateSheetHeading({ mergeCols: Number(e.target.value) }))}
+                  className="w-full px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                    focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Background Color */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Background Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color" value={heading.bgColor}
+                    onChange={(e) => dispatch(msUpdateSheetHeading({ bgColor: e.target.value }))}
+                    className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
+                  />
+                  <input
+                    type="text" value={heading.bgColor}
+                    onChange={(e) => dispatch(msUpdateSheetHeading({ bgColor: e.target.value }))}
+                    className="flex-1 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                      focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              {/* Text Color */}
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Text Color</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color" value={heading.textColor}
+                    onChange={(e) => dispatch(msUpdateSheetHeading({ textColor: e.target.value }))}
+                    className="w-8 h-8 rounded border border-slate-200 cursor-pointer"
+                  />
+                  <input
+                    type="text" value={heading.textColor}
+                    onChange={(e) => dispatch(msUpdateSheetHeading({ textColor: e.target.value }))}
+                    className="flex-1 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700
+                      focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {heading.text && (
+              <div className="mt-2 p-2 rounded-md border border-slate-200 bg-slate-50">
+                <p className="text-[9px] text-slate-400 mb-1 uppercase font-semibold">Preview</p>
+                <div
+                  className="inline-block px-3 py-1.5 rounded"
+                  style={{ backgroundColor: heading.bgColor, color: heading.textColor, fontSize: `${Math.min(heading.fontSize, 20)}px`, fontWeight: 'bold' }}
+                >
+                  {heading.text}
+                </div>
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Placed at cell {heading.startCell}, spanning {heading.mergeRows} row(s) x {heading.mergeCols} column(s)
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

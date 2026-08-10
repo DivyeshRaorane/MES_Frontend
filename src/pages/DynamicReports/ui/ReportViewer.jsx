@@ -8,13 +8,13 @@ import {
   ArrowLeft, RefreshCw, Download, Printer, Search, Filter,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   ArrowUpDown, ArrowUp, ArrowDown, Columns3, Eye, EyeOff,
-  FileSpreadsheet, FileText, FileDown, AlertCircle,
+  FileSpreadsheet, FileText, FileDown, AlertCircle, Calendar,
 } from 'lucide-react';
 import {
   runReport, setActiveReport, setCurrentPage, setPageSize,
   setFilters, clearFilters, setSorting, setSearchQuery, clearReportData,
 } from '../controller/dynamicReports.slice';
-import { fetchReportById, executeMultiSheetReport } from '../services/reportBuilder.api';
+import { fetchReportById, executeMultiSheetReport, executeUserReport } from '../services/reportBuilder.api';
 import { exportToExcel, exportToCSV, exportToPDF, printReport, exportMultiSheetToExcel } from '../utils/exportUtils';
 
 function parseJsonField(val, fallback = []) {
@@ -22,6 +22,11 @@ function parseJsonField(val, fallback = []) {
   if (val && typeof val === 'object' && !Array.isArray(val)) return val;
   if (typeof val === 'string') { try { return JSON.parse(val); } catch (e) { return fallback; } }
   return fallback;
+}
+
+/** Get today's date as YYYY-MM-DD string */
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 const ReportViewer = () => {
@@ -40,6 +45,10 @@ const ReportViewer = () => {
   const [localFilters, setLocalFilters] = useState({});
   const [reportLoaded, setReportLoaded] = useState(false);
 
+  // Default date range - today's data loaded on first view
+  const [dateFrom, setDateFrom] = useState(getTodayStr());
+  const [dateTo, setDateTo] = useState(getTodayStr());
+
   useEffect(() => {
     if (reportId && !activeReport) {
       fetchReportById(reportId).then((res) => {
@@ -51,9 +60,9 @@ const ReportViewer = () => {
 
   useEffect(() => {
     if (reportLoaded && activeReport?.id) {
-      dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery } }));
+      dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom, dateTo } }));
     }
-  }, [dispatch, reportLoaded, activeReport?.id, currentPage, pageSize, filters, sorting, searchQuery]);
+  }, [dispatch, reportLoaded, activeReport?.id, currentPage, pageSize, filters, sorting, searchQuery, dateFrom, dateTo]);
 
   const columns = useMemo(() => {
     if (responseColumns && responseColumns.length > 0) {
@@ -116,19 +125,38 @@ const ReportViewer = () => {
   const getSortDirection = (columnKey) => sorting.find((s) => s.column === columnKey)?.direction || null;
   const toggleColumnVisibility = (key) => setHiddenColumns((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
 
-  const handleExport = (type) => {
-    if (!reportData || reportData.length === 0) return;
+  const handleExport = async (type) => {
+    if (!activeReport?.id) return;
     const title = activeReport?.report_name || 'Report';
-    switch (type) {
-      case 'excel': exportToExcel(reportData, visibleColumns, title); break;
-      case 'csv': exportToCSV(reportData, visibleColumns, title); break;
-      case 'pdf': exportToPDF(reportData, visibleColumns, title); break;
-      case 'print': printReport(reportData, visibleColumns, title); break;
+    const heading = parseJsonField(activeReport?.heading, null);
+
+    // Fetch ALL data for the current date range (no pagination limit) for export
+    try {
+      const res = await executeUserReport(activeReport.id, {
+        page: 1,
+        pageSize: 999999,
+        filters,
+        sorting,
+        search: searchQuery,
+        dateFrom,
+        dateTo,
+      });
+      const allData = Array.isArray(res?.data) ? res.data : Array.isArray(res?.rows) ? res.rows : Array.isArray(res) ? res : [];
+      if (!allData || allData.length === 0) return;
+
+      switch (type) {
+        case 'excel': exportToExcel(allData, visibleColumns, title, heading); break;
+        case 'csv': exportToCSV(allData, visibleColumns, title); break;
+        case 'pdf': exportToPDF(allData, visibleColumns, title); break;
+        case 'print': printReport(allData, visibleColumns, title); break;
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
     }
     setShowExportMenu(false);
   };
 
-  const handleRefresh = () => { if (activeReport?.id) dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery } })); };
+  const handleRefresh = () => { if (activeReport?.id) dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom, dateTo } })); };
 
   if (!activeReport && !reportLoaded) {
     return (<div className="h-full flex items-center justify-center bg-slate-50"><RefreshCw size={20} className="animate-spin text-blue-500" /><span className="ml-2 text-sm text-slate-500">Loading report...</span></div>);
@@ -154,6 +182,15 @@ const ReportViewer = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Date Range Filter - always visible */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
+            <Calendar size={12} className="text-blue-500 flex-shrink-0" />
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+            <span className="text-[10px] text-slate-400">to</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+          </div>
           <div className="relative">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" value={searchQuery} onChange={(e) => dispatch(setSearchQuery(e.target.value))} placeholder="Search..."
@@ -324,25 +361,40 @@ const MultiSheetView = ({ report, navigate, dispatch }) => {
   const [msLoading, setMsLoading] = useState(false);
   const [msError, setMsError] = useState(null);
 
+  // Default date range - today's data
+  const [dateFrom, setDateFrom] = useState(getTodayStr());
+  const [dateTo, setDateTo] = useState(getTodayStr());
+
   useEffect(() => {
     if (report?.id) {
       setMsLoading(true);
-      executeMultiSheetReport(report.id, {})
+      executeMultiSheetReport(report.id, { dateFrom, dateTo })
         .then((data) => { setExecutionResult(data); setMsLoading(false); })
         .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
     }
-  }, [report?.id]);
+  }, [report?.id, dateFrom, dateTo]);
 
   const handleRefresh = () => {
     setMsLoading(true);
     setMsError(null);
-    executeMultiSheetReport(report.id, {})
+    executeMultiSheetReport(report.id, { dateFrom, dateTo })
       .then((data) => { setExecutionResult(data); setMsLoading(false); })
       .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
   };
 
   const handleExport = () => {
-    if (executionResult) exportMultiSheetToExcel(executionResult, report.report_name || 'Report');
+    if (!executionResult) return;
+    // Merge heading config from report definition into execution result for export
+    const reportSheets = parseJsonField(report.sheets, []);
+    const enrichedResult = {
+      ...executionResult,
+      sheets: (executionResult.sheets || []).map((exSheet, idx) => {
+        const configSheet = reportSheets[idx] || {};
+        const heading = exSheet.heading || configSheet.heading || null;
+        return { ...exSheet, heading };
+      }),
+    };
+    exportMultiSheetToExcel(enrichedResult, report.report_name || 'Report');
   };
 
   const sheetTabs = executionResult?.sheets?.map(s => s.sheetName || s.sheet_name || 'Sheet') || [];
@@ -363,6 +415,15 @@ const MultiSheetView = ({ report, navigate, dispatch }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
+            <Calendar size={12} className="text-purple-500 flex-shrink-0" />
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+            <span className="text-[10px] text-slate-400">to</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+          </div>
           <button onClick={handleRefresh} disabled={msLoading}
             className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors">
             <RefreshCw size={14} className={msLoading ? 'animate-spin' : ''} />
