@@ -508,6 +508,14 @@ const PTEntry = () => {
     try {
       const response = await dispatch(ptEntryApi(payload));
 
+      // Handle rejected thunk (backend returned error status like 500)
+      if (response?.meta?.requestStatus === 'rejected') {
+        const errMsg = response.payload || response.error?.message || "Failed to save PT Entry";
+        alert(errMsg);
+        showError(errMsg);
+        return;
+      }
+
       if (response.payload?.success) {
         showSuccess(response.payload.message || "PT Entry saved successfully");
 
@@ -533,11 +541,15 @@ const PTEntry = () => {
           setShowSpoolEndPopup(true);
         }
       } else {
-        showError(response.payload?.message || "Failed to save PT Entry");
+        const errMsg = response.payload?.message || "Failed to save PT Entry";
+        alert(errMsg);
+        showError(errMsg);
       }
     } catch (error) {
       console.error(error);
-      showError("Something went wrong");
+      const errMsg = error?.response?.data?.message || error?.message || "Something went wrong";
+      alert(errMsg);
+      showError(errMsg);
     }
   };
 

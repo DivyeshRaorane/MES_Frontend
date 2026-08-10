@@ -60,3 +60,15 @@ export const submitFlawRewind = async (payload) => {
   const res = await axios.post(`${API}/api/qcentry/flaw-rewind`, payload, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Colored bobbin QC check ── */
+export const checkAndCopyColoredBobbinQC = async (bobbin_no) => {
+  const res = await axios.get(`${API}/api/qcentry/colored-bobbin-qc/${bobbin_no}`, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── MFD / Cable Cutoff auto-calculation ── */
+export const checkMfdCableCutoff = async (bobbin_no) => {
+  const res = await axios.get(`${API}/api/qcentry/mfd-cable-cutoff/${bobbin_no}`, { headers: authHeaders() });
+  return res.data;
+};

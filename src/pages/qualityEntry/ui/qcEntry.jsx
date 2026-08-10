@@ -4,7 +4,7 @@ import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, T
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind } from '../services/qc_entry.api';
+import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind, checkAndCopyColoredBobbinQC, checkMfdCableCutoff } from '../services/qc_entry.api';
 import { submitRewindRequest } from '../../fg_fiber_rejection/services/fg_rejection.api';
 
 /* ── Compact table-cell input ── */
@@ -157,6 +157,7 @@ const QCEntryScreen = () => {
   const [savingMissing, setSavingMissing] = useState(false);
   const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [] });
   const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
+  const [mbendRemark, setMbendRemark] = useState('');
   const formRef = useRef(null);
   const valuesRef = useRef(null); // stores current Formik values for manual REW
   const scanRef = useRef(null);
@@ -178,11 +179,81 @@ const QCEntryScreen = () => {
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
     setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
-    setExistingTempGrade(''); setExistingFinalGrade('');
+    setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark('');
     try {
       const res = await fetchBobbinQC(bobbin_no);
       if (!res?.success) {
-        // Bobbin not in QC — check PT Entry table for flags
+        
+        // Bobbin not in QC — first check if it's a colored bobbin that needs data copied
+        let coloredHandled = false;
+        try {
+          const coloredRes = await checkAndCopyColoredBobbinQC(bobbin_no);
+          if (coloredRes?.success && coloredRes?.is_colored && coloredRes?.copied) {
+            // Colored bobbin data was copied — re-fetch QC data and continue normal flow
+            const refreshColored = await fetchBobbinQC(bobbin_no);
+            if (refreshColored?.success && refreshColored?.data) {
+              coloredHandled = true;
+              setSource(refreshColored.source);
+              const cData = refreshColored.data;
+              const cVals = buildInitialValues();
+              Object.keys(cVals).forEach(k => { if (cData[k] !== undefined && cData[k] !== null) cVals[k] = cData[k]; });
+              cVals.bobbin_no = bobbin_no;
+              setValues(cVals);
+              if (cData.temp_grade) setExistingTempGrade(cData.temp_grade);
+              if (cData.final_grade) setExistingFinalGrade(cData.final_grade);
+              setMbendRemark(cData.remark || '');
+              showSuccess('This is a colored bobbin. Test required testings.');
+            }
+          }
+        } catch (coloredErr) {
+          // Do NOT break existing flow — fall through to PT check
+          console.error('Colored bobbin QC check failed:', coloredErr);
+        }
+
+        if (coloredHandled) {
+          // Colored bobbin was handled — proceed with MBEnd logic
+          setLoading(false);
+          // Execute MBEnd copy + MAC calculation for colored bobbin
+          try {
+            const mbRes = await executeMbendCopyAndMac(bobbin_no);
+            if (mbRes?.success && (mbRes.mbend_copied || mbRes.mac_calculated)) {
+              const refreshRes = await fetchBobbinQC(bobbin_no);
+              if (refreshRes?.success) {
+                const refreshData = refreshRes.data || {};
+                const refreshVals = buildInitialValues();
+                Object.keys(refreshVals).forEach(k => { if (refreshData[k] !== undefined && refreshData[k] !== null) refreshVals[k] = refreshData[k]; });
+                refreshVals.bobbin_no = bobbin_no;
+                setValues(refreshVals);
+              }
+            }
+          } catch (mbErr) {
+            console.error('[MBEnd] Error for colored bobbin:', mbErr);
+          }
+          // ── MFD / Cable Cutoff auto-calculation for colored bobbin ──
+          try {
+            const mfdRes = await checkMfdCableCutoff(bobbin_no);
+            if (mfdRes?.success && mfdRes?.applicable) {
+              if (mfdRes.mfd_calculated || mfdRes.cable_cutoff_calculated) {
+                const refreshRes = await fetchBobbinQC(bobbin_no);
+                if (refreshRes?.success && refreshRes?.data) {
+                  const mfdData = refreshRes.data;
+                  const mfdVals = buildInitialValues();
+                  Object.keys(mfdVals).forEach(k => { if (mfdData[k] !== undefined && mfdData[k] !== null) mfdVals[k] = mfdData[k]; });
+                  mfdVals.bobbin_no = bobbin_no;
+                  setValues(mfdVals);
+                }
+              }
+              if (mfdRes.cable_cutoff_mandatory_popup) {
+                showError('Cable Cutoff Mandatory');
+              }
+            }
+          } catch (mfdErr) {
+            console.error('MFD/Cable Cutoff calculation failed (colored):', mfdErr);
+          }
+          return;
+        }
+
+        // Not a colored bobbin (or colored check didn't copy) — check PT Entry table for flags
         try {
           const ptRes = await checkBobbinInPtEntry(bobbin_no);
           console.log("Res:", ptRes)
@@ -234,6 +305,10 @@ const QCEntryScreen = () => {
       if (data.final_grade) setExistingFinalGrade(data.final_grade);
       if (res.source === 'final') showError('Final QC has already been completed for this bobbin.');
 
+      // Set mbend remark from qc_entry_temp data
+      setMbendRemark(data.remark || '');
+      console.log("Remark:", mbendRemark)
+
       // Execute MBEnd copy + MAC calculation (backend handles all logic)
       if (res.source !== 'final') {
         const mbRes = await executeMbendCopyAndMac(bobbin_no);
@@ -247,6 +322,30 @@ const QCEntryScreen = () => {
             refreshVals.bobbin_no = bobbin_no;
             setValues(refreshVals);
           }
+        }
+      }
+
+      // ── MFD / Cable Cutoff auto-calculation ──
+      if (res.source !== 'final') {
+        try {
+          const mfdRes = await checkMfdCableCutoff(bobbin_no);
+          if (mfdRes?.success && mfdRes?.applicable) {
+            if (mfdRes.mfd_calculated || mfdRes.cable_cutoff_calculated) {
+              const refreshRes = await fetchBobbinQC(bobbin_no);
+              if (refreshRes?.success && refreshRes?.data) {
+                const mfdData = refreshRes.data;
+                const mfdVals = buildInitialValues();
+                Object.keys(mfdVals).forEach(k => { if (mfdData[k] !== undefined && mfdData[k] !== null) mfdVals[k] = mfdData[k]; });
+                mfdVals.bobbin_no = bobbin_no;
+                setValues(mfdVals);
+              }
+            }
+            if (mfdRes.cable_cutoff_mandatory_popup) {
+              showError('Cable Cutoff Mandatory');
+            }
+          }
+        } catch (mfdErr) {
+          console.error('MFD/Cable Cutoff calculation failed:', mfdErr);
         }
       }
     } catch (e) {
@@ -617,7 +716,7 @@ const QCEntryScreen = () => {
                 {/* Optical Length display */}
                 {values.optical_length && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
+                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">LEN</span>
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
                   </div>
                 )}
@@ -625,7 +724,6 @@ const QCEntryScreen = () => {
                 {/* Product Type display */}
                 {values.product_type && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-green-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">TYPE</span>
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-800">{values.product_type}</span>
                   </div>
                 )}
@@ -685,10 +783,10 @@ const QCEntryScreen = () => {
                   </button>
                   {/* <ResetButton compact type="button" onClick={() => {
                     setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null); setExistingTempGrade(''); setExistingFinalGrade('');
-                  }}>Reset</ResetButton> */}
+                  }}>Reset</ResetButton>
                   <SubmitButton compact type="button" disabled={submitting || !graded || locked || (!!existingTempGrade && !!existingFinalGrade)} onClick={() => handleSubmit(values)}>
                     {submitting ? 'Saving...' : 'Update'}
-                  </SubmitButton>
+                  </SubmitButton> */}
                 </div>
               </div>
 
@@ -843,6 +941,13 @@ const QCEntryScreen = () => {
                       </tbody>
                     </table>
                   </div>
+                  {/* MBend Remark from qc_entry_temp */}
+                  {mbendRemark && (
+                    <div className="col-span-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                      <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5"><strong>REWinding Remark</strong></p>
+                      <p className="text-[9px] text-slate-700 font-medium break-words">{mbendRemark}</p>
+                    </div>
+                  )}
                 </Col>
 
               </div>
