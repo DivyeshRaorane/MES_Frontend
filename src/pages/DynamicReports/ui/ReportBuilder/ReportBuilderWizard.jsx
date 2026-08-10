@@ -64,17 +64,7 @@ const ReportBuilderWizard = () => {
   useEffect(() => {
     if (!editId) return;
     
-    // Already loaded correctly - skip completely
-    if (String(editingReportId) === String(editId)) return;
-    
-    // Priority 1: Use report from navigation state (passed directly from list)
-    const navReport = location.state?.report;
-    if (navReport && (navReport.main_table || navReport.is_multi_sheet)) {
-      dispatch(loadReportIntoWizard(navReport));
-      return;
-    }
-    
-    // Priority 2: Fetch from API (only if navigation state didn't have report)
+    // Always fetch full report from API to ensure sections are loaded
     dispatch(getReportById(editId)).then((res) => {
       if (res.meta.requestStatus === 'fulfilled') {
         const payload = res.payload;

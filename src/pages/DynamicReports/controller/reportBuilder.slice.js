@@ -771,12 +771,59 @@ const reportBuilderSlice = createSlice({
         permissions: parseJson(report.permissions, []),
         // Report-level heading (for single-sheet export)
         heading: parseJson(report.heading, { text: '', fontSize: 15, bgColor: '#1e40af', textColor: '#ffffff', startCell: 'B2', mergeRows: 2, mergeCols: 2 }),
-        // Section visibility (Display In)
-        selectedSections: report.sections 
-          ? report.sections.map(s => s.section_id) 
-          : (report.section_ids && Array.isArray(report.section_ids) 
-              ? report.section_ids 
-              : []),
+        // Section visibility (Display In) - use section_key strings
+        selectedSections: (() => {
+          // Map to resolve various formats to SIDEBAR_SECTIONS keys
+          const SECTION_KEY_LOOKUP = {
+            'Draw Management': 'DRAW_MANAGEMENT',
+            'Proof Testing': 'PROOF_TESTING',
+            'Quality': 'QUALITY',
+            'Quality Assurance': 'QUALITY_ASSURANCE',
+            'Finish Goods': 'FINISH_GOODS',
+            'Dispatch': 'DISPATCH',
+            'Dynamic Reports': 'DYNAMIC_REPORTS',
+          };
+
+          const resolveToKey = (s) => {
+            if (typeof s === 'string') {
+              // Already a section_key like 'DRAW_MANAGEMENT'
+              if (s === s.toUpperCase() && s.includes('_')) return s;
+              // section_name like 'Draw Management'
+              if (SECTION_KEY_LOOKUP[s]) return SECTION_KEY_LOOKUP[s];
+              return s;
+            }
+            if (typeof s === 'object' && s) {
+              return s.section_key || SECTION_KEY_LOOKUP[s.section_name] || String(s.section_id);
+            }
+            return String(s);
+          };
+
+          // From report.sections (array of objects with section_key)
+          if (report.sections && Array.isArray(report.sections) && report.sections.length > 0) {
+            return report.sections.map(resolveToKey).filter(Boolean);
+          }
+          // From report.section_ids (may be array of keys or integers)
+          if (report.section_ids && Array.isArray(report.section_ids) && report.section_ids.length > 0) {
+            return report.section_ids.map(resolveToKey).filter(Boolean);
+          }
+          // From report.selectedSections (wizard state format)
+          if (report.selectedSections && Array.isArray(report.selectedSections) && report.selectedSections.length > 0) {
+            return report.selectedSections.map(resolveToKey).filter(Boolean);
+          }
+          // Fallback: infer from module field
+          const mod = report.module || '';
+          const moduleMap = {
+            'Draw Management': 'DRAW_MANAGEMENT',
+            'Proof Testing': 'PROOF_TESTING',
+            'QC': 'QUALITY',
+            'QA': 'QUALITY_ASSURANCE',
+            'FG': 'FINISH_GOODS',
+            'Dispatch': 'DISPATCH',
+            'Common': 'DYNAMIC_REPORTS',
+          };
+          if (moduleMap[mod]) return [moduleMap[mod]];
+          return [];
+        })(),
         // Multi-sheet fields
         isMultiSheet: report.is_multi_sheet || false,
         sheets: parseJson(report.sheets, []).map((sheet, idx) => ({

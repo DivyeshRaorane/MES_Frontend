@@ -164,7 +164,9 @@ const StepReportInfo = () => {
         {/* Section checkboxes */}
         <div className="grid grid-cols-2 gap-2">
           {sections.map((section) => {
-            const isChecked = (selectedSections || []).includes(section.section_id);
+            const isChecked = (selectedSections || []).some(s => 
+              s === section.section_id || String(s) === String(section.section_id)
+            );
             return (
               <label
                 key={section.section_id}
