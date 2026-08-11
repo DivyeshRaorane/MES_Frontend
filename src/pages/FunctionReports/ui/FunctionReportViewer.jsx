@@ -208,6 +208,49 @@ const FunctionReportViewer = () => {
    REPORT EXECUTION PANEL
    Shows parameter inputs, executes function, displays results
    ══════════════════════════════════════════════════════════ */
+
+/**
+ * Normalizes default values from the report registration.
+ * Values like "NULL::date", "NULL::varchar", "—", etc. are treated as empty
+ * so the UI starts with blank inputs instead of passing invalid strings to the API.
+ */
+const normalizeDefaultValue = (value) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    value === '—' ||
+    value === 'NULL' ||
+    value === 'null' ||
+    value === 'NULL::date' ||
+    value === 'NULL::varchar' ||
+    value === 'NULL::character varying'
+  ) {
+    return '';
+  }
+  return value;
+};
+
+/**
+ * Normalizes a parameter value before sending to the API.
+ * Empty strings and NULL-placeholder strings become actual JavaScript null
+ * so the backend passes NULL to the PostgreSQL function.
+ */
+const normalizeParamForExecution = (value) => {
+  if (
+    value === '' ||
+    value === '—' ||
+    value === 'NULL' ||
+    value === 'null' ||
+    value === 'NULL::date' ||
+    value === 'NULL::varchar' ||
+    value === 'NULL::character varying'
+  ) {
+    return null;
+  }
+  return value;
+};
+
 const ReportExecutionPanel = ({ report, onBack }) => {
   const dispatch = useDispatch();
   const { reportResult, resultColumns, totalRows, executionTime, loading } = useSelector(state => state.functionReports);
@@ -231,11 +274,20 @@ const ReportExecutionPanel = ({ report, onBack }) => {
   const [paramValues, setParamValues] = useState(() => {
     const initial = {};
     paramConfig.forEach(p => {
-      initial[p.param_name] = p.default_value || '';
+      initial[p.param_name] = normalizeDefaultValue(p.default_value);
     });
     return initial;
   });
   const [exporting, setExporting] = useState(false);
+
+  // Re-initialize paramValues when report/paramConfig changes (prevents stale values from previous report)
+  useEffect(() => {
+    const initial = {};
+    paramConfig.forEach(p => {
+      initial[p.param_name] = normalizeDefaultValue(p.default_value);
+    });
+    setParamValues(initial);
+  }, [report.id]);
 
   const handleParamChange = (paramName, value) => {
     setParamValues(prev => ({ ...prev, [paramName]: value }));
@@ -249,7 +301,17 @@ const ReportExecutionPanel = ({ report, onBack }) => {
         return;
       }
     }
-    dispatch(runFunctionReport({ reportId: report.id, params: paramValues }));
+
+    // Normalize parameter values before dispatch:
+    // Empty strings and NULL placeholders become actual null for the PostgreSQL function
+    const normalizedParams = {};
+    paramConfig.forEach(p => {
+      normalizedParams[p.param_name] = normalizeParamForExecution(paramValues[p.param_name]);
+    });
+
+    console.log('REPORT PARAMS:', normalizedParams);
+
+    dispatch(runFunctionReport({ reportId: report.id, params: normalizedParams }));
   };
 
   const handleExportExcel = async () => {
