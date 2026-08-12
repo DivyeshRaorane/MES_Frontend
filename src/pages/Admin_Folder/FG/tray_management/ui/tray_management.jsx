@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Grid3X3, Plus, Eye, Power, ArrowLeft, Loader2, Search, X, Minus } from 'lucide-react';
+import { Grid3X3, Plus, Eye, Power, ArrowLeft, Loader2, Search, X, Minus, Pencil, CheckCircle } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../../utils/toastService';
-import { getAllTrays, createTray, deactivateTray, getTrayPositions, addPositions, removePositions } from '../services/tray.api';
+import { getAllTrays, createTray, deactivateTray, activateTray, updateTrayName, getTrayPositions, addPositions, removePositions } from '../services/tray.api';
 
 /* ══════════════════════════════════════════════════════════ */
 const TrayManagement = () => {
@@ -11,6 +11,8 @@ const TrayManagement = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [viewTray, setViewTray] = useState(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState(null);
+  const [confirmActivate, setConfirmActivate] = useState(null);
+  const [editTray, setEditTray] = useState(null);
 
   const fetchTrays = async () => {
     setLoading(true);
@@ -27,6 +29,15 @@ const TrayManagement = () => {
       else showError(res?.message || 'Failed');
     } catch (e) { showError(e?.response?.data?.message || 'Failed'); }
     setConfirmDeactivate(null);
+  };
+
+  const handleActivate = async () => {
+    try {
+      const res = await activateTray(confirmActivate.tray_id);
+      if (res?.success) { showSuccess('Tray activated'); fetchTrays(); }
+      else showError(res?.message || 'Failed');
+    } catch (e) { showError(e?.response?.data?.message || 'Failed'); }
+    setConfirmActivate(null);
   };
 
   /* ── View Positions ── */
@@ -74,8 +85,12 @@ const TrayManagement = () => {
                     <div className="flex items-center gap-1.5">
                       <button type="button" onClick={() => setViewTray(t)}
                         className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-bold rounded hover:bg-blue-100"><Eye size={9} /> Positions</button>
+                      <button type="button" onClick={() => setEditTray(t)}
+                        className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold rounded hover:bg-amber-100"><Pencil size={9} /> Edit</button>
                       {t.is_active && <button type="button" onClick={() => setConfirmDeactivate(t)}
                         className="flex items-center gap-1 px-2 py-1 bg-rose-50 text-rose-700 border border-rose-200 text-[8px] font-bold rounded hover:bg-rose-100"><Power size={9} /> Deactivate</button>}
+                      {!t.is_active && <button type="button" onClick={() => setConfirmActivate(t)}
+                        className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[8px] font-bold rounded hover:bg-emerald-100"><CheckCircle size={9} /> Activate</button>}
                     </div>
                   </td>
                 </tr>
@@ -101,6 +116,23 @@ const TrayManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Activate Confirm */}
+      {confirmActivate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-xl shadow-2xl p-5 w-80 text-center">
+            <h3 className="text-sm font-bold text-slate-800 mb-2">Activate Tray {confirmActivate.tray_no}?</h3>
+            <p className="text-xs text-slate-500 mb-4">This will mark the tray as active.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmActivate(null)} className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+              <button onClick={handleActivate} className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">Activate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Tray Name Modal */}
+      {editTray && <EditTrayModal tray={editTray} onClose={() => setEditTray(null)} onUpdated={() => { setEditTray(null); fetchTrays(); }} />}
     </div>
   );
 };
@@ -151,6 +183,46 @@ const CreateTrayModal = ({ onClose, onCreated }) => {
             <button onClick={onClose} className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
             <button onClick={handleSubmit} disabled={submitting}
               className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Creating...' : 'Create'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Edit Tray Name Modal ── */
+const EditTrayModal = ({ tray, onClose, onUpdated }) => {
+  const [trayName, setTrayName] = useState(tray.tray_name || '');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!trayName.trim()) { showError('Tray name is required'); return; }
+    setSubmitting(true);
+    try {
+      const res = await updateTrayName(tray.tray_id, trayName.trim());
+      if (res?.success) { showSuccess('Tray name updated'); onUpdated(); }
+      else showError(res?.message || 'Failed');
+    } catch (e) { showError(e?.response?.data?.message || 'Failed'); }
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+          <span className="text-sm font-bold text-slate-700">Edit Tray {tray.tray_no}</span>
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 rounded"><X size={16} /></button>
+        </div>
+        <div className="px-4 py-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] font-bold text-slate-500 uppercase">Tray Name *</label>
+            <input value={trayName} onChange={e => setTrayName(e.target.value)} placeholder="Enter tray name"
+              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200" />
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-slate-100">
+            <button onClick={onClose} className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
+            <button onClick={handleSubmit} disabled={submitting}
+              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Saving...' : 'Save'}</button>
           </div>
         </div>
       </div>

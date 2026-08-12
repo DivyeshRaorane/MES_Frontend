@@ -35,3 +35,13 @@ export const removePositions = async (tray_id, count) => {
   const res = await axios.put(`${API}/api/admin/trays/${tray_id}/remove-positions`, { count }, { headers: authHeaders() });
   return res.data;
 };
+
+export const activateTray = async (tray_id) => {
+  const res = await axios.put(`${API}/api/admin/trays/${tray_id}/activate`, {}, { headers: authHeaders() });
+  return res.data;
+};
+
+export const updateTrayName = async (tray_id, tray_name) => {
+  const res = await axios.put(`${API}/api/admin/trays/${tray_id}/update-name`, { tray_name }, { headers: authHeaders() });
+  return res.data;
+};
