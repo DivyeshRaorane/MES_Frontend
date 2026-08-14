@@ -88,7 +88,7 @@ const validationSchema = Yup.object({
 const initialValues = {
   spool_id: '', preform_id: '', drawn_length: '', tower_no: '', drawn_date: '',
   pt_entry: new Date().toISOString().split('T')[0], fid: '', bobbin_no: '', spool_status: '',
-  pt_machine_no: '', operator_name: '', shift_incharge: '', shift: '', bobbin_color: '', bobbin_type: '',
+  pt_machine_no: '', operator_name: '', shift_incharge: '', shift: '', bobbin_color: 'Blue', bobbin_type: '50KM',
   pt_length: '', pt_break: false, pt_scrap: false, status: 'PENDING', payoff_vibration: 'No', dancer_vibration: 'No',
   active_rejection_type: '', // radio token architecture: 'rejection', 'bal_draw_rejection', etc.
   rejection_reason: '', bal_draw_rejection_reason: '', ztmd_id: '', doc_id: '',product_type: "", pt_strain: "",pt_break_count: "",

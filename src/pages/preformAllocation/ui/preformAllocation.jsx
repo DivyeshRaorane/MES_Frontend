@@ -113,7 +113,7 @@ const confirmDeallocation = async () => {
 
    const drawUsersOption = drawUsers.map((users) => ({
     label: `${users.draw_user_name}`,
-    value: users.draw_user_id
+    value: users.draw_user_name
   }))
 
    const towerOptions = Array.isArray(towerForAllocationData)

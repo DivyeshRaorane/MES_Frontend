@@ -176,6 +176,7 @@ const HandleJoining = () => {
 
       if (handleJoin.fulfilled.match(result)) {
         showSuccess("Join Data Submitted Successfully");
+        getPreformForHandleJoin()
         resetForm();
       } else {
         showError(result?.payload?.message || "Submission Failed");

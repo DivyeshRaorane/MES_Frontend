@@ -84,6 +84,7 @@ const validationSchema = Yup.object({
   tower_no: Yup.string().required('Tower No is required'),
   preform_id: Yup.string().required('Preform ID is required'),
   spool_id: Yup.string().required('Spool ID is required').length(10, 'Spool ID must be exactly 10 characters'),
+  process_type: Yup.string().required('Process Type Required'),
   start_date: Yup.string().required('Start Date is required'),
   start_time: Yup.string().required('Start Time is required'),
   end_date: Yup.string().required('End Date is required'),
@@ -348,7 +349,7 @@ const DrawSpoolEntry = () => {
       const events = res.payload?.data || [];
       console.log("WHat is the events:", events)
 
-      const mappedFlaws = drawFlawAutomation(events);
+      const mappedFlaws = drawFlawAutomation(rows);
       console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
@@ -730,7 +731,7 @@ const DrawSpoolEntry = () => {
                           { label: "P-COAT-V1", value: "P-COAT-V1" },
                           { label: "P-COAT-V2", value: "P-COAT-V2" }
                         ]} />
-                        <FormikSelect compact label="Coating Type" name="coating_type" options={['S-Batch-01', 'S-Batch-02']} />
+                        <FormikSelect compact label="Coating Type" name="coating_type" options={['Single', 'Double']} />
                         <FormikInput compact label="Primary Pressure" name="primary_pressure" type="number" />
                         <FormikInput compact label="Secondary Pressure" name="secondary_pressure" type="number" />
                         <FormikSelect compact label="Primary Batch" name="primary_batch" options={[
