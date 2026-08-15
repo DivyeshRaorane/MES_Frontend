@@ -134,9 +134,9 @@ const MENU = [
 const DEPT_MENU_MAP = {
   'Draw': ['draw', 'dynamicreports'],
   'Proof Testing': ['proof', 'dynamicreports'],
-  'Quality': ['quality', 'dynamicreports'],
+  'Quality Control': ['quality', 'dynamicreports'],
   'Quality Assurance': ['qa', 'dynamicreports'],
-  'Finish Goods': ['finishgoods', 'dynamicreports'],
+  'Dispatch': ['finishgoods', 'dynamicreports'],
   'All': ['draw', 'proof', 'quality', 'qa', 'finishgoods', 'admin', 'settings', 'dynamicreports'],
 };
 
@@ -146,6 +146,8 @@ const Sidebar = () => {
   const location  = useLocation();
   const dispatch  = useDispatch();
   const user = useSelector(state => state.auth?.user);
+
+  console.log("USer:", user)
 
   // Determine which menu keys are allowed
   const getAllowedMenuKeys = () => {
