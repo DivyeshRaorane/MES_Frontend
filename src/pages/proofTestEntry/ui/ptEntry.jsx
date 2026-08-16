@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import * as Yup from 'yup';
-import { Scan, ClipboardCheck, AlertTriangle, Users, Database, Trash2, Plus, Zap, Lock } from 'lucide-react';
+import { Scan, ClipboardCheck, AlertTriangle, Users, Database, Trash2, Plus, Zap, Lock, Search } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
@@ -14,6 +14,8 @@ import { checkPTLength, computeFlawStatuses, findBookableFlaw, validateFlawBooki
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
 import { clearPtFlaws } from '../controller/get_pt_flaws.slice.jsx';
 import { clearPtLogs } from '../controller/get_pt_logs.slice.jsx';
+import { getPTAllocatedSpool } from '../../ptRunnigTable/services/pt_running.api';
+import SelectionModal from '../../../components/selectionModal';
 import axios from 'axios';
 
 /* ── Password Modal ─────────────────────────────────────── */
@@ -104,6 +106,7 @@ const PTEntry = () => {
   const [showBreakScrapAlert, setShowBreakScrapAlert] = useState(false);
   const [breakAlertContext, setBreakAlertContext] = useState('');
   const [pendingPtSubmit, setPendingPtSubmit] = useState(null);
+  const [isSpoolModalOpen, setIsSpoolModalOpen] = useState(false);
   const [ptUsers, setPTUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
   const [bobbinTypes, setBobbinTypes] = useState([]);
@@ -121,6 +124,7 @@ const PTEntry = () => {
   const dispatch = useDispatch();
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
+  const { ptAllocatedSpoolData, ptASLoading } = useSelector((state) => state.ptAllocatedSpool);
   console.log("What is the ptAlert:", ptAlert)
 
   /* ── Reusable FID generation logic ── */
@@ -273,6 +277,7 @@ const PTEntry = () => {
   useEffect(() => {
     dispatch(clearPtFlaws());
     dispatch(clearPtLogs());
+    dispatch(getPTAllocatedSpool(false));
     return () => {
       dispatch(clearPtFlaws());
       dispatch(clearPtLogs());
@@ -553,6 +558,26 @@ const PTEntry = () => {
     }
   };
 
+  /* ── Row click handler for PT Running Table ── */
+  const handleRowClick = (row) => {
+    const spoolId = row.spool_id || '';
+    if (spoolId && formikRef.current) {
+      formikRef.current.setFieldValue('spool_id', spoolId);
+      handleScan(spoolId, formikRef.current.setFieldValue);
+    }
+  };
+
+  /* ── Modal columns for spool selection ── */
+  const spoolModalColumns = [
+    { key: 'allocated_by', label: 'Operator' },
+    { key: 'shift_incharge', label: 'Shift Incharge' },
+    { key: 'pt_machine_no', label: 'PT No' },
+    { key: 'spool_id', label: 'Drawn Spool ID' },
+    { key: 'drawn_length', label: 'Drawn Length' },
+    { key: 'balance_qty', label: 'Balance' },
+    { key: 'allocation_remark', label: 'Remark' },
+  ];
+
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
@@ -664,6 +689,11 @@ const PTEntry = () => {
                         <button type="button" onClick={() => handleScan(values.spool_id, setFieldValue)}
                           className="flex items-center gap-0.5 px-2 py-1.5 bg-indigo-600 text-white text-[8px] font-bold rounded uppercase hover:bg-indigo-700 h-[28px]">
                           <Scan size={9} /> Scan
+                        </button>
+                        <button type="button" onClick={() => setIsSpoolModalOpen(true)}
+                          disabled={ptASLoading}
+                          className="flex items-center gap-0.5 px-2 py-1.5 bg-emerald-600 text-white text-[8px] font-bold rounded uppercase hover:bg-emerald-700 disabled:opacity-50 h-[28px]">
+                          <Search size={9} /> Browse
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -1209,6 +1239,20 @@ const PTEntry = () => {
         )}
 
       </div>
+
+      {/* ── Spool Selection Modal (PT Running Table) ── */}
+      <SelectionModal
+        isOpen={isSpoolModalOpen}
+        onClose={() => setIsSpoolModalOpen(false)}
+        title="Select Allocated Spool"
+        data={Array.isArray(ptAllocatedSpoolData) ? ptAllocatedSpoolData : []}
+        columns={spoolModalColumns}
+        onSelect={(row) => {
+          handleRowClick(row);
+          setIsSpoolModalOpen(false);
+        }}
+      />
+
     </div>
   );
 };

@@ -215,7 +215,7 @@ useEffect(() => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 z-10">
               <tr className="border-b border-slate-200">
-                {['Preform ID', 'Draw Spool ID', 'DT No', 'Draw Length', 'PT Done', 'Balance Length'].map(h => (
+                {['Preform ID', 'Draw Spool ID', 'DT No', 'Draw Length','Product Type', 'PT Done', 'Balance Length'].map(h => (
                   <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -231,6 +231,7 @@ useEffect(() => {
                   <td className="px-3 py-2 text-xs text-slate-600">{row.spool_id}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">{row.tower_no}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">{row.drawn_length}</td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.product_type.trim()+row.process_type}</td>
                   <td className="px-3 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${row.PT_Done === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                       }`}>

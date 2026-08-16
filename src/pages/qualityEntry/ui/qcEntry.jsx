@@ -716,7 +716,7 @@ const QCEntryScreen = () => {
                 {/* Optical Length display */}
                 {values.optical_length && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">LEN</span>
+                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
                   </div>
                 )}

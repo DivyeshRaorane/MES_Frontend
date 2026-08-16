@@ -34,6 +34,7 @@ import ComplaintClosure from './pages/customer_complaint/complaintClosure/ui/com
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
 import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
 import D2Combined from './pages/d2Egeing/ui/d2_combined'
+import BulkFinalGrade from './pages/d2Egeing/ui/bulkFinalGrade'
 import D2Issue from './pages/d2Egeing/ui/d2egeing'
 import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
 import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
@@ -113,6 +114,7 @@ function App() {
         <Route path='quality/d2gasconeentry' element={<D2Combined/>}/>
         <Route path='quality/d2recieving' element={<D2Combined/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
+        <Route path='quality/finalgrade' element={<BulkFinalGrade/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
         <Route path='quality/reports' element={<QualityReports/>}/>
         <Route path='fg/customerallocation' element={<CustomerAllocation/>}/>

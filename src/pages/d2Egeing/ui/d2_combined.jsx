@@ -3,11 +3,13 @@ import { FlaskConical } from 'lucide-react';
 import D2Issue from './d2egeing';
 import D2GasConeEntry from '../../d2gas_coneEntry/ui/d2gas_cone_entry';
 import D2Recieving from '../../d2_Recieving/ui/d2_Recieving';
+import D2Batches from './d2Batches';
 
 const TABS = [
   { key: 'issue', label: 'D2 Issue' },
   { key: 'gas', label: 'D2 Gas Entry' },
   { key: 'receiving', label: 'D2 Receiving' },
+  { key: 'batches', label: 'D2 Batches' },
 ];
 
 const D2Combined = () => {
@@ -43,6 +45,7 @@ const D2Combined = () => {
           {activeTab === 'issue' && <D2IssueInner />}
           {activeTab === 'gas' && <D2GasInner />}
           {activeTab === 'receiving' && <D2ReceivingInner />}
+          {activeTab === 'batches' && <D2BatchesInner />}
         </div>
 
       </div>
@@ -57,5 +60,6 @@ const D2Combined = () => {
 const D2IssueInner = () => <div className="h-full overflow-hidden [&>div]:h-full [&>div]:m-0 [&>div]:rounded-none [&>div]:shadow-none [&>div]:border-0 [&>div>div]:m-0 [&>div>div]:rounded-none [&>div>div]:shadow-none [&>div>div]:border-0"><D2Issue /></div>;
 const D2GasInner = () => <div className="h-full overflow-hidden [&>div]:h-full [&>div]:m-0 [&>div]:rounded-none [&>div]:shadow-none [&>div]:border-0 [&>div>div]:m-0 [&>div>div]:rounded-none [&>div>div]:shadow-none [&>div>div]:border-0"><D2GasConeEntry /></div>;
 const D2ReceivingInner = () => <div className="h-full overflow-hidden [&>div]:h-full [&>div]:m-0 [&>div]:rounded-none [&>div]:shadow-none [&>div]:border-0 [&>div>div]:m-0 [&>div>div]:rounded-none [&>div>div]:shadow-none [&>div>div]:border-0"><D2Recieving /></div>;
+const D2BatchesInner = () => <div className="h-full overflow-hidden"><D2Batches /></div>;
 
 export default D2Combined;

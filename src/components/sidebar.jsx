@@ -60,6 +60,7 @@ const MENU = [
       { label: 'Quality Entry',       path: '/quality/qcentry' },
       { label: 'Physical Verification ',            path: '/quality/pventry' },
       { label: 'D2 Management',     path: '/quality/d2issue' },
+      { label: 'Final Grade',        path: '/quality/finalgrade' },
       { label: 'H2 Ageing',           path: '/quality/h2egeing' },
       { label: 'QC Out',             path: '/quality/qcinout' },
       { label: 'Report',      path: '/quality/reports' },

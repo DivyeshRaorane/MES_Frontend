@@ -103,3 +103,54 @@ export const deleteDraft = async (d2_batch_id) => {
   });
   return response.data;
 };
+
+/* ══════════════════════════════════════════════════════════════
+   D2 BATCHES APIs
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Get distinct D2 batches filtered by d2_end_date range ── */
+export const getD2Batches = async (fromDate, toDate) => {
+  const response = await axios({
+    method: "GET",
+    url: `${API}/api/d2issue/batches?from=${fromDate}&to=${toDate}`,
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
+
+/* ── Get bobbins for final grade export (no final_grade, is_d2=true, if h2 batch then is_h2_after=true) ── */
+export const getD2BatchBobbinsForGrade = async (d2_batch_id) => {
+  const response = await axios({
+    method: "GET",
+    url: `${API}/api/d2issue/batches/${d2_batch_id}/grade-export`,
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
+
+/* ══════════════════════════════════════════════════════════════
+   BULK FINAL GRADE APIs
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Single bobbin final grade (scan mode) ── */
+export const processSingleFinalGrade = async (bobbin_no) => {
+  const response = await axios({
+    method: "POST",
+    url: `${API}/api/d2issue/final-grade/single`,
+    data: { bobbin_no },
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
+
+/* ── Bulk final grade (excel import mode) ── */
+export const processBulkFinalGrade = async (bobbins) => {
+  // bobbins: array of { bobbin_no, fid, product_type, temp_grade }
+  const response = await axios({
+    method: "POST",
+    url: `${API}/api/d2issue/final-grade/bulk`,
+    data: { bobbins },
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
