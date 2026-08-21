@@ -141,6 +141,7 @@ const DrawSpoolEntry = () => {
   const [preformEndScenario, setPreformEndScenario] = useState(null); // 'balance' | 'fiber_cut' | 'preform_remove'
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
   const [pendingResetForm, setPendingResetForm] = useState(null);
+  const [showDrawnLengthConfirm, setShowDrawnLengthConfirm] = useState(false);
   const [processTypeOptions, setProcessTypeOptions] = useState([]);
   const formikRef = React.useRef(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
@@ -504,7 +505,7 @@ const DrawSpoolEntry = () => {
                       console.log("Validation errors:", errs);
                       return;
                     }
-                    handleSubmit();
+                    setShowDrawnLengthConfirm(true);
                   }}>Submit</SubmitButton>
                   <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
                 </div>
@@ -731,7 +732,7 @@ const DrawSpoolEntry = () => {
                           { label: "P-COAT-V1", value: "P-COAT-V1" },
                           { label: "P-COAT-V2", value: "P-COAT-V2" }
                         ]} />
-                        <FormikSelect compact label="Coating Type" name="coating_type" options={['Single', 'Double']} />
+                        <FormikSelect compact label="Coating Type" name="coating_type" options={['PHICHEM', 'ZTT','DSM']} />
                         <FormikInput compact label="Primary Pressure" name="primary_pressure" type="number" />
                         <FormikInput compact label="Secondary Pressure" name="secondary_pressure" type="number" />
                         <FormikSelect compact label="Primary Batch" name="primary_batch" options={[
@@ -831,6 +832,41 @@ const DrawSpoolEntry = () => {
             </Form>
           )}
         </Formik>
+
+        {/* ── Drawn Length Confirmation Popup ── */}
+        {showDrawnLengthConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-96 text-center">
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">📏</span>
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 mb-2">Confirm Drawn Length</h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Drawn Length is <strong className="text-blue-700 text-base">{formikRef.current?.values?.drawn_length} KM</strong>
+              </p>
+              <p className="text-xs text-slate-500 mb-4">Is this correct?</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDrawnLengthConfirm(false)}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDrawnLengthConfirm(false);
+                    formikRef.current?.handleSubmit();
+                  }}
+                  className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all"
+                >
+                  Ok
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Preform End / Tower Free Confirmation Popup ── */}
         {showPreformEndPopup && (

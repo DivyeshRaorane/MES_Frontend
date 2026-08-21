@@ -72,6 +72,7 @@ import SpecCreation from './pages/QualityAssurance/SpecCreation/SpecCreation'
 import QualityReports from './pages/Reports/QualityReports/ui/QualityReports'
 import QAReports from './pages/Reports/QAReports/ui/QAReports'
 import FGReports from './pages/Reports/FGReports/ui/FGReports'
+import DispatchPage from './pages/dispatch/ui/dispatch'
 
 // Dynamic Reports Module
 import DynamicReportsList from './pages/DynamicReports/ui/DynamicReportsList'
@@ -127,6 +128,7 @@ function App() {
         <Route path='fg/fiberrejection' element={<FGFiberRejection/>}/>
         <Route path='fg/packinglist' element={<PackingListGeneration/>}/>
         <Route path='fg/modulainout' element={<ModulaInOut/>}/>
+        <Route path='fg/dispatch' element={<DispatchPage/>}/>
         <Route path='fg/reports' element={<FGReports/>}/>
         <Route path='order/customerenquiry' element={<CustomerEnquiry/>}/>
         <Route path='order/enquirylist' element={<CustomerEnquiryList/>}/>

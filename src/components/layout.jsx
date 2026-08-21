@@ -30,6 +30,7 @@ const ROUTE_TITLES = {
   '/quality/qcinout':              'QC In / Out',
   '/quality/customerallocation':   'Customer Allocation',
   '/dispatch/dispatchchecking':    'Dispatch Checking',
+  '/fg/dispatch':                  'Dispatch',
   '/dispatch/fibermakingcheck':    'Fiber Making Check',
   '/dispatch/boxscanningentry':    'Box Scanning Entry',
   '/dispatch/fgfiberallocation':   'FG Fiber Allocation',

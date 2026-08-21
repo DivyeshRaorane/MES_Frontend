@@ -100,6 +100,7 @@ export const drawFlawAutomation = (rows) => {
  for (const row of rows) {
 
  const msg = row.Message;
+ console.log("rows:", msg)
 
  // Ignore unwanted messages
  if (

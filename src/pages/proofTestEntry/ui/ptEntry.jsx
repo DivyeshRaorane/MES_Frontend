@@ -367,17 +367,25 @@ const PTEntry = () => {
     let ptFlawRemark = '';
     let aFlawCut = '';
     if (missedFlaws.length > 0 && !values.active_rejection_type && values.fid) {
-      // Only include flaws whose position falls within this entry's range (currentPtDone to newPtDone)
+      // Include flaws that OVERLAP with this entry's range (not just pos1 within range)
+      // A flaw overlaps if: flaw.pos1 < newPtDone AND flaw.pos2 > currentPtDone
+      // This handles partial flaw splits across bobbins (e.g., flaw 170-172 split into 170-171 and 171-172)
       const flawsInThisEntry = missedFlaws.filter(f => {
         const pos1 = parseFloat(f.pos1) || 0;
-        return pos1 >= currentPtDone && pos1 <= newPtDone;
+        const pos2 = parseFloat(f.pos2) || 0;
+        return pos1 < newPtDone && pos2 > currentPtDone;
       });
 
       if (flawsInThisEntry.length > 0) {
         ptFlawRemark = flawsInThisEntry
           .map(f => {
-            const relPos1 = (parseFloat(f.pos1) - currentPtDone).toFixed(3);
-            const relPos2 = (parseFloat(f.pos2) - currentPtDone).toFixed(3);
+            const fPos1 = parseFloat(f.pos1) || 0;
+            const fPos2 = parseFloat(f.pos2) || 0;
+            // Clamp flaw range to this bobbin's boundaries
+            const effectiveStart = Math.max(fPos1, currentPtDone);
+            const effectiveEnd = Math.min(fPos2, newPtDone);
+            const relPos1 = (effectiveStart - currentPtDone).toFixed(3);
+            const relPos2 = (effectiveEnd - currentPtDone).toFixed(3);
             return `Cut from  ${relPos1} km to ${relPos2} ("Flaw Missed")`;
           })
           .join('; ');
@@ -385,8 +393,13 @@ const PTEntry = () => {
         // Reverse remark: measured from end of PT length (takeup side)
         aFlawCut = flawsInThisEntry
           .map(f => {
-            const relPos1 = (parseFloat(f.pos1) - currentPtDone).toFixed(3);
-            const relPos2 = (parseFloat(f.pos2) - currentPtDone).toFixed(3);
+            const fPos1 = parseFloat(f.pos1) || 0;
+            const fPos2 = parseFloat(f.pos2) || 0;
+            // Clamp flaw range to this bobbin's boundaries
+            const effectiveStart = Math.max(fPos1, currentPtDone);
+            const effectiveEnd = Math.min(fPos2, newPtDone);
+            const relPos1 = (effectiveStart - currentPtDone).toFixed(3);
+            const relPos2 = (effectiveEnd - currentPtDone).toFixed(3);
             const revPos1 = (ptLen - parseFloat(relPos2)).toFixed(3);
             const revPos2 = (ptLen - parseFloat(relPos1)).toFixed(3);
             return `Cut from ${revPos1} km to ${revPos2} ("Flaw Missed")`;

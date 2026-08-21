@@ -126,6 +126,20 @@ export const checkPTLength = ({
                 const pos1 = Number(flaw.pos1);
                 const pos2 = Number(flaw.pos2);
 
+                // Case: ptDone is INSIDE the flaw range (done >= pos1 && done < pos2)
+                if (done >= pos1 && done < pos2) {
+                    const suggestedCut = Number((pos2 - done + 0.100).toFixed(3));
+                    return {
+                        hit: true,
+                        type: "FLAW_INSIDE",
+                        suggestedLength: suggestedCut,
+                        flaw,
+                        message:
+                            `⚠️ Flaw Detected! "${flaw.reason}" (${pos1} km to ${pos2} km).\nPT Done is inside the flaw range.\nBalance: ${balance.toFixed(3)} km remaining.\n\nPlease set PT Length to ${suggestedCut} km.`,
+                        nextFlawMessage: null
+                    };
+                }
+
                 if (pos1 > done && pos1 <= remainingEnd) {
                     const safeLength = Number((pos1 - done).toFixed(3));
 
@@ -189,6 +203,24 @@ export const checkPTLength = ({
 
             const pos1 = Number(flaw.pos1);
             const pos2 = Number(flaw.pos2);
+
+            //-------------------------
+            // Case: ptDone is INSIDE the flaw range (done >= pos1 && done < pos2)
+            // This happens when a previous bobbin cut into the flaw partially.
+            // Alert: "Flaw detected! Set length to (pos2 - done + 0.1) km"
+            //-------------------------
+            if (done >= pos1 && done < pos2) {
+                const suggestedCut = Number((pos2 - done + 0.100).toFixed(3));
+                return {
+                    hit: true,
+                    type: "FLAW_INSIDE",
+                    suggestedLength: suggestedCut,
+                    flaw,
+                    message:
+                        `⚠️ Flaw Detected! "${flaw.reason}" (${pos1} km to ${pos2} km).\nPT Done is inside the flaw range.\n\nPlease set PT Length to ${suggestedCut} km.`,
+                    nextFlawMessage: null
+                };
+            }
 
             if (pos1 > done && pos1 <= runEnd) {
 
@@ -270,14 +302,15 @@ const GOOD_LENGTH_FLAW = 2.1; // km — booking window
  * 
  * Status Rules:
  *   BOOKED  — flaw.is_done === true (already booked via rejection)
- *   MISSED  — PT Done > (pos1 + GOOD_LENGTH) and not booked
- *   PENDING — not booked and PT Done has not crossed booking window
+ *   MISSED  — PT Done > (pos1 + GOOD_LENGTH) or PT Done >= pos2 (passed flaw end)
+ *   PENDING — not booked and PT Done has not crossed booking window or flaw end
  */
 export const getFlawStatus = (flaw, ptDoneSoFar) => {
     if (flaw.is_done) return 'BOOKED';
     const pos1 = Number(flaw.pos1) || 0;
+    const pos2 = Number(flaw.pos2) || 0;
     const windowEnd = pos1 + GOOD_LENGTH_FLAW;
-    if (ptDoneSoFar > windowEnd) return 'MISSED';
+    if (ptDoneSoFar > windowEnd || ptDoneSoFar >= pos2) return 'MISSED';
     return 'PENDING';
 };
 
@@ -366,7 +399,10 @@ export const validateFlawBooking = (ptFlaws, ptDoneSoFar) => {
 
 /**
  * Get all flaws that should be marked as MISSED (for backend sync).
- * Unbooked flaws where ptDone > pos1 + GOOD_LENGTH.
+ * A flaw is missed when:
+ *   1. It's not already booked (is_done = false)
+ *   2. PT done has passed the flaw's booking window (done > pos1 + GOOD_LENGTH)
+ *      OR PT done has gone past the flaw end (done > pos2) — covers partial split case
  */
 export const getMissedFlaws = (ptFlaws, ptDoneSoFar) => {
     if (!Array.isArray(ptFlaws)) return [];
@@ -374,6 +410,8 @@ export const getMissedFlaws = (ptFlaws, ptDoneSoFar) => {
     return ptFlaws.filter(flaw => {
         if (flaw.is_done) return false;
         const pos1 = Number(flaw.pos1) || 0;
-        return done > (pos1 + GOOD_LENGTH_FLAW);
+        const pos2 = Number(flaw.pos2) || 0;
+        // Missed if PT done has passed the booking window OR past the flaw end
+        return done > (pos1 + GOOD_LENGTH_FLAW) || done >= pos2;
     });
 };

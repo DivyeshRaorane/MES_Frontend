@@ -100,6 +100,7 @@ const MENU = [
       { label: 'Order Register',        path: '/fg/orderregister' },
       { label: 'Packing List',          path: '/fg/packinglist' },
       { label: 'TC Generation',         path: '/fg/tcgeneration' },
+      { label: 'Dispatch',             path: '/fg/dispatch' },
       { label: 'Reports', path: '/fg/reports' },
     ],
   },

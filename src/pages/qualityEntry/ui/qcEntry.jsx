@@ -84,6 +84,13 @@ const buildInitialValues = () => {
 
 /* ── Failure Dialog ── */
 const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
+
+  const getDisplayValue = (val) => {
+  if (val === null || val === undefined) return '';
+  const str = val.toString();
+  if (str.toLowerCase().includes('(borrowed)')) return 'Value not available';
+  return str.split(' ')[0];
+};
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
@@ -96,7 +103,9 @@ const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
           <p className="text-xs text-slate-700"><span className="font-bold">Grade Checked:</span> {details?.grade_checked}</p>
           <p className="text-xs text-slate-700"><span className="font-bold">Failed Parameter:</span> <span className="text-red-600 font-mono">{details?.failed_parameter}</span></p>
           <p className="text-xs text-slate-700"><span className="font-bold">Measured Value:</span> {details?.measured_value}</p>
-          <p className="text-xs text-slate-700"><span className="font-bold">Allowed Range:</span> [{details?.min} to {details?.max}]</p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Allowed Range:</span> {details?.allowed_range} </p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Top Value:</span> {getDisplayValue(details?.top_value)} </p>
+          <p className="text-xs text-slate-700"><span className="font-bold">Bottom Value:</span> {getDisplayValue(details?.bottom_value)} </p>
         </div>
         <div className="flex gap-2">
           <button onClick={onFail} className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-all">FAIL</button>
@@ -510,6 +519,7 @@ const QCEntryScreen = () => {
       const res = await gradeBobbin(values.bobbin_no);
       // Handle response — res is already axios res.data, may have nested .data
       const data = res?.data?.status ? res.data : res;
+      console.log("grade:", data)
 
       if (data?.status === 'PASSED') {
         const matchedGrade = data.matched_grade;
