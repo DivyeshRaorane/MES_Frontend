@@ -461,7 +461,12 @@ const DrawSpoolEntry = () => {
             }
           }}>
           {({ values, resetForm, setFieldValue, errors, submitCount, validateForm, setTouched, handleSubmit }) => (
-            <Form className="flex flex-col flex-1 overflow-hidden" noValidate>
+            <Form className="flex flex-col flex-1 overflow-hidden" noValidate
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}>
               <DrawWeightWatcher />
               {/* ── Top action bar ── */}
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
