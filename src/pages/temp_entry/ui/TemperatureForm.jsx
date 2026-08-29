@@ -3,9 +3,9 @@ import { X, Thermometer, Activity, FileText } from 'lucide-react';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getTempEntryById, createTempEntry, updateTempEntry } from '../services/tempEntryService';
 
-const FIXED_TEMPS = [23, -60, 85, -60, -85, 23];
+const FIXED_TEMPS = [23, -60, 85, -60, 85, 23];
 
-const buildCycleRows = () => FIXED_TEMPS.map(t => ({ temperature: t, date: '', time: '', nm_1550: '', nm_1625: '', ch_nm_1550: '', ch_nm_1625: '', operator: '', remark: '' }));
+const buildCycleRows = () => FIXED_TEMPS.map(t => ({ temperature: t, date: '', time: '', nm_1310: '', nm_1550: '', nm_1625: '', operator: '', remark: '' }));
 
 /* ── Compact Field ── */
 const F = ({ label, value, onChange, type = 'text', placeholder = '', className = '' }) => (
@@ -26,6 +26,7 @@ const TemperatureForm = ({ entryId, onClose }) => {
     physical_obs: '', at_1310: '', at_1550: '', at_1625: '',
   });
   const [cycles, setCycles] = useState(buildCycleRows());
+  const [maxCh, setMaxCh] = useState({ max_ch_nm_1310: '', max_ch_nm_1550: '', max_ch_nm_1625: '' });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const isEdit = !!entryId;
@@ -54,11 +55,16 @@ const TemperatureForm = ({ entryId, onClose }) => {
               setCycles(res.data.cycles.map(c => ({
                 temperature: c.temperature,
                 date: c.date?.split('T')[0] || '', time: c.time || '',
-                nm_1550: c.nm_1550 ?? '', nm_1625: c.nm_1625 ?? '',
-                ch_nm_1550: c.ch_nm_1550 ?? '', ch_nm_1625: c.ch_nm_1625 ?? '',
+                nm_1310: c.nm_1310 ?? '', nm_1550: c.nm_1550 ?? '', nm_1625: c.nm_1625 ?? '',
                 operator: c.operator || '', remark: c.remark || '',
               })));
             }
+            const mc = res.data.maxCh || {};
+            setMaxCh({
+              max_ch_nm_1310: mc.max_ch_nm_1310 ?? '',
+              max_ch_nm_1550: mc.max_ch_nm_1550 ?? '',
+              max_ch_nm_1625: mc.max_ch_nm_1625 ?? '',
+            });
           }
         } catch (e) { showError('Failed to load entry'); }
         setLoading(false);
@@ -67,6 +73,7 @@ const TemperatureForm = ({ entryId, onClose }) => {
   }, [entryId]);
 
   const handleMasterChange = (key, val) => setMaster(prev => ({ ...prev, [key]: val }));
+  const handleMaxChChange = (key, val) => setMaxCh(prev => ({ ...prev, [key]: val }));
   const handleCycleChange = (idx, key, val) => {
     setCycles(prev => { const u = [...prev]; u[idx] = { ...u[idx], [key]: val }; return u; });
   };
@@ -75,7 +82,7 @@ const TemperatureForm = ({ entryId, onClose }) => {
     if (!master.bobbin_no) { showError('Bobbin No is required'); return; }
     setSubmitting(true);
     try {
-      const payload = { master, cycles };
+      const payload = { master, cycles, maxCh };
       const res = isEdit ? await updateTempEntry(entryId, payload) : await createTempEntry(payload);
       if (res?.success) { showSuccess(isEdit ? 'Entry updated' : 'Entry created'); onClose(); }
       else showError(res?.message || 'Save failed');
@@ -177,7 +184,7 @@ const TemperatureForm = ({ entryId, onClose }) => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-100">
                 <tr>
-                  {['Temp (°C)', 'Date', 'Time', '1550 nm', '1625 nm', 'Δ 1550', 'Δ 1625', 'Operator', 'Remark'].map(h => (
+                  {['Temp (°C)', 'Date', 'Time', '1310 nm', '1550 nm', '1625 nm', 'Operator', 'Remark'].map(h => (
                     <th key={h} className="px-2 py-1.5 text-[8px] font-bold text-slate-600 uppercase border-r border-slate-200 last:border-0 text-center">{h}</th>
                   ))}
                 </tr>
@@ -195,16 +202,25 @@ const TemperatureForm = ({ entryId, onClose }) => {
                     </td>
                     <td className="px-1 py-1"><input type="date" value={c.date} onChange={e => handleCycleChange(i, 'date', e.target.value)} className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 bg-white" /></td>
                     <td className="px-1 py-1"><input type="time" value={c.time} onChange={e => handleCycleChange(i, 'time', e.target.value)} className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 bg-white" /></td>
+                    <td className="px-1 py-1"><input type="number" step="0.001" value={c.nm_1310} onChange={e => handleCycleChange(i, 'nm_1310', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 text-center bg-blue-50/50" placeholder="—" /></td>
                     <td className="px-1 py-1"><input type="number" step="0.001" value={c.nm_1550} onChange={e => handleCycleChange(i, 'nm_1550', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 text-center bg-blue-50/50" placeholder="—" /></td>
                     <td className="px-1 py-1"><input type="number" step="0.001" value={c.nm_1625} onChange={e => handleCycleChange(i, 'nm_1625', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 text-center bg-blue-50/50" placeholder="—" /></td>
-                    <td className="px-1 py-1"><input type="number" step="0.001" value={c.ch_nm_1550} onChange={e => handleCycleChange(i, 'ch_nm_1550', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-amber-300 text-center bg-amber-50/50" placeholder="—" /></td>
-                    <td className="px-1 py-1"><input type="number" step="0.001" value={c.ch_nm_1625} onChange={e => handleCycleChange(i, 'ch_nm_1625', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-amber-300 text-center bg-amber-50/50" placeholder="—" /></td>
                     <td className="px-1 py-1"><input value={c.operator} onChange={e => handleCycleChange(i, 'operator', e.target.value)} className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 bg-white" placeholder="Op" /></td>
                     <td className="px-1 py-1"><input value={c.remark} onChange={e => handleCycleChange(i, 'remark', e.target.value)} className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-blue-300 bg-white" placeholder="—" /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Section 5: Max Change in Attenuation — single row */}
+          <div className="bg-amber-50/50 border border-amber-100 rounded-xl px-3 py-2 flex items-center gap-4">
+            <span className="text-[8px] font-bold text-amber-700 uppercase tracking-wider whitespace-nowrap">Max Change in Attenuation (dB):</span>
+            <div className="flex gap-3 flex-1">
+              <F label="Max Δ 1310" value={maxCh.max_ch_nm_1310} onChange={v => handleMaxChChange('max_ch_nm_1310', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1550" value={maxCh.max_ch_nm_1550} onChange={v => handleMaxChChange('max_ch_nm_1550', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1625" value={maxCh.max_ch_nm_1625} onChange={v => handleMaxChChange('max_ch_nm_1625', v)} type="number" className="flex-1" />
+            </div>
           </div>
         </div>
 

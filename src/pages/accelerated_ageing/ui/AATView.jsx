@@ -40,12 +40,12 @@ const AATView = ({ entryId, onBack }) => {
 
   const m = data.master || {};
   const days = data.days || [];
-  const allAt1310 = days.map(d => parseFloat(d.at_1310) || 0).filter(v => v > 0);
-  const allAt1550 = days.map(d => parseFloat(d.at_1550) || 0).filter(v => v > 0);
-  const allAt1625 = days.map(d => parseFloat(d.at_1625) || 0).filter(v => v > 0);
-  const ch1310 = allAt1310.length ? (Math.max(...allAt1310) - allAt1310[0]).toFixed(3) : '0.000';
-  const ch1550 = allAt1550.length ? (Math.max(...allAt1550) - allAt1550[0]).toFixed(3) : '0.000';
-  const ch1625 = allAt1625.length ? (Math.max(...allAt1625) - allAt1625[0]).toFixed(3) : '0.000';
+
+  // Max change in attenuation — stored values from aat_ch table
+  const mc = data.maxCh || {};
+  const ch1310 = (parseFloat(mc.max_ch_nm_1310) || 0).toFixed(3);
+  const ch1550 = (parseFloat(mc.max_ch_nm_1550) || 0).toFixed(3);
+  const ch1625 = (parseFloat(mc.max_ch_nm_1625) || 0).toFixed(3);
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">

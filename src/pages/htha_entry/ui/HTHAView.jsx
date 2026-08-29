@@ -43,14 +43,12 @@ const HTHAView = ({ entryId, onBack }) => {
 
   const m = data.master || {};
   const days = data.days || [];
-  const allAt1550 = days.map(d => parseFloat(d.at_1550) || 0).filter(v => v > 0);
-  const allAt1625 = days.map(d => parseFloat(d.at_1625) || 0).filter(v => v > 0);
-  const initAt1550 = allAt1550.length > 0 ? allAt1550[0] : 0;
-  const initAt1625 = allAt1625.length > 0 ? allAt1625[0] : 0;
-  const maxAt1550 = allAt1550.length > 0 ? Math.max(...allAt1550) : 0;
-  const maxAt1625 = allAt1625.length > 0 ? Math.max(...allAt1625) : 0;
-  const changeAt1550 = (maxAt1550 - initAt1550).toFixed(3);
-  const changeAt1625 = (maxAt1625 - initAt1625).toFixed(3);
+
+  // Max change in attenuation — stored values from htha_ch table
+  const mc = data.maxCh || {};
+  const changeAt1310 = (parseFloat(mc.max_ch_nm_1310) || 0).toFixed(3);
+  const changeAt1550 = (parseFloat(mc.max_ch_nm_1550) || 0).toFixed(3);
+  const changeAt1625 = (parseFloat(mc.max_ch_nm_1625) || 0).toFixed(3);
 
   // Split into two columns for display (like the report)
   const half = Math.ceil(days.length / 2);
@@ -107,7 +105,7 @@ const HTHAView = ({ entryId, onBack }) => {
                 <tr>
                   <th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>LENGTH (KM):</th>
                   <td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={2}>{m.fiber_length} KM</td>
-                  <td style={{ border: '1px solid #999', padding: '4px 8px' }}>INITIAL ATTENUATION: (1550: {m.at_1550} / 1625: {m.at_1625}) dB/KM</td>
+                  <td style={{ border: '1px solid #999', padding: '4px 8px' }}>INITIAL ATTENUATION: (1310: {m.at_1310} / 1550: {m.at_1550} / 1625: {m.at_1625}) dB/KM</td>
                 </tr>
               </tbody>
             </table>
@@ -118,18 +116,20 @@ const HTHAView = ({ entryId, onBack }) => {
                 <tr style={{ background: '#cbd5e1' }}>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>DATE</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>DAY</th>
+                  <th style={{ border: '1px solid #333', padding: '4px' }}>1310 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1550 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1625 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}></th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>DATE</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>DAY</th>
+                  <th style={{ border: '1px solid #333', padding: '4px' }}>1310 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1550 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1625 nm</th>
                 </tr>
                 <tr style={{ background: '#e2e8f0', fontSize: 9 }}>
-                  <th style={{ border: '1px solid #333', padding: '2px' }} colSpan={4}>ATTENUATION (dB/km)</th>
+                  <th style={{ border: '1px solid #333', padding: '2px' }} colSpan={5}>ATTENUATION (dB/km)</th>
                   <th style={{ border: '1px solid #333', padding: '2px' }}></th>
-                  <th style={{ border: '1px solid #333', padding: '2px' }} colSpan={4}>ATTENUATION (dB/km)</th>
+                  <th style={{ border: '1px solid #333', padding: '2px' }} colSpan={5}>ATTENUATION (dB/km)</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,11 +137,13 @@ const HTHAView = ({ entryId, onBack }) => {
                   <tr key={i}>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col1[i]?.htha_date?.split('T')[0] || ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center', fontWeight: 'bold' }}>{col1[i]?.htha_day ?? ''}</td>
+                    <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col1[i]?.at_1310 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col1[i]?.at_1550 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col1[i]?.at_1625 ?? ''}</td>
                     <td style={{ border: 'none', padding: '2px' }}></td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col2[i]?.htha_date?.split('T')[0] || ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center', fontWeight: 'bold' }}>{col2[i]?.htha_day ?? ''}</td>
+                    <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col2[i]?.at_1310 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col2[i]?.at_1550 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }}>{col2[i]?.at_1625 ?? ''}</td>
                   </tr>
@@ -149,9 +151,10 @@ const HTHAView = ({ entryId, onBack }) => {
                 {/* Change in attenuation row */}
                 <tr style={{ fontWeight: 'bold' }}>
                   <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center' }} colSpan={2}>Change in Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center', background: '#ffff00' }}>{changeAt1310}</td>
                   <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center', background: '#ffff00' }}>{changeAt1550}</td>
                   <td style={{ border: '1px solid #333', padding: '3px 6px', textAlign: 'center', background: '#ffff00' }}>{changeAt1625}</td>
-                  <td colSpan={5}></td>
+                  <td colSpan={6}></td>
                 </tr>
               </tbody>
             </table>
@@ -162,6 +165,7 @@ const HTHAView = ({ entryId, onBack }) => {
                 <tr style={{ background: '#16a34a', color: 'white' }}>
                   <td style={{ border: '1px solid #333', padding: '6px 10px', fontWeight: 'bold', fontSize: 13 }} colSpan={2}>RESULTS: PASS</td>
                 </tr>
+                <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn-1310 nm= {changeAt1310} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                 <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn-1550 nm= {changeAt1550} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                 <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn-1625 nm= {changeAt1625} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                 <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={2}>{m.remark || 'All results are found OK. Sample is passed.'}</td></tr>

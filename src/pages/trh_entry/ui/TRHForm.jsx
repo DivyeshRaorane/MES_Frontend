@@ -10,7 +10,7 @@ const CYCLE_TEMPS = [
   { temperature: '23', rh: '85-98' },
 ];
 
-const makeCycle = () => CYCLE_TEMPS.map(t => ({ ...t, trh_date: '', trh_time: '', at_1550: '', at_1625: '', tested_by: '' }));
+const makeCycle = () => CYCLE_TEMPS.map(t => ({ ...t, trh_date: '', trh_time: '', at_1310: '', at_1550: '', at_1625: '', tested_by: '' }));
 
 const F = ({ label, value, onChange, type = 'text', className = '' }) => (
   <div className={`flex flex-col gap-0.5 ${className}`}>
@@ -29,6 +29,7 @@ const TRHForm = ({ entryId, onClose }) => {
     fiber_length: '', remark: '', at_1310: '', at_1550: '', at_1625: '',
   });
   const [cycles, setCycles] = useState([...makeCycle()]);
+  const [maxCh, setMaxCh] = useState({ max_ch_nm_1310: '', max_ch_nm_1550: '', max_ch_nm_1625: '' });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const isEdit = !!entryId;
@@ -59,9 +60,15 @@ const TRHForm = ({ entryId, onClose }) => {
               setCycles(cycleSrc.map(c => ({
                 temperature: String(c.temperature || 85), rh: c.rh || '',
                 trh_date: c.trh_date?.split('T')[0] || '', trh_time: c.trh_time || '',
-                at_1550: c.at_1550 ?? '', at_1625: c.at_1625 ?? '', tested_by: c.tested_by || '',
+                at_1310: c.at_1310 ?? '', at_1550: c.at_1550 ?? '', at_1625: c.at_1625 ?? '', tested_by: c.tested_by || '',
               })));
             }
+            const mc = res.data?.maxCh || {};
+            setMaxCh({
+              max_ch_nm_1310: mc.max_ch_nm_1310 ?? '',
+              max_ch_nm_1550: mc.max_ch_nm_1550 ?? '',
+              max_ch_nm_1625: mc.max_ch_nm_1625 ?? '',
+            });
           }
         } catch (e) { console.error('TRH load error:', e?.response?.status, e?.response?.data, e?.message); showError(`Failed to load entry: ${e?.response?.data?.message || e?.message || 'Check backend'}`); }
         setLoading(false);
@@ -70,6 +77,7 @@ const TRHForm = ({ entryId, onClose }) => {
   }, [entryId]);
 
   const handleMasterChange = (key, val) => setMaster(prev => ({ ...prev, [key]: val }));
+  const handleMaxChChange = (key, val) => setMaxCh(prev => ({ ...prev, [key]: val }));
   const handleCycleChange = (idx, key, val) => setCycles(prev => { const u = [...prev]; u[idx] = { ...u[idx], [key]: val }; return u; });
   const addRow = () => setCycles(prev => [...prev, ...makeCycle()]);
   const removeCycle = () => {
@@ -82,7 +90,7 @@ const TRHForm = ({ entryId, onClose }) => {
     if (cycles.length === 0) { showError('Add at least one cycle row'); return; }
     setSubmitting(true);
     try {
-      const payload = { master, cycles: cycles.map((c, i) => ({ ...c, cycle_no: i + 1 })) };
+      const payload = { master, cycles: cycles.map((c, i) => ({ ...c, cycle_no: i + 1 })), maxCh };
       const res = isEdit ? await updateTrhEntry(entryId, payload) : await createTrhEntry(payload);
       if (res?.success) { showSuccess(isEdit ? 'Entry updated' : 'Entry created'); onClose(); }
       else showError(res?.message || 'Save failed');
@@ -158,7 +166,7 @@ const TRHForm = ({ entryId, onClose }) => {
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-100 z-10">
                   <tr>
-                    {['Cycle', 'Temp (°C)', 'RH (%)', 'Date', 'Time', 'AT 1550', 'AT 1625', 'Tested By'].map(h => (
+                    {['Cycle', 'Temp (°C)', 'RH (%)', 'Date', 'Time', 'AT 1310', 'AT 1550', 'AT 1625', 'Tested By'].map(h => (
                       <th key={h} className="px-2 py-1.5 text-[8px] font-bold text-slate-600 uppercase border-r border-slate-200 last:border-0 text-center">{h}</th>
                     ))}
                   </tr>
@@ -183,6 +191,7 @@ const TRHForm = ({ entryId, onClose }) => {
                         <td className="px-1 py-1"><input value={c.rh} onChange={e => handleCycleChange(i, 'rh', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center" placeholder="85-98" /></td>
                         <td className="px-1 py-1"><input type="date" value={c.trh_date} onChange={e => handleCycleChange(i, 'trh_date', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none" /></td>
                         <td className="px-1 py-1"><input type="time" value={c.trh_time} onChange={e => handleCycleChange(i, 'trh_time', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none" /></td>
+                        <td className="px-1 py-1"><input type="number" step="0.001" value={c.at_1310} onChange={e => handleCycleChange(i, 'at_1310', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50" placeholder="—" /></td>
                         <td className="px-1 py-1"><input type="number" step="0.001" value={c.at_1550} onChange={e => handleCycleChange(i, 'at_1550', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50" placeholder="—" /></td>
                         <td className="px-1 py-1"><input type="number" step="0.001" value={c.at_1625} onChange={e => handleCycleChange(i, 'at_1625', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50" placeholder="—" /></td>
                         <td className="px-1 py-1"><input value={c.tested_by} onChange={e => handleCycleChange(i, 'tested_by', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none" placeholder="Name" /></td>
@@ -191,6 +200,16 @@ const TRHForm = ({ entryId, onClose }) => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Max Change in Attenuation — single row */}
+          <div className="bg-amber-50/50 border border-amber-100 rounded-xl px-3 py-2 flex items-center gap-4 flex-shrink-0">
+            <span className="text-[8px] font-bold text-amber-700 uppercase tracking-wider whitespace-nowrap">Max Change in Attenuation (dB):</span>
+            <div className="flex gap-3 flex-1">
+              <F label="Max Δ 1310" value={maxCh.max_ch_nm_1310} onChange={v => handleMaxChChange('max_ch_nm_1310', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1550" value={maxCh.max_ch_nm_1550} onChange={v => handleMaxChChange('max_ch_nm_1550', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1625" value={maxCh.max_ch_nm_1625} onChange={v => handleMaxChChange('max_ch_nm_1625', v)} type="number" className="flex-1" />
             </div>
           </div>
         </div>

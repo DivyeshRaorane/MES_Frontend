@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, ClipboardList, FileText, Truck,
+  Package, Layers, ClipboardList, FileText, Truck, Mail,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -15,6 +15,7 @@ import ProcessTypePanel from './ProcessTypePanel';
 import BomMasterPanel from '../bom_master/ui/BomMasterPanel';
 import ProcessOrderPanel from '../process_order/ui/ProcessOrderPanel';
 import MesConfigPanel from '../mes_config/ui/MesConfigPanel';
+import MailDashboard from '../../../mail/ui/MailDashboard';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -111,6 +112,14 @@ const ADMIN_CARDS = [
     color: 'text-purple-600 bg-purple-100',
     component: 'mes_config',
   },
+  {
+    key: 'mail_config',
+    title: 'Mail Configuration',
+    desc: 'Configure & send emails via Gmail or Org',
+    icon: Mail,
+    color: 'text-rose-600 bg-rose-100',
+    component: 'mail_config',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -171,6 +180,22 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'mes_config') {
     return <MesConfigPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'mail_config') {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="px-4 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+          <button type="button" onClick={() => setActiveCard(null)}
+            className="flex items-center gap-1 text-[9px] text-blue-600 font-bold hover:underline">
+            <ArrowLeft size={11} /> Back to Admin
+          </button>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <MailDashboard />
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -51,15 +51,19 @@ const TRHView = ({ entryId, onBack }) => {
     groupedCycles[cn].push(c);
   });
 
-  // Calculate max change
+  // Ambient condition (min reading) — still computed
+  const allAt1310 = cycles.map(c => parseFloat(c.at_1310) || 0).filter(v => v > 0);
   const allAt1550 = cycles.map(c => parseFloat(c.at_1550) || 0).filter(v => v > 0);
   const allAt1625 = cycles.map(c => parseFloat(c.at_1625) || 0).filter(v => v > 0);
+  const ambientAt1310 = allAt1310.length > 0 ? Math.min(...allAt1310) : 0;
   const ambientAt1550 = allAt1550.length > 0 ? Math.min(...allAt1550) : 0;
   const ambientAt1625 = allAt1625.length > 0 ? Math.min(...allAt1625) : 0;
-  const maxAt1550 = allAt1550.length > 0 ? Math.max(...allAt1550) : 0;
-  const maxAt1625 = allAt1625.length > 0 ? Math.max(...allAt1625) : 0;
-  const maxChange1550 = (maxAt1550 - ambientAt1550).toFixed(3);
-  const maxChange1625 = (maxAt1625 - ambientAt1625).toFixed(3);
+
+  // Max change in attenuation — stored values from trh_ch table
+  const mc = data.maxCh || {};
+  const maxChange1310 = (parseFloat(mc.max_ch_nm_1310) || 0).toFixed(3);
+  const maxChange1550 = (parseFloat(mc.max_ch_nm_1550) || 0).toFixed(3);
+  const maxChange1625 = (parseFloat(mc.max_ch_nm_1625) || 0).toFixed(3);
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -94,7 +98,7 @@ const TRHView = ({ entryId, onBack }) => {
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left', width: 140 }}>FIBRE ID:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.bobbin_no}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Testing standard: {m.testing_standard || '—'}</td></tr>
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>START DATE/TIME:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.start_date?.split('T')[0]} {m.start_time}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Marker A: {m.marker_a || 'Auto'}</td></tr>
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>END DATE/TIME:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.end_date?.split('T')[0]} {m.end_time}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Marker B: {m.marker_b || 'Auto'}</td></tr>
-                <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>LENGTH (KM):</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.fiber_length} KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Initial Attn.: (1550: {m.at_1550} / 1625: {m.at_1625}) dB/KM</td></tr>
+                <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>LENGTH (KM):</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.fiber_length} KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Initial Attn.: (1310: {m.at_1310} / 1550: {m.at_1550} / 1625: {m.at_1625}) dB/KM</td></tr>
               </tbody>
             </table>
 
@@ -106,10 +110,11 @@ const TRHView = ({ entryId, onBack }) => {
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Temperature (°C)</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>RH(%)</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>TIME</th>
-                  <th style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}>Attenuation (dB/Km)</th>
+                  <th style={{ border: '1px solid #333', padding: '4px' }} colSpan={3}>Attenuation (dB/Km)</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Tested By</th>
                 </tr>
                 <tr style={{ background: '#e2e8f0' }}>
+                  <th style={{ border: '1px solid #333', padding: '4px' }}>At 1310 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>At 1550 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>At 1625 nm</th>
                 </tr>
@@ -122,6 +127,7 @@ const TRHView = ({ entryId, onBack }) => {
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.temperature}</td>
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.rh || '—'}</td>
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.trh_time || ''}</td>
+                      <td style={{ border: '1px solid #333', padding: '4px' }}>{c.at_1310 ?? ''}</td>
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.at_1550 ?? ''}</td>
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.at_1625 ?? ''}</td>
                       <td style={{ border: '1px solid #333', padding: '4px' }}>{c.tested_by || ''}</td>
@@ -129,15 +135,15 @@ const TRHView = ({ entryId, onBack }) => {
                   ))
                 ))}
                 <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}></td>
-                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}>Ambient Condition Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={4}>Ambient Condition Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px' }}>{ambientAt1310.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px' }}>{ambientAt1550.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px' }}>{ambientAt1625.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px' }}></td>
                 </tr>
                 <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}></td>
-                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}>Max. Change in Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={4}>Max. Change in Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px', background: '#ffff00' }}>{maxChange1310}</td>
                   <td style={{ border: '1px solid #333', padding: '4px', background: '#ffff00' }}>{maxChange1550}</td>
                   <td style={{ border: '1px solid #333', padding: '4px', background: '#ffff00' }}>{maxChange1625}</td>
                   <td style={{ border: '1px solid #333', padding: '4px' }}></td>

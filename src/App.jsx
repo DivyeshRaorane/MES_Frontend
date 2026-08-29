@@ -84,6 +84,9 @@ import ReportBuilderWizard from './pages/DynamicReports/ui/ReportBuilder/ReportB
 import FunctionReportAdmin from './pages/FunctionReports/ui/FunctionReportAdmin'
 import FunctionReportViewer from './pages/FunctionReports/ui/FunctionReportViewer'
 
+// Mail Module
+import MailDashboard from './pages/mail/ui/MailDashboard'
+
 
 function App() {
 
@@ -158,6 +161,8 @@ function App() {
         <Route path='admin/reportbuilder' element={<ReportBuilderList/>}/>
         <Route path='admin/reportbuilder/wizard' element={<ReportBuilderWizard/>}/>
         <Route path='admin/functionreports' element={<FunctionReportAdmin/>}/>
+        <Route path='admin/mail-settings' element={<MailDashboard/>}/>
+        <Route path='mail/compose' element={<MailDashboard/>}/>
         <Route path='dynamicreports' element={<DynamicReportsList/>}/>
         <Route path='dynamicreports/view/:reportId' element={<ReportViewer/>}/>
         <Route path='dynamicreports/function/:reportId' element={<FunctionReportViewer/>}/>

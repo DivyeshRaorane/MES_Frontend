@@ -23,6 +23,7 @@ const WIForm = ({ entryId, onClose }) => {
     at_1310: '', at_1550: '', at_1625: '',
   });
   const [days, setDays] = useState([makeDay()]);
+  const [maxCh, setMaxCh] = useState({ max_ch_nm_1310: '', max_ch_nm_1550: '', max_ch_nm_1625: '' });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const isEdit = !!entryId;
@@ -52,6 +53,12 @@ const WIForm = ({ entryId, onClose }) => {
                 at_1310: d.at_1310 ?? '', at_1550: d.at_1550 ?? '', at_1625: d.at_1625 ?? '',
               })));
             }
+            const mc = res.data.maxCh || {};
+            setMaxCh({
+              max_ch_nm_1310: mc.max_ch_nm_1310 ?? '',
+              max_ch_nm_1550: mc.max_ch_nm_1550 ?? '',
+              max_ch_nm_1625: mc.max_ch_nm_1625 ?? '',
+            });
           }
         } catch (e) { showError(`Failed to load: ${e?.response?.data?.message || e?.message}`); }
         setLoading(false);
@@ -60,6 +67,7 @@ const WIForm = ({ entryId, onClose }) => {
   }, [entryId]);
 
   const setM = (key, val) => setMaster(prev => ({ ...prev, [key]: val }));
+  const setMC = (key, val) => setMaxCh(prev => ({ ...prev, [key]: val }));
   const setD = (idx, key, val) => setDays(prev => { const u = [...prev]; u[idx] = { ...u[idx], [key]: val }; return u; });
   const addDay = () => setDays(prev => [...prev, makeDay()]);
   const removeDay = (idx) => setDays(prev => prev.filter((_, i) => i !== idx));
@@ -68,7 +76,7 @@ const WIForm = ({ entryId, onClose }) => {
     if (!master.bobbin_no) { showError('Bobbin No is required'); return; }
     setSubmitting(true);
     try {
-      const payload = { master, days };
+      const payload = { master, days, maxCh };
       const res = isEdit ? await updateWiEntry(entryId, payload) : await createWiEntry(payload);
       if (res?.success) { showSuccess(isEdit ? 'Entry updated' : 'Entry created'); onClose(); }
       else showError(res?.message || 'Save failed');
@@ -155,6 +163,16 @@ const WIForm = ({ entryId, onClose }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Max Change in Attenuation — single row */}
+          <div className="bg-blue-50/50 border border-blue-100 rounded-xl px-3 py-2 flex items-center gap-4 flex-shrink-0">
+            <span className="text-[8px] font-bold text-blue-700 uppercase tracking-wider whitespace-nowrap">Max Change in Attenuation (dB):</span>
+            <div className="flex gap-3 flex-1">
+              <F label="Max Δ 1310" value={maxCh.max_ch_nm_1310} onChange={v => setMC('max_ch_nm_1310', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1550" value={maxCh.max_ch_nm_1550} onChange={v => setMC('max_ch_nm_1550', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1625" value={maxCh.max_ch_nm_1625} onChange={v => setMC('max_ch_nm_1625', v)} type="number" className="flex-1" />
             </div>
           </div>
         </div>

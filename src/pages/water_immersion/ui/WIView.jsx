@@ -41,15 +41,12 @@ const WIView = ({ entryId, onBack }) => {
 
   const m = data.master || {};
   const days = data.days || [];
-  const allAt1310 = days.map(d => parseFloat(d.at_1310) || 0).filter(v => v > 0);
-  const allAt1550 = days.map(d => parseFloat(d.at_1550) || 0).filter(v => v > 0);
-  const allAt1625 = days.map(d => parseFloat(d.at_1625) || 0).filter(v => v > 0);
-  const init1310 = allAt1310[0] || 0; const max1310 = allAt1310.length ? Math.max(...allAt1310) : 0;
-  const init1550 = allAt1550[0] || 0; const max1550 = allAt1550.length ? Math.max(...allAt1550) : 0;
-  const init1625 = allAt1625[0] || 0; const max1625 = allAt1625.length ? Math.max(...allAt1625) : 0;
-  const ch1310 = (max1310 - init1310).toFixed(3);
-  const ch1550 = (max1550 - init1550).toFixed(3);
-  const ch1625 = (max1625 - init1625).toFixed(3);
+
+  // Max change in attenuation — stored values from wi_ch table
+  const mc = data.maxCh || {};
+  const ch1310 = (parseFloat(mc.max_ch_nm_1310) || 0).toFixed(3);
+  const ch1550 = (parseFloat(mc.max_ch_nm_1550) || 0).toFixed(3);
+  const ch1625 = (parseFloat(mc.max_ch_nm_1625) || 0).toFixed(3);
   const half = Math.ceil(days.length / 2);
   const col1 = days.slice(0, half);
   const col2 = days.slice(half);

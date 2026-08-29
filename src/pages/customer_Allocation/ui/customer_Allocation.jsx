@@ -78,7 +78,7 @@ const CustomerAllocation = () => {
     };
 
     // Build Excel data
-    const headers = ['Sr No', 'Bobbin No', 'FID', 'Optical Length (KM)', 'Draw Date', 'PT Strain', 'Product Type', 'Spec', 'E Length', 'Glass', 'Status'];
+    const headers = ['Sr No', 'Bobbin No', 'FID', 'Optical Length (KM)', 'Draw Date', 'PT Strain', 'Product Type', 'Spec', 'E Length', 'Glass', 'Status','Position'];
     const rows = specBobbins.map((b, i) => [
       i + 1,
       b.bobbin_no || '',
@@ -91,6 +91,7 @@ const CustomerAllocation = () => {
       b.effective_length || '',
       b.preform_vendor_id || '',
       'Allocated',
+      b.position || ''
     ]);
 
     // Calculate Total Allocated KM

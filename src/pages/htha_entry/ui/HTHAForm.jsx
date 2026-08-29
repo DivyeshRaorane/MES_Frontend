@@ -3,7 +3,7 @@ import { X, Flame, Plus, Trash2 } from 'lucide-react';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getHthaEntryById, createHthaEntry, updateHthaEntry } from '../services/hthaEntryService';
 
-const makeDay = () => ({ htha_day: '', htha_date: '', at_1550: '', at_1625: '' });
+const makeDay = () => ({ htha_day: '', htha_date: '', at_1310: '', at_1550: '', at_1625: '' });
 
 const F = ({ label, value, onChange, type = 'text', className = '' }) => (
   <div className={`flex flex-col gap-0.5 ${className}`}>
@@ -23,6 +23,7 @@ const HTHAForm = ({ entryId, onClose }) => {
     at_1310: '', at_1550: '', at_1625: '',
   });
   const [days, setDays] = useState([makeDay()]);
+  const [maxCh, setMaxCh] = useState({ max_ch_nm_1310: '', max_ch_nm_1550: '', max_ch_nm_1625: '' });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const isEdit = !!entryId;
@@ -49,9 +50,15 @@ const HTHAForm = ({ entryId, onClose }) => {
             if (res.data.days?.length > 0) {
               setDays(res.data.days.map(d => ({
                 htha_day: d.htha_day ?? '', htha_date: d.htha_date?.split('T')[0] || '',
-                at_1550: d.at_1550 ?? '', at_1625: d.at_1625 ?? '',
+                at_1310: d.at_1310 ?? '', at_1550: d.at_1550 ?? '', at_1625: d.at_1625 ?? '',
               })));
             }
+            const mc = res.data.maxCh || {};
+            setMaxCh({
+              max_ch_nm_1310: mc.max_ch_nm_1310 ?? '',
+              max_ch_nm_1550: mc.max_ch_nm_1550 ?? '',
+              max_ch_nm_1625: mc.max_ch_nm_1625 ?? '',
+            });
           }
         } catch (e) { showError(`Failed to load: ${e?.response?.data?.message || e?.message}`); }
         setLoading(false);
@@ -60,6 +67,7 @@ const HTHAForm = ({ entryId, onClose }) => {
   }, [entryId]);
 
   const setM = (key, val) => setMaster(prev => ({ ...prev, [key]: val }));
+  const setMC = (key, val) => setMaxCh(prev => ({ ...prev, [key]: val }));
   const setD = (idx, key, val) => setDays(prev => { const u = [...prev]; u[idx] = { ...u[idx], [key]: val }; return u; });
   const addDay = () => setDays(prev => [...prev, makeDay()]);
   const removeDay = (idx) => setDays(prev => prev.filter((_, i) => i !== idx));
@@ -68,7 +76,7 @@ const HTHAForm = ({ entryId, onClose }) => {
     if (!master.bobbin_no) { showError('Bobbin No is required'); return; }
     setSubmitting(true);
     try {
-      const payload = { master, days };
+      const payload = { master, days, maxCh };
       const res = isEdit ? await updateHthaEntry(entryId, payload) : await createHthaEntry(payload);
       if (res?.success) { showSuccess(isEdit ? 'Entry updated' : 'Entry created'); onClose(); }
       else showError(res?.message || 'Save failed');
@@ -137,7 +145,7 @@ const HTHAForm = ({ entryId, onClose }) => {
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-100 z-10">
                   <tr>
-                    {['#', 'Day', 'Date', 'AT 1550 (dB/km)', 'AT 1625 (dB/km)', ''].map(h => (
+                    {['#', 'Day', 'Date', 'AT 1310 (dB/km)', 'AT 1550 (dB/km)', 'AT 1625 (dB/km)', ''].map(h => (
                       <th key={h} className="px-3 py-2 text-[8px] font-bold text-slate-600 uppercase border-r border-slate-200 last:border-0 text-center">{h}</th>
                     ))}
                   </tr>
@@ -148,6 +156,7 @@ const HTHAForm = ({ entryId, onClose }) => {
                       <td className="px-2 py-1 text-center text-[9px] text-slate-400 font-bold">{i + 1}</td>
                       <td className="px-2 py-1 w-24"><input type="number" min="0" value={d.htha_day} onChange={e => setD(i, 'htha_day', e.target.value)} className="w-full border border-slate-200 rounded px-2 py-0.5 text-[10px] outline-none text-center font-bold focus:ring-1 focus:ring-orange-300" placeholder="0" /></td>
                       <td className="px-1 py-1"><input type="date" value={d.htha_date} onChange={e => setD(i, 'htha_date', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none focus:ring-1 focus:ring-orange-300" /></td>
+                      <td className="px-1 py-1"><input type="number" step="0.001" value={d.at_1310} onChange={e => setD(i, 'at_1310', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50 focus:ring-1 focus:ring-blue-300" placeholder="—" /></td>
                       <td className="px-1 py-1"><input type="number" step="0.001" value={d.at_1550} onChange={e => setD(i, 'at_1550', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50 focus:ring-1 focus:ring-blue-300" placeholder="—" /></td>
                       <td className="px-1 py-1"><input type="number" step="0.001" value={d.at_1625} onChange={e => setD(i, 'at_1625', e.target.value)} className="w-full border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-center bg-blue-50/50 focus:ring-1 focus:ring-blue-300" placeholder="—" /></td>
                       <td className="px-1 py-1 text-center">
@@ -157,6 +166,16 @@ const HTHAForm = ({ entryId, onClose }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Max Change in Attenuation — single row */}
+          <div className="bg-amber-50/50 border border-amber-100 rounded-xl px-3 py-2 flex items-center gap-4 flex-shrink-0">
+            <span className="text-[8px] font-bold text-amber-700 uppercase tracking-wider whitespace-nowrap">Max Change in Attenuation (dB):</span>
+            <div className="flex gap-3 flex-1">
+              <F label="Max Δ 1310" value={maxCh.max_ch_nm_1310} onChange={v => setMC('max_ch_nm_1310', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1550" value={maxCh.max_ch_nm_1550} onChange={v => setMC('max_ch_nm_1550', v)} type="number" className="flex-1" />
+              <F label="Max Δ 1625" value={maxCh.max_ch_nm_1625} onChange={v => setMC('max_ch_nm_1625', v)} type="number" className="flex-1" />
             </div>
           </div>
         </div>

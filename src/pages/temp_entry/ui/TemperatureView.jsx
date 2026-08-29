@@ -46,8 +46,10 @@ const TemperatureView = ({ entryId, onBack }) => {
 
   const m = data.master || {};
   const cycles = data.cycles || [];
-  const maxCh1550 = Math.max(...cycles.map(c => parseFloat(c.ch_nm_1550) || 0));
-  const maxCh1625 = Math.max(...cycles.map(c => parseFloat(c.ch_nm_1625) || 0));
+  const mc = data.maxCh || {};
+  const maxCh1310 = parseFloat(mc.max_ch_nm_1310) || 0;
+  const maxCh1550 = parseFloat(mc.max_ch_nm_1550) || 0;
+  const maxCh1625 = parseFloat(mc.max_ch_nm_1625) || 0;
 
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
@@ -83,7 +85,7 @@ const TemperatureView = ({ entryId, onBack }) => {
               <tbody>
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left', width: 140 }}>FIBRE ID:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.bobbin_no}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Marker A: {m.marker_a || 'Auto'}</td></tr>
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>START DATE/TIME:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.start_date?.split('T')[0]} {m.start_time}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Marker B: {m.marker_b || 'Auto'}</td></tr>
-                <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>END DATE/TIME:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.end_date?.split('T')[0]} {m.end_time}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={2}>Initial Attenuation :- (1550: {m.at_1550} / 1625: {m.at_1625})dB/KM</td></tr>
+                <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>END DATE/TIME:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.end_date?.split('T')[0]} {m.end_time}</td><td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={2}>Initial Attenuation :- (1310: {m.at_1310} / 1550: {m.at_1550} / 1625: {m.at_1625})dB/KM</td></tr>
                 <tr><th style={{ border: '1px solid #999', padding: '4px 8px', background: '#f1f5f9', textAlign: 'left' }}>LENGTH:</th><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{m.fiber_length} KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={2}></td></tr>
               </tbody>
             </table>
@@ -95,16 +97,14 @@ const TemperatureView = ({ entryId, onBack }) => {
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Temp.(°C)</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Date</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Time</th>
-                  <th style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}></th>
-                  <th style={{ border: '1px solid #333', padding: '4px' }} colSpan={2}>Change in Attenuation in dB</th>
+                  <th style={{ border: '1px solid #333', padding: '4px' }} colSpan={3}>Attenuation in dB</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Operator</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }} rowSpan={2}>Remarks</th>
                 </tr>
                 <tr style={{ background: '#e2e8f0' }}>
+                  <th style={{ border: '1px solid #333', padding: '4px' }}>1310 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1550 nm</th>
                   <th style={{ border: '1px solid #333', padding: '4px' }}>1625 nm</th>
-                  <th style={{ border: '1px solid #333', padding: '4px' }}>1550 nm &lt;0.05</th>
-                  <th style={{ border: '1px solid #333', padding: '4px' }}>1625 nm &lt;0.05</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,18 +113,17 @@ const TemperatureView = ({ entryId, onBack }) => {
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', fontWeight: 'bold' }}>{c.temperature}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.date?.split('T')[0] || ''}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.time || ''}</td>
+                    <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.nm_1310 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.nm_1550 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.nm_1625 ?? ''}</td>
-                    <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.ch_nm_1550 ?? ''}</td>
-                    <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.ch_nm_1625 ?? ''}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.operator || ''}</td>
                     <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center' }}>{c.remark || ''}</td>
                   </tr>
                 ))}
                 {/* Max change row */}
                 <tr style={{ background: '#f8fafc' }}>
-                  <td style={{ border: '1px solid #333', padding: '4px' }} colSpan={3}></td>
-                  <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', fontWeight: 'bold' }} colSpan={2}>Change in Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', fontWeight: 'bold' }} colSpan={3}>Max Change in Attenuation</td>
+                  <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', background: '#ffff00', fontWeight: 'bold' }}>{maxCh1310.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', background: '#ffff00', fontWeight: 'bold' }}>{maxCh1550.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px', textAlign: 'center', background: '#ffff00', fontWeight: 'bold' }}>{maxCh1625.toFixed(3)}</td>
                   <td style={{ border: '1px solid #333', padding: '4px' }}></td>
@@ -138,6 +137,7 @@ const TemperatureView = ({ entryId, onBack }) => {
               <p style={{ fontWeight: 'bold', fontSize: 13 }}>RESULT: {m.result?.toUpperCase() || '—'}</p>
               <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
                 <tbody>
+                  <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn - <strong>1310 nm</strong></td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{maxCh1310.toFixed(3)} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                   <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn - <strong>1550 nm</strong></td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{maxCh1550.toFixed(3)} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                   <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }}>Maximum Change in attn - <strong>1625 nm</strong></td><td style={{ border: '1px solid #999', padding: '4px 8px' }}>{maxCh1625.toFixed(3)} dB/KM</td><td style={{ border: '1px solid #999', padding: '4px 8px' }}></td></tr>
                   <tr><td style={{ border: '1px solid #999', padding: '4px 8px' }} colSpan={3}>Physical Observation: {m.physical_obs || 'No Delamination observed'}</td></tr>
