@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, ClipboardList, FileText, Truck, Mail,
+  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -12,10 +12,12 @@ import axios from 'axios';
 import UserHomeScreen from '../../user_management/user/ui/user_home_screen';
 import MaterialMasterPanel from './MaterialMasterPanel';
 import ProcessTypePanel from './ProcessTypePanel';
-import BomMasterPanel from '../bom_master/ui/BomMasterPanel';
-import ProcessOrderPanel from '../process_order/ui/ProcessOrderPanel';
+import OrderPanel from '../order/ui/OrderPanel';
 import MesConfigPanel from '../mes_config/ui/MesConfigPanel';
 import MailDashboard from '../../../mail/ui/MailDashboard';
+import StockSearchPanel from './StockSearchPanel';
+import ColMaterialMasterPanel from '../col_material_code/ui/ColMaterialMasterPanel';
+import FiberColorMasterPanel from '../fiber_color/ui/FiberColorMasterPanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -81,20 +83,12 @@ const ADMIN_CARDS = [
     component: 'process_type',
   },
   {
-    key: 'bom_master',
-    title: 'BOM Master',
-    desc: 'Manage Bill of Materials for products',
-    icon: ClipboardList,
-    color: 'text-indigo-600 bg-indigo-100',
-    component: 'bom_master',
-  },
-  {
-    key: 'process_order',
-    title: 'Process Order',
-    desc: 'Manage production process orders',
+    key: 'order',
+    title: 'Order',
+    desc: 'Manage orders, components & operations',
     icon: FileText,
     color: 'text-amber-600 bg-amber-100',
-    component: 'process_order',
+    component: 'order',
   },
   {
     key: 'preform_vendor',
@@ -119,6 +113,30 @@ const ADMIN_CARDS = [
     icon: Mail,
     color: 'text-rose-600 bg-rose-100',
     component: 'mail_config',
+  },
+  {
+    key: 'stock_search',
+    title: 'Stock Search',
+    desc: 'Query SAP material stock by plant',
+    icon: PackageSearch,
+    color: 'text-sky-600 bg-sky-100',
+    component: 'stock_search',
+  },
+  {
+    key: 'col_material',
+    title: 'Col Material Master',
+    desc: 'Manage product / color / material code mapping',
+    icon: Palette,
+    color: 'text-fuchsia-600 bg-fuchsia-100',
+    component: 'col_material',
+  },
+  {
+    key: 'fiber_color',
+    title: 'Fiber Color',
+    desc: 'Manage fiber color master',
+    icon: Palette,
+    color: 'text-sky-600 bg-sky-100',
+    component: 'fiber_color',
   },
 ];
 
@@ -166,12 +184,8 @@ const GeneralAdmin = () => {
     return <ProcessTypePanel onBack={() => setActiveCard(null)} />;
   }
 
-  if (activeCard === 'bom_master') {
-    return <BomMasterPanel onBack={() => setActiveCard(null)} />;
-  }
-
-  if (activeCard === 'process_order') {
-    return <ProcessOrderPanel onBack={() => setActiveCard(null)} />;
+  if (activeCard === 'order') {
+    return <OrderPanel onBack={() => setActiveCard(null)} />;
   }
 
   if (activeCard === 'preform_vendor') {
@@ -180,6 +194,18 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'mes_config') {
     return <MesConfigPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'stock_search') {
+    return <StockSearchPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'col_material') {
+    return <ColMaterialMasterPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'fiber_color') {
+    return <FiberColorMasterPanel onBack={() => setActiveCard(null)} />;
   }
 
   if (activeCard === 'mail_config') {

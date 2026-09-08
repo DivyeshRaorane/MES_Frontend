@@ -334,7 +334,7 @@ const PTEntry = () => {
     }
   }, [ptLogsData]);
 
-  const ptUsersOptions = ptUsers.map(user => ({ label: user.pt_user_name, value: user.pt_user_id }));
+  const ptUsersOptions = ptUsers.map(user => ({ label: user.pt_user_name, value: user.pt_user_name }));
   const bobbinColorsOption = Array.isArray(bobbinColors) ? bobbinColors.map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_name })) : [];
   const bobbinTypesOption = Array.isArray(bobbinTypes) ? bobbinTypes.map(t => ({ label: t.bobbin_type_name, value: t.bobbin_type_name })) : [];
   const shiftOptions = Array.isArray(shifts) ? shifts.map(s => ({ label: s.shift_name, value: s.shift_name })) : [];

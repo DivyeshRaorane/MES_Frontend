@@ -1,5 +1,6 @@
 import './App.css'
 
+import { useEffect } from 'react'
 import { Route,Routes } from 'react-router'
 import LoginPage from './pages/login/ui/login'
 import Layout from './components/layout'
@@ -41,6 +42,7 @@ import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
 import PTReport from './pages/Reports/PTReports/ui/PTReports'
 import CustomerAllocation from './pages/customer_Allocation/ui/customer_Allocation'
 import QCInOut from './pages/qc_in_out/ui/qc_in_out'
+import UserDecision from './pages/user_decision/ui/UserDecisionList'
 import DispatchChecking from './pages/dispatch_Checking/ui/dispatch_checking'
 import FiberMakingCheck from './pages/dispatch_fiber_making/ui/dispatch_fiber_making'
 import FGFiberRejection from './pages/fg_fiber_rejection/ui/fg_fiber_rejection'
@@ -55,6 +57,7 @@ import Splicing from './pages/splicing/ui/SplicingList'
 import ShortTermContainer from './components/short_term_container'
 import CustomerComplaint from './pages/customer_complaint/ui/customer_complaint'
 import { ToastContainer } from 'react-toastify'
+import { initToastKeyDismiss } from './utils/toastService'
 import PreformEntryForm from './pages/preform_enrty_SAP/ui/Preform_entry_SAP'
 import DrawManagementAdmin from './pages/Admin_Folder/draw_management/ui/draw_management_admin'
 import PTAdmin from './pages/Admin_Folder/proof_testing/ui/pt_admin'
@@ -90,6 +93,11 @@ import MailDashboard from './pages/mail/ui/MailDashboard'
 
 function App() {
 
+  useEffect(() => {
+    const cleanup = initToastKeyDismiss()
+    return cleanup
+  }, [])
+
   return (
     <>
       <Routes>
@@ -120,6 +128,7 @@ function App() {
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
         <Route path='quality/finalgrade' element={<BulkFinalGrade/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
+        <Route path='quality/userdecision' element={<UserDecision/>}/>
         <Route path='quality/reports' element={<QualityReports/>}/>
         <Route path='fg/customerallocation' element={<CustomerAllocation/>}/>
         <Route path='dispatch/dispatchchecking' element={<DispatchChecking/>}/>

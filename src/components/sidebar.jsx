@@ -63,6 +63,7 @@ const MENU = [
       { label: 'Final Grade',        path: '/quality/finalgrade' },
       { label: 'H2 Ageing',           path: '/quality/h2egeing' },
       { label: 'QC Out',             path: '/quality/qcinout' },
+      { label: 'User Decision',      path: '/quality/userdecision' },
       { label: 'Report',      path: '/quality/reports' },
     ],
   },

@@ -45,9 +45,15 @@ const ReportViewer = () => {
   const [localFilters, setLocalFilters] = useState({});
   const [reportLoaded, setReportLoaded] = useState(false);
 
+  // Date filter mode: 'today' | 'range' | 'all'
+  const [dateMode, setDateMode] = useState('today');
   // Default date range - today's data loaded on first view
   const [dateFrom, setDateFrom] = useState(getTodayStr());
   const [dateTo, setDateTo] = useState(getTodayStr());
+
+  // When 'all' mode is selected, send no date restriction to the backend
+  const effectiveDateFrom = dateMode === 'all' ? '' : dateFrom;
+  const effectiveDateTo = dateMode === 'all' ? '' : dateTo;
 
   useEffect(() => {
     if (reportId && !activeReport) {
@@ -60,9 +66,9 @@ const ReportViewer = () => {
 
   useEffect(() => {
     if (reportLoaded && activeReport?.id) {
-      dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom, dateTo } }));
+      dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom: effectiveDateFrom, dateTo: effectiveDateTo } }));
     }
-  }, [dispatch, reportLoaded, activeReport?.id, currentPage, pageSize, filters, sorting, searchQuery, dateFrom, dateTo]);
+  }, [dispatch, reportLoaded, activeReport?.id, currentPage, pageSize, filters, sorting, searchQuery, effectiveDateFrom, effectiveDateTo]);
 
   const columns = useMemo(() => {
     if (responseColumns && responseColumns.length > 0) {
@@ -130,18 +136,52 @@ const ReportViewer = () => {
     const title = activeReport?.report_name || 'Report';
     const heading = parseJsonField(activeReport?.heading, null);
 
-    // Fetch ALL data for the current date range (no pagination limit) for export
+    // Fetch ALL rows for export by paging through the backend (which caps
+    // per-request page size), regardless of the current on-screen page size.
     try {
-      const res = await executeUserReport(activeReport.id, {
-        page: 1,
-        pageSize: 999999,
+      const EXPORT_PAGE_SIZE = 500; // safe size within backend limits
+      const MAX_PAGES = 1000;       // hard safety cap (500k rows)
+      const baseParams = {
         filters,
         sorting,
         search: searchQuery,
-        dateFrom,
-        dateTo,
-      });
-      const allData = Array.isArray(res?.data) ? res.data : Array.isArray(res?.rows) ? res.rows : Array.isArray(res) ? res : [];
+        dateFrom: effectiveDateFrom,
+        dateTo: effectiveDateTo,
+      };
+
+      const extractRows = (res) =>
+        Array.isArray(res?.data) ? res.data
+        : Array.isArray(res?.rows) ? res.rows
+        : Array.isArray(res) ? res : [];
+
+      const allData = [];
+      let page = 1;
+      let expectedTotal = Infinity;
+
+      while (page <= MAX_PAGES) {
+        const res = await executeUserReport(activeReport.id, {
+          ...baseParams,
+          page,
+          pageSize: EXPORT_PAGE_SIZE,
+        });
+        const rows = extractRows(res);
+
+        // Capture the true total on the first response, if provided.
+        if (page === 1) {
+          const t = res?.totalRows ?? res?.totalRecords ?? res?.total;
+          if (typeof t === 'number' && t >= 0) expectedTotal = t;
+        }
+
+        allData.push(...rows);
+
+        // Stop when we've collected everything, or the page wasn't full,
+        // or the server returned nothing.
+        if (rows.length === 0) break;
+        if (allData.length >= expectedTotal) break;
+        if (rows.length < EXPORT_PAGE_SIZE) break;
+        page += 1;
+      }
+
       if (!allData || allData.length === 0) return;
 
       switch (type) {
@@ -156,7 +196,7 @@ const ReportViewer = () => {
     setShowExportMenu(false);
   };
 
-  const handleRefresh = () => { if (activeReport?.id) dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom, dateTo } })); };
+  const handleRefresh = () => { if (activeReport?.id) dispatch(runReport({ reportId: activeReport.id, params: { page: currentPage, pageSize, filters, sorting, search: searchQuery, dateFrom: effectiveDateFrom, dateTo: effectiveDateTo } })); };
 
   if (!activeReport && !reportLoaded) {
     return (<div className="h-full flex items-center justify-center bg-slate-50"><RefreshCw size={20} className="animate-spin text-blue-500" /><span className="ml-2 text-sm text-slate-500">Loading report...</span></div>);
@@ -182,15 +222,26 @@ const ReportViewer = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Date Range Filter - always visible */}
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
-            <Calendar size={12} className="text-blue-500 flex-shrink-0" />
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
-            <span className="text-[10px] text-slate-400">to</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+          {/* Date Mode Toggle: Today | Date Range | All Data */}
+          <div className="flex items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5">
+            <button onClick={() => { setDateMode('today'); const t = getTodayStr(); setDateFrom(t); setDateTo(t); }}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'today' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Today</button>
+            <button onClick={() => setDateMode('range')}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'range' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Date Range</button>
+            <button onClick={() => setDateMode('all')}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>All Data</button>
           </div>
+          {/* Date Range Filter - hidden when showing all data */}
+          {dateMode !== 'all' && (
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
+              <Calendar size={12} className="text-blue-500 flex-shrink-0" />
+              <input type="date" value={dateFrom} onChange={(e) => { setDateMode('range'); setDateFrom(e.target.value); }}
+                className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+              <span className="text-[10px] text-slate-400">to</span>
+              <input type="date" value={dateTo} onChange={(e) => { setDateMode('range'); setDateTo(e.target.value); }}
+                className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+            </div>
+          )}
           <div className="relative">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" value={searchQuery} onChange={(e) => dispatch(setSearchQuery(e.target.value))} placeholder="Search..."
@@ -361,23 +412,29 @@ const MultiSheetView = ({ report, navigate, dispatch }) => {
   const [msLoading, setMsLoading] = useState(false);
   const [msError, setMsError] = useState(null);
 
+  // Date filter mode: 'today' | 'range' | 'all'
+  const [dateMode, setDateMode] = useState('today');
   // Default date range - today's data
   const [dateFrom, setDateFrom] = useState(getTodayStr());
   const [dateTo, setDateTo] = useState(getTodayStr());
 
+  // When 'all' mode is selected, send no date restriction to the backend
+  const effectiveDateFrom = dateMode === 'all' ? '' : dateFrom;
+  const effectiveDateTo = dateMode === 'all' ? '' : dateTo;
+
   useEffect(() => {
     if (report?.id) {
       setMsLoading(true);
-      executeMultiSheetReport(report.id, { dateFrom, dateTo })
+      executeMultiSheetReport(report.id, { dateFrom: effectiveDateFrom, dateTo: effectiveDateTo })
         .then((data) => { setExecutionResult(data); setMsLoading(false); })
         .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
     }
-  }, [report?.id, dateFrom, dateTo]);
+  }, [report?.id, effectiveDateFrom, effectiveDateTo]);
 
   const handleRefresh = () => {
     setMsLoading(true);
     setMsError(null);
-    executeMultiSheetReport(report.id, { dateFrom, dateTo })
+    executeMultiSheetReport(report.id, { dateFrom: effectiveDateFrom, dateTo: effectiveDateTo })
       .then((data) => { setExecutionResult(data); setMsLoading(false); })
       .catch((err) => { setMsError(err?.response?.data?.message || err.message); setMsLoading(false); });
   };
@@ -415,15 +472,26 @@ const MultiSheetView = ({ report, navigate, dispatch }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
-            <Calendar size={12} className="text-purple-500 flex-shrink-0" />
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
-            <span className="text-[10px] text-slate-400">to</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+          {/* Date Mode Toggle: Today | Date Range | All Data */}
+          <div className="flex items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5">
+            <button onClick={() => { setDateMode('today'); const t = getTodayStr(); setDateFrom(t); setDateTo(t); }}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'today' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Today</button>
+            <button onClick={() => setDateMode('range')}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'range' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Date Range</button>
+            <button onClick={() => setDateMode('all')}
+              className={`px-2 py-1 rounded text-[10px] font-semibold transition-colors ${dateMode === 'all' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>All Data</button>
           </div>
+          {/* Date Range Filter - hidden when showing all data */}
+          {dateMode !== 'all' && (
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2 py-1 shadow-sm">
+              <Calendar size={12} className="text-purple-500 flex-shrink-0" />
+              <input type="date" value={dateFrom} onChange={(e) => { setDateMode('range'); setDateFrom(e.target.value); }}
+                className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+              <span className="text-[10px] text-slate-400">to</span>
+              <input type="date" value={dateTo} onChange={(e) => { setDateMode('range'); setDateTo(e.target.value); }}
+                className="text-[11px] text-slate-700 border-none outline-none bg-transparent w-[105px] cursor-pointer" />
+            </div>
+          )}
           <button onClick={handleRefresh} disabled={msLoading}
             className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors">
             <RefreshCw size={14} className={msLoading ? 'animate-spin' : ''} />

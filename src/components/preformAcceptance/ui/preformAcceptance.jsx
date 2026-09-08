@@ -167,7 +167,10 @@ useEffect(() => {
                             />
                             <button
                               type="button"
-                              onClick={() => setIsModalOpen(true)}
+                              onClick={() => {
+                                dispatch(getPreforms());
+                                setIsModalOpen(true);
+                              }}
                               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-600 hover:text-white transition-all"
                             >
                               <Search size={12} />
