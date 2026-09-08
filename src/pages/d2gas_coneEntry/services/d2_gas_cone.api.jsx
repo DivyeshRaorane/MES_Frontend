@@ -6,7 +6,7 @@ const API = import.meta.env.VITE_API_URL;
 export const getD2ChambersInUse = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2gas/chambers-in-use`,
+    url: `${API}/d2gas/chambers-in-use`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -16,7 +16,7 @@ export const getD2ChambersInUse = async () => {
 export const getRunningBatch = async (chamber_no) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2gas/running-batch/${chamber_no}`,
+    url: `${API}/d2gas/running-batch/${chamber_no}`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -26,7 +26,7 @@ export const getRunningBatch = async (chamber_no) => {
 export const getQCUsers = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/getqcusers`,
+    url: `${API}/getqcusers`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -36,7 +36,7 @@ export const getQCUsers = async () => {
 export const getAllShifts = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/getshifts`,
+    url: `${API}/getshifts`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -47,7 +47,7 @@ export const submitD2GasEntry = async (payload) => {
   const token = localStorage.getItem("token");
   const response = await axios({
     method: "POST",
-    url: `${API}/api/d2gas/entry`,
+    url: `${API}/d2gas/entry`,
     data: payload,
     headers: {
       "Content-Type": "application/json",

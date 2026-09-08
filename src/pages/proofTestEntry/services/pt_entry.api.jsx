@@ -6,7 +6,7 @@ export const getSpoolDetailsForPT = async(bobbin_id)=>{
     try{
         const response = await axios({
             method : import.meta.env.VITE_METHOD_GET,
-            url: `${import.meta.env.VITE_API_URL}/api/getspooldetailsforpt/${bobbin_id}`,
+            url: `${import.meta.env.VITE_API_URL}/getspooldetailsforpt/${bobbin_id}`,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -24,7 +24,7 @@ export const ptEntryApi = createAsyncThunk(
             const token = await localStorage.getItem("token")
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
-                url: `${import.meta.env.VITE_API_URL}/api/ptentry`,
+                url: `${import.meta.env.VITE_API_URL}/ptentry`,
                 data:payload,
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export const getPTFlaws = createAsyncThunk(
         try{
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/getptflaws?spool_id=${Spool_id}`,
+                url: `${import.meta.env.VITE_API_URL}/getptflaws?spool_id=${Spool_id}`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -69,7 +69,7 @@ export const getPTLogs = createAsyncThunk(
         try{
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/getptlogs?spool_id=${Spool_id}`,
+                url: `${import.meta.env.VITE_API_URL}/getptlogs?spool_id=${Spool_id}`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -89,7 +89,7 @@ export const getPTLogs = createAsyncThunk(
 export const getFidBySpool = async (spool_id) => {
   const response = await axios({
     method: "GET",
-    url: `${import.meta.env.VITE_API_URL}/api/getfidbyspool/${spool_id}`,
+    url: `${import.meta.env.VITE_API_URL}/getfidbyspool/${spool_id}`,
     headers: { 'Content-Type': 'application/json' }
   });
   return response.data;

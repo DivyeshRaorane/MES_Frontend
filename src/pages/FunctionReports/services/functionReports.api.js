@@ -19,7 +19,7 @@ const getAuthHeaders = () => ({
 
 /** Fetch list of existing PostgreSQL functions from database metadata */
 export const fetchAvailableFunctions = async () => {
-  const res = await axios.get(`${API_URL}/api/function-reports/available-functions`, {
+  const res = await axios.get(`${API_URL}/function-reports/available-functions`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -28,7 +28,7 @@ export const fetchAvailableFunctions = async () => {
 /** Fetch parameters of a specific function (from pg_proc metadata) */
 export const fetchFunctionParameters = async (schemaName, functionName) => {
   const res = await axios.get(
-    `${API_URL}/api/function-reports/function-params/${schemaName}/${functionName}`,
+    `${API_URL}/function-reports/function-params/${schemaName}/${functionName}`,
     { headers: getAuthHeaders() }
   );
   return res.data;
@@ -38,7 +38,7 @@ export const fetchFunctionParameters = async (schemaName, functionName) => {
 
 /** Get all registered function reports (admin) */
 export const fetchAllFunctionReports = async () => {
-  const res = await axios.get(`${API_URL}/api/function-reports`, {
+  const res = await axios.get(`${API_URL}/function-reports`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -46,7 +46,7 @@ export const fetchAllFunctionReports = async () => {
 
 /** Get a single registered function report by ID */
 export const fetchFunctionReportById = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/function-reports/${reportId}`, {
+  const res = await axios.get(`${API_URL}/function-reports/${reportId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -54,7 +54,7 @@ export const fetchFunctionReportById = async (reportId) => {
 
 /** Register a new function report (create report configuration pointing to an existing function) */
 export const createFunctionReport = async (reportData) => {
-  const res = await axios.post(`${API_URL}/api/function-reports`, reportData, {
+  const res = await axios.post(`${API_URL}/function-reports`, reportData, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -62,7 +62,7 @@ export const createFunctionReport = async (reportData) => {
 
 /** Update a registered function report */
 export const updateFunctionReport = async (reportId, reportData) => {
-  const res = await axios.put(`${API_URL}/api/function-reports/${reportId}`, reportData, {
+  const res = await axios.put(`${API_URL}/function-reports/${reportId}`, reportData, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -70,7 +70,7 @@ export const updateFunctionReport = async (reportId, reportData) => {
 
 /** Toggle active/disable status of a registered function report */
 export const toggleFunctionReportStatus = async (reportId) => {
-  const res = await axios.patch(`${API_URL}/api/function-reports/${reportId}/toggle-status`, {}, {
+  const res = await axios.patch(`${API_URL}/function-reports/${reportId}/toggle-status`, {}, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -78,7 +78,7 @@ export const toggleFunctionReportStatus = async (reportId) => {
 
 /** Delete a registered function report (soft delete) */
 export const deleteFunctionReport = async (reportId) => {
-  const res = await axios.delete(`${API_URL}/api/function-reports/${reportId}`, {
+  const res = await axios.delete(`${API_URL}/function-reports/${reportId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -88,7 +88,7 @@ export const deleteFunctionReport = async (reportId) => {
 
 /** Get function reports accessible by current user, optionally filtered by section */
 export const fetchUserFunctionReports = async (section) => {
-  const res = await axios.get(`${API_URL}/api/function-reports/user/reports`, {
+  const res = await axios.get(`${API_URL}/function-reports/user/reports`, {
     headers: getAuthHeaders(),
     params: section ? { section } : {},
   });
@@ -98,7 +98,7 @@ export const fetchUserFunctionReports = async (section) => {
 /** Execute a registered function report with user-provided parameters */
 export const executeFunctionReport = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/function-reports/${reportId}/execute`,
+    `${API_URL}/function-reports/${reportId}/execute`,
     { params },
     { headers: getAuthHeaders() }
   );
@@ -110,7 +110,7 @@ export const executeFunctionReport = async (reportId, params) => {
 /** Export function report result as Excel */
 export const exportFunctionReportExcel = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/function-reports/${reportId}/export/excel`,
+    `${API_URL}/function-reports/${reportId}/export/excel`,
     { params },
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -120,7 +120,7 @@ export const exportFunctionReportExcel = async (reportId, params) => {
 /** Export function report result as CSV */
 export const exportFunctionReportCSV = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/function-reports/${reportId}/export/csv`,
+    `${API_URL}/function-reports/${reportId}/export/csv`,
     { params },
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -131,7 +131,7 @@ export const exportFunctionReportCSV = async (reportId, params) => {
 
 /** Get available sections for function report assignment */
 export const fetchFunctionReportSections = async () => {
-  const res = await axios.get(`${API_URL}/api/function-reports/sections`, {
+  const res = await axios.get(`${API_URL}/function-reports/sections`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -139,7 +139,7 @@ export const fetchFunctionReportSections = async () => {
 
 /** Get section mappings for a specific function report */
 export const fetchFunctionReportSectionMappings = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/function-reports/${reportId}/sections`, {
+  const res = await axios.get(`${API_URL}/function-reports/${reportId}/sections`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -148,7 +148,7 @@ export const fetchFunctionReportSectionMappings = async (reportId) => {
 /** Update section mappings for a function report */
 export const updateFunctionReportSectionMappings = async (reportId, sectionIds) => {
   const res = await axios.put(
-    `${API_URL}/api/function-reports/${reportId}/sections`,
+    `${API_URL}/function-reports/${reportId}/sections`,
     { section_ids: sectionIds },
     { headers: getAuthHeaders() }
   );

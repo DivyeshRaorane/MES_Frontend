@@ -12,7 +12,7 @@ const authHeaders = () => ({
  *   gr_qty, order_status, order_creation_date, updated_at, total_components, total_operations } ] }
  */
 export const getAllOrders = async () => {
-  const res = await axios.get(`${API}/api/admin/orders`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/admin/orders`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -27,7 +27,7 @@ export const getAllOrders = async () => {
  * } }
  */
 export const getOrderByNo = async (orderNo) => {
-  const res = await axios.get(`${API}/api/admin/orders/${orderNo}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/admin/orders/${orderNo}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -40,7 +40,7 @@ export const getOrderByNo = async (orderNo) => {
  * }
  */
 export const createOrder = async (payload) => {
-  const res = await axios.post(`${API}/api/admin/orders`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/admin/orders`, payload, { headers: authHeaders() });
   return res.data;
 };
 
@@ -50,7 +50,7 @@ export const createOrder = async (payload) => {
  * payload: same shape as createOrder.
  */
 export const updateOrder = async (orderNo, payload) => {
-  const res = await axios.put(`${API}/api/admin/orders/${orderNo}`, payload, { headers: authHeaders() });
+  const res = await axios.put(`${API}/admin/orders/${orderNo}`, payload, { headers: authHeaders() });
   return res.data;
 };
 
@@ -66,7 +66,7 @@ export const updateOrder = async (orderNo, payload) => {
  */
 export const syncProcessOrders = async (date) => {
   const body = date ? { date } : {};
-  const res = await axios.post(`${API}/api/process-order/sync`, body, { headers: authHeaders() });
+  const res = await axios.post(`${API}/process-order/sync`, body, { headers: authHeaders() });
   return res.data;
 };
 
@@ -76,8 +76,8 @@ export const syncProcessOrders = async (date) => {
  */
 export const getMaterials = async (category) => {
   const url = category
-    ? `${API}/api/admin/materials?category=${category}`
-    : `${API}/api/admin/materials`;
+    ? `${API}/admin/materials?category=${category}`
+    : `${API}/admin/materials`;
   const res = await axios.get(url, { headers: authHeaders() });
   return res.data;
 };

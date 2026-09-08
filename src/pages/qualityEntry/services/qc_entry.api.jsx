@@ -8,67 +8,67 @@ const authHeaders = () => ({
 
 /* ── Fetch bobbin QC data ── */
 export const fetchBobbinQC = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/fetch/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/fetch/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Check bobbin in PT Entry (fallback when not in QC) ── */
 export const checkBobbinInPtEntry = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/pt-check/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/pt-check/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Grade bobbin ── */
 export const gradeBobbin = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/grade/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/grade/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Check process status ── */
 export const checkProcessStatus = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/process-check/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/process-check/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Submit QC entry ── */
 export const submitQCEntry = async (payload) => {
-  const res = await axios.post(`${API}/api/qcentry/submit`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/qcentry/submit`, payload, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Update missing QC values ── */
 export const updateMissingValues = async (payload) => {
-  const res = await axios.post(`${API}/api/qc/update-missing-values`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/qc/update-missing-values`, payload, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Copy MBEnd data from previous sample + Calculate MAC value ── */
 export const copyMbendAndCalcMac = async (bobbin_no) => {
-  const res = await axios.post(`${API}/api/qcentry/mbend-copy`, { bobbin_no }, { headers: authHeaders() });
+  const res = await axios.post(`${API}/qcentry/mbend-copy`, { bobbin_no }, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Update MBend cycle after a sample bobbin fails/reworks in QC ── */
 export const updateMbendCycleAfterFailedSample = async (bobbin_no) => {
-  const res = await axios.post(`${API}/api/qcentry/mbend-reassign`, { bobbin_no }, { headers: authHeaders() });
+  const res = await axios.post(`${API}/qcentry/mbend-reassign`, { bobbin_no }, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Submit flaw rewind instruction entry ── */
 export const submitFlawRewind = async (payload) => {
   // payload: { bobbin_no, bobbin_fid, p1, p2, instruction }
-  const res = await axios.post(`${API}/api/qcentry/flaw-rewind`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/qcentry/flaw-rewind`, payload, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Colored bobbin QC check ── */
 export const checkAndCopyColoredBobbinQC = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/colored-bobbin-qc/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/colored-bobbin-qc/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── MFD / Cable Cutoff auto-calculation ── */
 export const checkMfdCableCutoff = async (bobbin_no) => {
-  const res = await axios.get(`${API}/api/qcentry/mfd-cable-cutoff/${bobbin_no}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/qcentry/mfd-cable-cutoff/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };

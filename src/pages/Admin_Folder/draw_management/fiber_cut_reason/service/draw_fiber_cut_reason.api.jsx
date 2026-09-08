@@ -10,7 +10,7 @@ export const getAllDrawFiberCutReason = async () => {
   try {
     const response = await axios({
       method: import.meta.env.VITE_METHOD_GET,
-      url: `${API}/api/getalldrawfibercutreasons`,
+      url: `${API}/getalldrawfibercutreasons`,
       headers: {
         "Content-Type": "application/json",
       }
@@ -24,7 +24,7 @@ export const getAllDrawFiberCutReason = async () => {
 /* ── Get fiber cut reasons filtered by indication_id ── */
 export const getFiberCutReasonsByIndication = async (indicationId) => {
   const response = await axios.get(
-    `${API}/api/fiber-cut-reasons?indication_id=${indicationId}`,
+    `${API}/fiber-cut-reasons?indication_id=${indicationId}`,
     { headers: authHeaders() }
   );
   return response.data;

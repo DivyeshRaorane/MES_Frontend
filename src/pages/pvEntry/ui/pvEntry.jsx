@@ -9,24 +9,24 @@ import axios from 'axios';
 
 /* ── APIs ── */
 const getQCUsers = async () => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/getqcusers`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getqcusers`);
   return res.data;
 };
 
 const searchBobbinOnline = async (bobbin_no) => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/getbobbinforpv/${bobbin_no}`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforpv/${bobbin_no}`);
   return res.data;
 };
 
 const searchBobbinRePV = async (bobbin_no) => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/getbobbinforrepv/${bobbin_no}`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforrepv/${bobbin_no}`);
   return res.data;
 };
 
 const updateBobbinColor = async (bobbin_no, fiber_color) => {
   const token = localStorage.getItem('token');
   const res = await axios.patch(
-    `${import.meta.env.VITE_API_URL}/api/updatebobbincolor/${bobbin_no}`,
+    `${import.meta.env.VITE_API_URL}/updatebobbincolor/${bobbin_no}`,
     { fiber_color },
     { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
   );
@@ -36,7 +36,7 @@ const updateBobbinColor = async (bobbin_no, fiber_color) => {
 const submitPVEntries = async (payload) => {
   const token = localStorage.getItem('token');
   const res = await axios.post(
-    `${import.meta.env.VITE_API_URL}/api/pventry`,
+    `${import.meta.env.VITE_API_URL}/pventry`,
     payload,
     { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
   );
@@ -46,7 +46,7 @@ const submitPVEntries = async (payload) => {
 const submitRePVEntries = async (payload) => {
   const token = localStorage.getItem('token');
   const res = await axios.put(
-    `${import.meta.env.VITE_API_URL}/api/repventry`,
+    `${import.meta.env.VITE_API_URL}/repventry`,
     payload,
     { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } }
   );

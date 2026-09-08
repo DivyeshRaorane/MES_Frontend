@@ -8,21 +8,21 @@ const authHeaders = () => ({
 
 export const getHthaEntries = async (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
-  const res = await axios.get(`${API}/api/htha-entry?${params}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/htha-entry?${params}`, { headers: authHeaders() });
   return res.data;
 };
 
 export const getHthaEntryById = async (id) => {
-  const res = await axios.get(`${API}/api/htha-entry/${id}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/htha-entry/${id}`, { headers: authHeaders() });
   return res.data;
 };
 
 export const createHthaEntry = async (payload) => {
-  const res = await axios.post(`${API}/api/htha-entry`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/htha-entry`, payload, { headers: authHeaders() });
   return res.data;
 };
 
 export const updateHthaEntry = async (id, payload) => {
-  const res = await axios.put(`${API}/api/htha-entry/${id}`, payload, { headers: authHeaders() });
+  const res = await axios.put(`${API}/htha-entry/${id}`, payload, { headers: authHeaders() });
   return res.data;
 };

@@ -24,7 +24,7 @@ const ProcessTypePanel = ({ onBack }) => {
   const fetchProcessTypes = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/process-types`, { headers: authHeaders() });
+      const res = await axios.get(`${API}/admin/process-types`, { headers: authHeaders() });
       setProcessTypes(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -39,7 +39,7 @@ const ProcessTypePanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/process-types/${item.process_type_id}`, {
+      const res = await axios.put(`${API}/admin/process-types/${item.process_type_id}`, {
         process_type: item.process_type,
         is_active: !item.is_active,
       }, { headers: authHeaders() });
@@ -172,9 +172,9 @@ const ProcessTypeFormModal = ({ item, onClose, onSaved }) => {
       let res;
       const payload = { process_type: Number(values.process_type), is_active: item?.is_active ?? true };
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/process-types/${item.process_type_id}`, payload, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/process-types/${item.process_type_id}`, payload, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/process-types`, payload, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/process-types`, payload, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Process type updated' : 'Process type created'); onSaved(); }
       else showError(res.data?.message || 'Failed');
@@ -217,7 +217,7 @@ const PreformMappingModal = ({ processType, onClose }) => {
   const fetchMappings = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/process-types/${processType.process_type_id}/mappings`, { headers: authHeaders() });
+      const res = await axios.get(`${API}/admin/process-types/${processType.process_type_id}/mappings`, { headers: authHeaders() });
       setMappings(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -229,7 +229,7 @@ const PreformMappingModal = ({ processType, onClose }) => {
     if (!newPreformType.trim()) { showError('Enter preform type'); return; }
     setAdding(true);
     try {
-      const res = await axios.post(`${API}/api/admin/process-types/${processType.process_type_id}/mappings`, {
+      const res = await axios.post(`${API}/admin/process-types/${processType.process_type_id}/mappings`, {
         preform_type: newPreformType.trim(),
       }, { headers: authHeaders() });
       if (res.data?.success) {
@@ -244,7 +244,7 @@ const PreformMappingModal = ({ processType, onClose }) => {
   const handleDelete = async (mappingId) => {
     if (!confirm('Remove this mapping?')) return;
     try {
-      const res = await axios.delete(`${API}/api/admin/process-types/mappings/${mappingId}`, { headers: authHeaders() });
+      const res = await axios.delete(`${API}/admin/process-types/mappings/${mappingId}`, { headers: authHeaders() });
       if (res.data?.success) { showSuccess('Mapping removed'); fetchMappings(); }
       else showError(res.data?.message || 'Failed');
     } catch (e) { showError(e?.response?.data?.message || 'Failed'); }

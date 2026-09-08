@@ -15,8 +15,8 @@ const authHeaders = () => ({
 export const getColMaterialCodes = async (isActive) => {
   const url =
     isActive === undefined || isActive === null
-      ? `${API}/api/col-material-code`
-      : `${API}/api/col-material-code?is_active=${isActive}`;
+      ? `${API}/col-material-code`
+      : `${API}/col-material-code?is_active=${isActive}`;
   const res = await axios.get(url, { headers: authHeaders() });
   return res.data;
 };
@@ -26,7 +26,7 @@ export const getColMaterialCodes = async (isActive) => {
  * Response: { success, message?, data: { col_material_code_id, product, color, material_code, is_active } }
  */
 export const getColMaterialCodeById = async (id) => {
-  const res = await axios.get(`${API}/api/col-material-code/${id}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/col-material-code/${id}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -36,7 +36,7 @@ export const getColMaterialCodeById = async (id) => {
  * Response: { success, message?, data }
  */
 export const createColMaterialCode = async (payload) => {
-  const res = await axios.post(`${API}/api/createcolmaterialcode`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/createcolmaterialcode`, payload, { headers: authHeaders() });
   return res.data;
 };
 
@@ -46,6 +46,6 @@ export const createColMaterialCode = async (payload) => {
  * Response: { success, message?, data }
  */
 export const updateColMaterialCode = async (id, payload) => {
-  const res = await axios.put(`${API}/api/admin/colmaterialcode/${id}`, payload, { headers: authHeaders() });
+  const res = await axios.put(`${API}/admin/colmaterialcode/${id}`, payload, { headers: authHeaders() });
   return res.data;
 };

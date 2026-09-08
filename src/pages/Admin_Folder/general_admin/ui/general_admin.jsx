@@ -271,7 +271,7 @@ const ShiftPanel = ({ onBack }) => {
   const fetchShifts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/getshifts`);
+      const res = await axios.get(`${API}/getshifts`);
       setShifts(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -286,7 +286,7 @@ const ShiftPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/shifts/${item.shift_id}`, {
+      const res = await axios.put(`${API}/admin/shifts/${item.shift_id}`, {
         shift_name: item.shift_name,
         shift_start_time: item.shift_start_time,
         shift_end_time: item.shift_end_time,
@@ -395,9 +395,9 @@ const ShiftFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/shifts/${item.shift_id}`, values, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/shifts/${item.shift_id}`, values, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/shifts`, values, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/shifts`, values, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Shift updated' : 'Shift created'); onSaved(); }
       else showError(res.data?.message || 'Failed');
@@ -445,7 +445,7 @@ const DepartmentPanel = ({ onBack }) => {
   const fetchDepts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/departments`);
+      const res = await axios.get(`${API}/admin/departments`);
       setDepartments(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -460,7 +460,7 @@ const DepartmentPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/departments/${item.id}`, {
+      const res = await axios.put(`${API}/admin/departments/${item.id}`, {
         d_name: item.d_name,
         disable: !item.disable,
       }, { headers: authHeaders() });
@@ -560,9 +560,9 @@ const DeptFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/departments/${item.id}`, { d_name: values.d_name, disable: item.disable ?? false }, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/departments/${item.id}`, { d_name: values.d_name, disable: item.disable ?? false }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/departments`, { d_name: values.d_name }, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/departments`, { d_name: values.d_name }, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Department updated' : 'Department created'); onSaved(); }
       else showError(res.data?.message || 'Failed');
@@ -608,7 +608,7 @@ const CustomerPanel = ({ onBack }) => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/customers`);
+      const res = await axios.get(`${API}/admin/customers`);
       setCustomers(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -623,7 +623,7 @@ const CustomerPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/customers/${item.customer_id}`, {
+      const res = await axios.put(`${API}/admin/customers/${item.customer_id}`, {
         customer_name: item.customer_name,
         cust_address: item.cust_address || null,
         customer_since: item.customer_since,
@@ -734,14 +734,14 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/customers/${item.customer_id}`, {
+        res = await axios.put(`${API}/admin/customers/${item.customer_id}`, {
           customer_name: values.customer_name,
           cust_address: values.cust_address || null,
           customer_since: values.customer_since || null,
           disable: item.disable ?? false,
         }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/customers`, {
+        res = await axios.post(`${API}/admin/customers`, {
           customer_name: values.customer_name,
           cust_address: values.cust_address || null,
           customer_since: values.customer_since || null,
@@ -793,7 +793,7 @@ const BobbinColorPanel = ({ onBack }) => {
   const fetchColors = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/getbobbincolor`);
+      const res = await axios.get(`${API}/getbobbincolor`);
       setColors(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -808,7 +808,7 @@ const BobbinColorPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/bobbincolors/${item.bobbin_color_id}`, {
+      const res = await axios.put(`${API}/admin/bobbincolors/${item.bobbin_color_id}`, {
         bobbin_color_name: item.bobbin_color_name,
         is_disable: !item.is_disable,
       }, { headers: authHeaders() });
@@ -906,9 +906,9 @@ const BobbinColorFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/bobbincolors/${item.bobbin_color_id}`, { bobbin_color_name: values.bobbin_color_name, is_disable: item.is_disable ?? false }, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/bobbincolors/${item.bobbin_color_id}`, { bobbin_color_name: values.bobbin_color_name, is_disable: item.is_disable ?? false }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/createbobbincolor`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
+        res = await axios.post(`${API}/createbobbincolor`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Color updated' : 'Color created'); onSaved(); }
       else showError(res.data?.message || 'Failed');
@@ -954,7 +954,7 @@ const PreformVendorPanel = ({ onBack }) => {
   const fetchVendors = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/getpreformvendor`, { headers: authHeaders() });
+      const res = await axios.get(`${API}/getpreformvendor`, { headers: authHeaders() });
       setVendors(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -969,7 +969,7 @@ const PreformVendorPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/preformvendor/${item.preform_vendor_id}`, {
+      const res = await axios.put(`${API}/admin/preformvendor/${item.preform_vendor_id}`, {
         vendor_code: item.vendor_code,
         vendor_name: item.vendor_name,
         vendor_initial: item.vendor_initial,
@@ -1079,14 +1079,14 @@ const PreformVendorFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/preformvendor/${item.preform_vendor_id}`, {
+        res = await axios.put(`${API}/admin/preformvendor/${item.preform_vendor_id}`, {
           vendor_code: values.vendor_code,
           vendor_name: values.vendor_name,
           vendor_initial: values.vendor_initial,
           is_disable: item.is_disable ?? false,
         }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/createpreformvendor`, {
+        res = await axios.post(`${API}/createpreformvendor`, {
           vendor_code: values.vendor_code,
           vendor_name: values.vendor_name,
           vendor_initial: values.vendor_initial,

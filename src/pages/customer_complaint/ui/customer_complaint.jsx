@@ -146,8 +146,8 @@ const RaiseComplaint = ({ onBack, onCreated }) => {
       try {
         const axios = (await import('axios')).default;
         const [uRes, cRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/getuser`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/admin/customers`),
+          axios.get(`${import.meta.env.VITE_API_URL}/getuser`),
+          axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`),
         ]);
         setUsers(uRes.data?.data || uRes.data || []);
         setCustomers((cRes.data?.data || []).filter(c => !c.disable));

@@ -7,7 +7,7 @@ export const userLogin = createAsyncThunk(
         try{
             const response = await axios({
                 method:import.meta.env.VITE_METHOD_POST,
-                url:`${import.meta.env.VITE_API_URL}/api/login`,
+                url:`${import.meta.env.VITE_API_URL}/login`,
                 data:credential,
                 headers: {
                     'Content-Type': 'application/json',

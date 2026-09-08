@@ -8,7 +8,7 @@ export const createDrawEntry = createAsyncThunk(
             const token = await localStorage.getItem('token')
         const response = await axios({
                             method: import.meta.env.VITE_METHOD_POST,
-                            url: `${import.meta.env.VITE_API_URL}/api/drawentry`,
+                            url: `${import.meta.env.VITE_API_URL}/drawentry`,
                             data:payload,
                             headers: {
                                 'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ export const getTowerEvent = createAsyncThunk(
         try{
             const response = await axios({
                             method: import.meta.env.VITE_METHOD_POST,
-                            url: `${import.meta.env.VITE_API_URL}/api/towerdata`,
+                            url: `${import.meta.env.VITE_API_URL}/towerdata`,
                             data:payload,
                             headers: {
                                 'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ export const getPreformByTower = createAsyncThunk(
         try{
             const response = await axios({
                             method: import.meta.env.VITE_METHOD_GET,
-                            url: `${import.meta.env.VITE_API_URL}/api/preformbytower/${tower_id}`,
+                            url: `${import.meta.env.VITE_API_URL}/preformbytower/${tower_id}`,
                             headers: {
                                 'Content-Type': 'application/json',
                             }

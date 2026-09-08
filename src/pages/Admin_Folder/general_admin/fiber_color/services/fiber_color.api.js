@@ -15,8 +15,8 @@ const authHeaders = () => ({
 export const getFiberColors = async (isActive) => {
   const url =
     isActive === undefined || isActive === null
-      ? `${API}/api/getfibercolor`
-      : `${API}/api/getfibercolor?is_active=${isActive}`;
+      ? `${API}/getfibercolor`
+      : `${API}/getfibercolor?is_active=${isActive}`;
   const res = await axios.get(url, { headers: authHeaders() });
   return res.data;
 };
@@ -26,7 +26,7 @@ export const getFiberColors = async (isActive) => {
  * Response: { success, message?, data: { fiber_color_id, color, is_active, created_at } }
  */
 export const getFiberColorById = async (id) => {
-  const res = await axios.get(`${API}/api/fiber-color/${id}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/fiber-color/${id}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -36,7 +36,7 @@ export const getFiberColorById = async (id) => {
  * Response: { success, message?, data }
  */
 export const createFiberColor = async (payload) => {
-  const res = await axios.post(`${API}/api/createfibercolor`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/createfibercolor`, payload, { headers: authHeaders() });
   return res.data;
 };
 
@@ -46,6 +46,6 @@ export const createFiberColor = async (payload) => {
  * Response: { success, message?, data }
  */
 export const updateFiberColor = async (id, payload) => {
-  const res = await axios.put(`${API}/api/admin/fibercolors/${id}`, payload, { headers: authHeaders() });
+  const res = await axios.put(`${API}/admin/fibercolors/${id}`, payload, { headers: authHeaders() });
   return res.data;
 };

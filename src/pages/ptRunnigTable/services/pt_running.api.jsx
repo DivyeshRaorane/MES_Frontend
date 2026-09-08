@@ -7,7 +7,7 @@ export const getPTAllocatedSpool = createAsyncThunk(
         try{
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/getptallocatedspool?is_pt_complete=${is_pt_complete}`,
+                url: `${import.meta.env.VITE_API_URL}/getptallocatedspool?is_pt_complete=${is_pt_complete}`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -28,7 +28,7 @@ export const deallocatePT = async (payload) => {
     const token = localStorage.getItem("token");
     const response = await axios({
         method: "POST",
-        url: `${import.meta.env.VITE_API_URL}/api/deallocatept`,
+        url: `${import.meta.env.VITE_API_URL}/deallocatept`,
         data: payload,
         headers: {
             'Content-Type': 'application/json',

@@ -8,12 +8,12 @@ const authHeaders = () => ({
 
 /* ── Run Allocation Engine ── */
 export const runAllocationEngine = async (spec_ids) => {
-  const res = await axios.post(`${API}/api/allocation/run`, { spec_ids }, { headers: authHeaders() });
+  const res = await axios.post(`${API}/allocation/run`, { spec_ids }, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Save Allocation (future) ── */
 export const saveAllocation = async (payload) => {
-  const res = await axios.post(`${API}/api/allocation/save`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/allocation/save`, payload, { headers: authHeaders() });
   return res.data;
 };

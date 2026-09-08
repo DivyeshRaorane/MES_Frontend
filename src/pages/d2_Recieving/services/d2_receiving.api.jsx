@@ -6,7 +6,7 @@ const API = import.meta.env.VITE_API_URL;
 export const getD2ChambersInUse = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2receiving/chambers-in-use`,
+    url: `${API}/d2receiving/chambers-in-use`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -16,7 +16,7 @@ export const getD2ChambersInUse = async () => {
 export const getRunningBatchForReceiving = async (chamber_no) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2receiving/running-batch/${chamber_no}`,
+    url: `${API}/d2receiving/running-batch/${chamber_no}`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -26,7 +26,7 @@ export const getRunningBatchForReceiving = async (chamber_no) => {
 export const getQCUsers = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/getqcusers`,
+    url: `${API}/getqcusers`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -37,7 +37,7 @@ export const completeD2Receiving = async (payload) => {
   const token = localStorage.getItem("token");
   const response = await axios({
     method: "PUT",
-    url: `${API}/api/d2receiving/complete`,
+    url: `${API}/d2receiving/complete`,
     data: payload,
     headers: {
       "Content-Type": "application/json",

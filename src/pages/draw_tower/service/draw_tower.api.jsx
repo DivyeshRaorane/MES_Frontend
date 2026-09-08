@@ -6,7 +6,7 @@ export const getTowerForAllocation = createAsyncThunk(
     async(active = null, {rejectWithValue})=>{
         try{
 
-            let url = `${import.meta.env.VITE_API_URL}/api/gettowers`;
+            let url = `${import.meta.env.VITE_API_URL}/gettowers`;
 
       if (active === true || active === false) {
         url += `?active=${active}`;

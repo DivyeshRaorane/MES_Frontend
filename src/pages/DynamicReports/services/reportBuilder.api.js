@@ -20,7 +20,7 @@ const getAuthHeaders = () => {
 
 /** Fetch all available PostgreSQL tables */
 export const fetchTables = async () => {
-  const res = await axios.get(`${API_URL}/api/report-builder/tables`, {
+  const res = await axios.get(`${API_URL}/report-builder/tables`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -28,7 +28,7 @@ export const fetchTables = async () => {
 
 /** Fetch columns for a specific table */
 export const fetchTableColumns = async (tableName) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/tables/${tableName}/columns`, {
+  const res = await axios.get(`${API_URL}/report-builder/tables/${tableName}/columns`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -36,7 +36,7 @@ export const fetchTableColumns = async (tableName) => {
 
 /** Fetch foreign key relationships for a table */
 export const fetchTableRelationships = async (tableName) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/tables/${tableName}/relationships`, {
+  const res = await axios.get(`${API_URL}/report-builder/tables/${tableName}/relationships`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -46,7 +46,7 @@ export const fetchTableRelationships = async (tableName) => {
 
 /** Get all reports (admin view) */
 export const fetchAllReports = async () => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -54,7 +54,7 @@ export const fetchAllReports = async () => {
 
 /** Get a single report by ID */
 export const fetchReportById = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports/${reportId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -62,7 +62,7 @@ export const fetchReportById = async (reportId) => {
 
 /** Create a new report */
 export const createReport = async (reportData) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports`, reportData, {
+  const res = await axios.post(`${API_URL}/report-builder/reports`, reportData, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -70,7 +70,7 @@ export const createReport = async (reportData) => {
 
 /** Update an existing report */
 export const updateReport = async (reportId, reportData) => {
-  const res = await axios.put(`${API_URL}/api/report-builder/reports/${reportId}`, reportData, {
+  const res = await axios.put(`${API_URL}/report-builder/reports/${reportId}`, reportData, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -78,7 +78,7 @@ export const updateReport = async (reportId, reportData) => {
 
 /** Soft-delete a report */
 export const deleteReport = async (reportId) => {
-  const res = await axios.delete(`${API_URL}/api/report-builder/reports/${reportId}`, {
+  const res = await axios.delete(`${API_URL}/report-builder/reports/${reportId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -86,7 +86,7 @@ export const deleteReport = async (reportId) => {
 
 /** Duplicate a report */
 export const duplicateReport = async (reportId) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/duplicate`, {}, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/${reportId}/duplicate`, {}, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -96,7 +96,7 @@ export const duplicateReport = async (reportId) => {
 
 /** Preview report (first 100 rows) */
 export const previewReport = async (reportConfig) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/preview`, reportConfig, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/preview`, reportConfig, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -104,7 +104,7 @@ export const previewReport = async (reportConfig) => {
 
 /** Execute report with filters and pagination */
 export const executeReport = async (reportId, params) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/execute`, params, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/${reportId}/execute`, params, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -112,7 +112,7 @@ export const executeReport = async (reportId, params) => {
 
 /** Get generated SQL for a report (developer mode) */
 export const getReportSQL = async (reportConfig) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/sql`, reportConfig, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/sql`, reportConfig, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -122,7 +122,7 @@ export const getReportSQL = async (reportConfig) => {
 
 /** Get reports accessible by current user */
 export const fetchUserReports = async () => {
-  const res = await axios.get(`${API_URL}/api/dynamic-reports`, {
+  const res = await axios.get(`${API_URL}/dynamic-reports`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -130,7 +130,7 @@ export const fetchUserReports = async () => {
 
 /** Execute a report from user side */
 export const executeUserReport = async (reportId, params) => {
-  const res = await axios.post(`${API_URL}/api/dynamic-reports/${reportId}/execute`, params, {
+  const res = await axios.post(`${API_URL}/dynamic-reports/${reportId}/execute`, params, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -141,7 +141,7 @@ export const executeUserReport = async (reportId, params) => {
 /** Export report as Excel */
 export const exportReportExcel = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/export/excel`,
+    `${API_URL}/dynamic-reports/${reportId}/export/excel`,
     params,
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -151,7 +151,7 @@ export const exportReportExcel = async (reportId, params) => {
 /** Export report as CSV */
 export const exportReportCSV = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/export/csv`,
+    `${API_URL}/dynamic-reports/${reportId}/export/csv`,
     params,
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -161,7 +161,7 @@ export const exportReportCSV = async (reportId, params) => {
 /** Export report as PDF */
 export const exportReportPDF = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/export/pdf`,
+    `${API_URL}/dynamic-reports/${reportId}/export/pdf`,
     params,
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -172,7 +172,7 @@ export const exportReportPDF = async (reportId, params) => {
 
 /** Get permissions for a report */
 export const fetchReportPermissions = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/permissions`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports/${reportId}/permissions`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -181,7 +181,7 @@ export const fetchReportPermissions = async (reportId) => {
 /** Update permissions for a report */
 export const updateReportPermissions = async (reportId, permissions) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/permissions`,
+    `${API_URL}/report-builder/reports/${reportId}/permissions`,
     permissions,
     { headers: getAuthHeaders() }
   );
@@ -190,7 +190,7 @@ export const updateReportPermissions = async (reportId, permissions) => {
 
 /** Get all roles */
 export const fetchRoles = async () => {
-  const res = await axios.get(`${API_URL}/api/report-builder/roles`, {
+  const res = await axios.get(`${API_URL}/report-builder/roles`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -198,7 +198,7 @@ export const fetchRoles = async () => {
 
 /** Get all users (for permission assignment) */
 export const fetchUsersForPermission = async () => {
-  const res = await axios.get(`${API_URL}/api/report-builder/users`, {
+  const res = await axios.get(`${API_URL}/report-builder/users`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -208,7 +208,7 @@ export const fetchUsersForPermission = async () => {
 
 /** Create a multi-sheet report (uses same endpoint, backend detects is_multi_sheet) */
 export const createMultiSheetReport = async (reportData) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports`, { ...reportData, is_multi_sheet: true }, {
+  const res = await axios.post(`${API_URL}/report-builder/reports`, { ...reportData, is_multi_sheet: true }, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -216,7 +216,7 @@ export const createMultiSheetReport = async (reportData) => {
 
 /** Update a multi-sheet report (uses same endpoint, backend detects is_multi_sheet) */
 export const updateMultiSheetReport = async (reportId, reportData) => {
-  const res = await axios.put(`${API_URL}/api/report-builder/reports/${reportId}`, { ...reportData, is_multi_sheet: true }, {
+  const res = await axios.put(`${API_URL}/report-builder/reports/${reportId}`, { ...reportData, is_multi_sheet: true }, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -224,7 +224,7 @@ export const updateMultiSheetReport = async (reportId, reportData) => {
 
 /** Get full multi-sheet report structure (sheets + tables) - uses same endpoint */
 export const fetchMultiSheetReport = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports/${reportId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -234,7 +234,7 @@ export const fetchMultiSheetReport = async (reportId) => {
 
 /** Get all sheets for a report */
 export const fetchReportSheets = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/sheets`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports/${reportId}/sheets`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -242,7 +242,7 @@ export const fetchReportSheets = async (reportId) => {
 
 /** Create a sheet in a report */
 export const createReportSheet = async (reportId, sheetData) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/${reportId}/sheets`, sheetData, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/${reportId}/sheets`, sheetData, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -251,7 +251,7 @@ export const createReportSheet = async (reportId, sheetData) => {
 /** Update a sheet */
 export const updateReportSheet = async (reportId, sheetId, sheetData) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}`,
     sheetData,
     { headers: getAuthHeaders() }
   );
@@ -261,7 +261,7 @@ export const updateReportSheet = async (reportId, sheetId, sheetData) => {
 /** Delete a sheet */
 export const deleteReportSheet = async (reportId, sheetId) => {
   const res = await axios.delete(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}`,
     { headers: getAuthHeaders() }
   );
   return res.data;
@@ -270,7 +270,7 @@ export const deleteReportSheet = async (reportId, sheetId) => {
 /** Reorder sheets */
 export const reorderReportSheets = async (reportId, sheetOrder) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/reorder`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/reorder`,
     { sheetOrder },
     { headers: getAuthHeaders() }
   );
@@ -282,7 +282,7 @@ export const reorderReportSheets = async (reportId, sheetOrder) => {
 /** Get all tables for a sheet */
 export const fetchSheetTables = async (reportId, sheetId) => {
   const res = await axios.get(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
     { headers: getAuthHeaders() }
   );
   return res.data;
@@ -291,7 +291,7 @@ export const fetchSheetTables = async (reportId, sheetId) => {
 /** Create a table in a sheet */
 export const createSheetTable = async (reportId, sheetId, tableData) => {
   const res = await axios.post(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables`,
     tableData,
     { headers: getAuthHeaders() }
   );
@@ -301,7 +301,7 @@ export const createSheetTable = async (reportId, sheetId, tableData) => {
 /** Update a table */
 export const updateSheetTable = async (reportId, sheetId, tableId, tableData) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
     tableData,
     { headers: getAuthHeaders() }
   );
@@ -311,7 +311,7 @@ export const updateSheetTable = async (reportId, sheetId, tableId, tableData) =>
 /** Delete a table */
 export const deleteSheetTable = async (reportId, sheetId, tableId) => {
   const res = await axios.delete(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}`,
     { headers: getAuthHeaders() }
   );
   return res.data;
@@ -320,7 +320,7 @@ export const deleteSheetTable = async (reportId, sheetId, tableId) => {
 /** Duplicate a table within the same sheet */
 export const duplicateSheetTable = async (reportId, sheetId, tableId) => {
   const res = await axios.post(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}/duplicate`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables/${tableId}/duplicate`,
     {},
     { headers: getAuthHeaders() }
   );
@@ -330,7 +330,7 @@ export const duplicateSheetTable = async (reportId, sheetId, tableId) => {
 /** Reorder tables within a sheet */
 export const reorderSheetTables = async (reportId, sheetId, tableOrder) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/sheets/${sheetId}/tables/reorder`,
+    `${API_URL}/report-builder/reports/${reportId}/sheets/${sheetId}/tables/reorder`,
     { tableOrder },
     { headers: getAuthHeaders() }
   );
@@ -339,7 +339,7 @@ export const reorderSheetTables = async (reportId, sheetId, tableOrder) => {
 
 /** Preview a single table's query */
 export const previewTableQuery = async (tableConfig) => {
-  const res = await axios.post(`${API_URL}/api/report-builder/reports/preview-table`, tableConfig, {
+  const res = await axios.post(`${API_URL}/report-builder/reports/preview-table`, tableConfig, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -350,7 +350,7 @@ export const previewTableQuery = async (tableConfig) => {
 /** Execute a multi-sheet report (uses same execute endpoint - backend detects is_multi_sheet) */
 export const executeMultiSheetReport = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/execute`,
+    `${API_URL}/dynamic-reports/${reportId}/execute`,
     params,
     { headers: getAuthHeaders() }
   );
@@ -360,7 +360,7 @@ export const executeMultiSheetReport = async (reportId, params) => {
 /** Export multi-sheet report as Excel workbook */
 export const exportMultiSheetExcel = async (reportId, params) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/export/multi-excel`,
+    `${API_URL}/dynamic-reports/${reportId}/export/multi-excel`,
     params,
     { headers: getAuthHeaders(), responseType: 'blob' }
   );
@@ -371,7 +371,7 @@ export const exportMultiSheetExcel = async (reportId, params) => {
 
 /** Get saved filters for a report */
 export const fetchSavedFilters = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/dynamic-reports/${reportId}/saved-filters`, {
+  const res = await axios.get(`${API_URL}/dynamic-reports/${reportId}/saved-filters`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -380,7 +380,7 @@ export const fetchSavedFilters = async (reportId) => {
 /** Save a filter preset */
 export const saveFilter = async (reportId, filterData) => {
   const res = await axios.post(
-    `${API_URL}/api/dynamic-reports/${reportId}/saved-filters`,
+    `${API_URL}/dynamic-reports/${reportId}/saved-filters`,
     filterData,
     { headers: getAuthHeaders() }
   );
@@ -390,7 +390,7 @@ export const saveFilter = async (reportId, filterData) => {
 /** Delete a saved filter */
 export const deleteSavedFilter = async (reportId, filterId) => {
   const res = await axios.delete(
-    `${API_URL}/api/dynamic-reports/${reportId}/saved-filters/${filterId}`,
+    `${API_URL}/dynamic-reports/${reportId}/saved-filters/${filterId}`,
     { headers: getAuthHeaders() }
   );
   return res.data;
@@ -400,7 +400,7 @@ export const deleteSavedFilter = async (reportId, filterId) => {
 
 /** Get all active report sections for multi-select */
 export const fetchReportSections = async () => {
-  const res = await axios.get(`${API_URL}/api/report-builder/sections`, {
+  const res = await axios.get(`${API_URL}/report-builder/sections`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -408,7 +408,7 @@ export const fetchReportSections = async () => {
 
 /** Get sections assigned to a specific report */
 export const fetchReportSectionMappings = async (reportId) => {
-  const res = await axios.get(`${API_URL}/api/report-builder/reports/${reportId}/sections`, {
+  const res = await axios.get(`${API_URL}/report-builder/reports/${reportId}/sections`, {
     headers: getAuthHeaders(),
   });
   return res.data;
@@ -417,7 +417,7 @@ export const fetchReportSectionMappings = async (reportId) => {
 /** Update section mappings for a report */
 export const updateReportSectionMappings = async (reportId, sectionIds) => {
   const res = await axios.put(
-    `${API_URL}/api/report-builder/reports/${reportId}/sections`,
+    `${API_URL}/report-builder/reports/${reportId}/sections`,
     { section_ids: sectionIds },
     { headers: getAuthHeaders() }
   );
@@ -426,7 +426,7 @@ export const updateReportSectionMappings = async (reportId, sectionIds) => {
 
 /** Fetch user reports filtered by section */
 export const fetchUserReportsBySection = async (sectionKey) => {
-  const res = await axios.get(`${API_URL}/api/dynamic-reports`, {
+  const res = await axios.get(`${API_URL}/dynamic-reports`, {
     headers: getAuthHeaders(),
     params: sectionKey ? { section: sectionKey } : {},
   });

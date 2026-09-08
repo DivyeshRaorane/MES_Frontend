@@ -23,7 +23,7 @@ const MaterialMasterPanel = ({ onBack }) => {
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/materials`, { headers: authHeaders() });
+      const res = await axios.get(`${API}/admin/materials`, { headers: authHeaders() });
       setMaterials(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -40,7 +40,7 @@ const MaterialMasterPanel = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/materials/${item.material_code}`, {
+      const res = await axios.put(`${API}/admin/materials/${item.material_code}`, {
         ...item,
         is_active: !item.is_active,
       }, { headers: authHeaders() });
@@ -174,9 +174,9 @@ const MaterialFormModal = ({ item, onClose, onSaved }) => {
     try {
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/materials/${item.material_code}`, values, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/materials/${item.material_code}`, values, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/materials`, values, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/materials`, values, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Material updated' : 'Material created'); onSaved(); }
       else showError(res.data?.message || 'Failed');

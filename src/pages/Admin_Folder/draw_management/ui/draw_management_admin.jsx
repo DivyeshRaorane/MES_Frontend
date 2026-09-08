@@ -25,10 +25,10 @@ const ADMIN_CARDS = [
     icon: Users,
     color: 'text-blue-600 bg-blue-100',
     api: {
-      getAll: () => axios.get(`${API}/api/getdrawusers`).then(r => r.data),
-      create: (data) => axios.post(`${API}/api/admin/drawusers`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/api/admin/drawusers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/api/admin/drawusers/${id}`, { headers: authHeaders() }).then(r => r.data),
+      getAll: () => axios.get(`${API}/getdrawusers`).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/drawusers`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/admin/drawusers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/admin/drawusers/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
       { name: 'emp_id', label: 'Employee ID', required: true },
@@ -45,10 +45,10 @@ const ADMIN_CARDS = [
     icon: Layers,
     color: 'text-indigo-600 bg-indigo-100',
     api: {
-      getAll: () => axios.get(`${API}/api/admin/drawtowers`).then(r => r.data),
-      create: (data) => axios.post(`${API}/api/admin/drawtowers`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/api/admin/drawtowers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/api/admin/drawtowers/${id}`, { headers: authHeaders() }).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/drawtowers`).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/drawtowers`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/admin/drawtowers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/admin/drawtowers/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
       { name: 'tower_no', label: 'Tower Number', required: true },
@@ -66,10 +66,10 @@ const ADMIN_CARDS = [
     icon: Zap,
     color: 'text-orange-600 bg-orange-100',
     api: {
-      getAll: () => axios.get(`${API}/api/fiber-cut-indication`, { headers: authHeaders() }).then(r => r.data),
-      create: (data) => axios.post(`${API}/api/fiber-cut-indication`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/api/fiber-cut-indication/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/api/fiber-cut-indication/${id}`, { headers: authHeaders() }).then(r => r.data),
+      getAll: () => axios.get(`${API}/fiber-cut-indication`, { headers: authHeaders() }).then(r => r.data),
+      create: (data) => axios.post(`${API}/fiber-cut-indication`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/fiber-cut-indication/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/fiber-cut-indication/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
       { name: 'indication_name', label: 'Indication Name', required: true },
@@ -86,13 +86,13 @@ const ADMIN_CARDS = [
     icon: AlertTriangle,
     color: 'text-rose-600 bg-rose-100',
     api: {
-      getAll: () => axios.get(`${API}/api/admin/fibercutreasons`).then(r => r.data),
-      create: (data) => axios.post(`${API}/api/admin/fibercutreasons`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/api/admin/fibercutreasons/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/api/admin/fibercutreasons/${id}`, { headers: authHeaders() }).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/fibercutreasons`).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/fibercutreasons`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/admin/fibercutreasons/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/admin/fibercutreasons/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
-      { name: 'indication_fiber_cut_id', label: 'Indication', required: true, type: 'select', optionsApi: () => axios.get(`${API}/api/fiber-cut-indication`, { headers: authHeaders() }).then(r => r.data), optionLabel: 'indication_name', optionValue: 'indication_fiber_cut_id' },
+      { name: 'indication_fiber_cut_id', label: 'Indication', required: true, type: 'select', optionsApi: () => axios.get(`${API}/fiber-cut-indication`, { headers: authHeaders() }).then(r => r.data), optionLabel: 'indication_name', optionValue: 'indication_fiber_cut_id' },
       { name: 'dfcr_name', label: 'Reason Name', required: true },
     ],
     columns: ['dfcr_id', 'indication_name', 'dfcr_name', 'disable', 'created_at'],
@@ -107,10 +107,10 @@ const ADMIN_CARDS = [
     icon: Eye,
     color: 'text-amber-600 bg-amber-100',
     api: {
-      getAll: () => axios.get(`${API}/api/admin/windingobservations`).then(r => r.data),
-      create: (data) => axios.post(`${API}/api/admin/windingobservations`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/api/admin/windingobservations/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/api/admin/windingobservations/${id}`, { headers: authHeaders() }).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/windingobservations`).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/windingobservations`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/admin/windingobservations/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/admin/windingobservations/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
       { name: 'w_o_name', label: 'Observation Name', required: true },

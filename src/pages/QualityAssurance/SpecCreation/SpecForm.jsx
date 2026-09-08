@@ -90,7 +90,7 @@ const SpecForm = ({ specId, onBack }) => {
     (async () => {
       try {
         const axios = (await import('axios')).default;
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/customers`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`);
         setCustomers((res.data?.data || []).filter(c => !c.disable));
       } catch (_) {}
     })();

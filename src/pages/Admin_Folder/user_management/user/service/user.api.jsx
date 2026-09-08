@@ -5,7 +5,7 @@ export const getUsers = createAsyncThunk(
     'users/getUsers',
     async (params = {}, { rejectWithValue }) => {
         try {
-            let url = `${import.meta.env.VITE_API_URL}/api/getuser`;
+            let url = `${import.meta.env.VITE_API_URL}/getuser`;
 
             const query = [];
 

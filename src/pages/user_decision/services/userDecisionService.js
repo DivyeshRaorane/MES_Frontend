@@ -18,7 +18,7 @@ const authHeaders = () => ({
 export const getPendingUserDecisions = async (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
   const res = await axios.get(
-    `${API}/api/user-decision/pending${params ? `?${params}` : ""}`,
+    `${API}/user-decision/pending${params ? `?${params}` : ""}`,
     { headers: authHeaders() }
   );
   return res.data;
@@ -35,7 +35,7 @@ export const getPendingUserDecisions = async (filters = {}) => {
  */
 export const postUserDecisionUD = async (lots) => {
   const res = await axios.post(
-    `${API}/api/sap/inspection-lot/ud`,
+    `${API}/sap/inspection-lot/ud`,
     lots,
     { headers: authHeaders() }
   );

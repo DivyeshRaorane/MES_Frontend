@@ -8,7 +8,7 @@ export const preformAccept = createAsyncThunk(
             const token = localStorage.getItem("token");
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
-                url: `${import.meta.env.VITE_API_URL}/api/preformaccept`,
+                url: `${import.meta.env.VITE_API_URL}/preformaccept`,
                 data: data,
                 headers: {
                     'Content-Type': 'application/json',

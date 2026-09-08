@@ -7,7 +7,7 @@ export const getPreforms = createAsyncThunk(
         try{
             const response = await axios({
                 method:import.meta.env.VITE_METHOD_GET,
-                url:`${import.meta.env.VITE_API_URL}/api/getpreform`,
+                url:`${import.meta.env.VITE_API_URL}/getpreform`,
                 headers:{
                     'Content-Type':'application/json',
                 }

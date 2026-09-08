@@ -132,7 +132,7 @@ const GradeManagement = ({ onBack }) => {
   const fetchGrades = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/grades`, { headers: authHeaders() });
+      const res = await axios.get(`${API}/admin/grades`, { headers: authHeaders() });
       setGrades(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -147,7 +147,7 @@ const GradeManagement = ({ onBack }) => {
 
   const handleToggle = async (item) => {
     try {
-      const res = await axios.put(`${API}/api/admin/grades/${item.qc_entry_id}`, { status: !item.status }, { headers: authHeaders() });
+      const res = await axios.put(`${API}/admin/grades/${item.qc_entry_id}`, { status: !item.status }, { headers: authHeaders() });
       if (res.data?.success) { showSuccess(`${!item.status ? 'Enabled' : 'Disabled'}`); fetchGrades(); }
       else showError(res.data?.message || 'Failed');
     } catch (e) { showError(e?.response?.data?.message || 'Failed'); }
@@ -256,7 +256,7 @@ const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
     if (isEdit && data?.grade && data?.product_type) {
       const fetchMandatory = async () => {
         try {
-          const res = await axios.get(`${API}/api/admin/grade-mandatory`, {
+          const res = await axios.get(`${API}/admin/grade-mandatory`, {
             params: { grade: data.grade, product_type: data.product_type },
             headers: authHeaders()
           });
@@ -281,7 +281,7 @@ const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
     const mandatory_params = checked.join(',');
     try {
       setMandatoryLoading(true);
-      await axios.post(`${API}/api/admin/grade-mandatory`, {
+      await axios.post(`${API}/admin/grade-mandatory`, {
         grade, product_type, mandatory_params
       }, { headers: authHeaders() });
     } catch (e) { console.error('Failed to save mandatory params', e); }
@@ -306,9 +306,9 @@ const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
 
       let res;
       if (isEdit) {
-        res = await axios.put(`${API}/api/admin/grades/${data.qc_entry_id}`, payload, { headers: authHeaders() });
+        res = await axios.put(`${API}/admin/grades/${data.qc_entry_id}`, payload, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/api/admin/grades`, payload, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/grades`, payload, { headers: authHeaders() });
       }
       if (res.data?.success) {
         // Save mandatory fields after grade is saved
@@ -375,7 +375,7 @@ const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
                           });
                           // Copy mandatory checkboxes
                           try {
-                            const res = await axios.get(`${API}/api/admin/grade-mandatory`, {
+                            const res = await axios.get(`${API}/admin/grade-mandatory`, {
                               params: { grade: selectedGrade.grade, product_type: selectedGrade.product_type },
                               headers: authHeaders()
                             });

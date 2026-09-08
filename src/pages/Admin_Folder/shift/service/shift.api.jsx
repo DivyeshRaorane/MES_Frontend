@@ -4,7 +4,7 @@ export const getAllShifts = async()=>{
     try{
         const response = await axios({
             method : import.meta.env.VITE_METHOD_GET,
-            url: `${import.meta.env.VITE_API_URL}/api/getshifts`,
+            url: `${import.meta.env.VITE_API_URL}/getshifts`,
             headers: {
                 "Content-Type": "application/json",
             }

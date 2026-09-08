@@ -7,7 +7,7 @@ export const getPreformForHandleJoin = createAsyncThunk(
         try {
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/getpreformformhandlejoin`,
+                url: `${import.meta.env.VITE_API_URL}/getpreformformhandlejoin`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -29,7 +29,7 @@ export const handleJoin = createAsyncThunk(
             console.log("What is the payload:",payload)
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
-                url: `${import.meta.env.VITE_API_URL}/api/handlejoin`,
+                url: `${import.meta.env.VITE_API_URL}/handlejoin`,
                 data: payload,
                 headers: {
                     'Content-Type': 'application/json',

@@ -7,7 +7,7 @@ export const preformEntrySap = createAsyncThunk(
         try {
                     const response = await axios({
                         method: import.meta.env.VITE_METHOD_POST,
-                        url: `${import.meta.env.VITE_API_URL}/api/createpreform`,
+                        url: `${import.meta.env.VITE_API_URL}/createpreform`,
                         data:payload,
                         headers: {
                             'Content-Type': 'application/json',

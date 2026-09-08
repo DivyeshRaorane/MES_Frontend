@@ -205,7 +205,7 @@ const DrawSpoolEntry = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/api/admin/process-types/by-preform/${preformType}`, {
+      const res = await axios.get(`${API}/admin/process-types/by-preform/${preformType}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = res.data?.data || [];

@@ -10,7 +10,7 @@ export const getPreformVendors = async () => {
   try {
     const response = await axios({
       method: import.meta.env.VITE_METHOD_GET,
-      url: `${API}/api/getpreformvendor`,
+      url: `${API}/getpreformvendor`,
       headers: authHeaders(),
     });
     return response.data;
@@ -21,7 +21,7 @@ export const getPreformVendors = async () => {
 
 export const createPreformVendor = async (data) => {
   try {
-    const response = await axios.post(`${API}/api/createpreformvendor`, data, {
+    const response = await axios.post(`${API}/createpreformvendor`, data, {
       headers: authHeaders(),
     });
     return response.data;
@@ -32,7 +32,7 @@ export const createPreformVendor = async (data) => {
 
 export const updatePreformVendor = async (id, data) => {
   try {
-    const response = await axios.put(`${API}/api/admin/preformvendor/${id}`, data, {
+    const response = await axios.put(`${API}/admin/preformvendor/${id}`, data, {
       headers: authHeaders(),
     });
     return response.data;

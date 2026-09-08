@@ -19,7 +19,7 @@ export const queryMaterialStock = async ({ Material, Plant, InventoryStockType }
     payload.InventoryStockType = InventoryStockType;
   }
 
-  const res = await axios.post(`${API}/api/material-stock/query`, payload, {
+  const res = await axios.post(`${API}/material-stock/query`, payload, {
     headers: authHeaders(),
   });
   return res.data;

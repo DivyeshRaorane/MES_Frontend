@@ -11,7 +11,7 @@ const getAuthHeaders = () => ({
 export const getD2Chambers = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/getd2chambers`,
+    url: `${API}/getd2chambers`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -21,7 +21,7 @@ export const getD2Chambers = async () => {
 export const getQCUsers = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/getqcusers`,
+    url: `${API}/getqcusers`,
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -31,7 +31,7 @@ export const getQCUsers = async () => {
 export const validateBobbinForD2 = async (bobbin_no, restricted) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2issue/validate/${bobbin_no}?restricted=${restricted}`,
+    url: `${API}/d2issue/validate/${bobbin_no}?restricted=${restricted}`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -41,7 +41,7 @@ export const validateBobbinForD2 = async (bobbin_no, restricted) => {
 export const submitD2Issue = async (payload) => {
   const response = await axios({
     method: "POST",
-    url: `${API}/api/d2issue`,
+    url: `${API}/d2issue`,
     data: payload,
     headers: getAuthHeaders(),
   });
@@ -56,7 +56,7 @@ export const submitD2Issue = async (payload) => {
 export const getDraftList = async () => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2issue/drafts`,
+    url: `${API}/d2issue/drafts`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -66,7 +66,7 @@ export const getDraftList = async () => {
 export const getDraftDetails = async (d2_batch_id) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2issue/drafts/${d2_batch_id}`,
+    url: `${API}/d2issue/drafts/${d2_batch_id}`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -77,7 +77,7 @@ export const saveDraftBobbin = async (payload) => {
   // payload: { d2_batch_id, bobbin_fid, bobbin_no, chamber, d2_type }
   const response = await axios({
     method: "POST",
-    url: `${API}/api/d2issue/drafts`,
+    url: `${API}/d2issue/drafts`,
     data: payload,
     headers: getAuthHeaders(),
   });
@@ -88,7 +88,7 @@ export const saveDraftBobbin = async (payload) => {
 export const removeDraftBobbin = async (d2_batch_id, bobbin_no) => {
   const response = await axios({
     method: "DELETE",
-    url: `${API}/api/d2issue/drafts/${d2_batch_id}/bobbin/${bobbin_no}`,
+    url: `${API}/d2issue/drafts/${d2_batch_id}/bobbin/${bobbin_no}`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -98,7 +98,7 @@ export const removeDraftBobbin = async (d2_batch_id, bobbin_no) => {
 export const deleteDraft = async (d2_batch_id) => {
   const response = await axios({
     method: "DELETE",
-    url: `${API}/api/d2issue/drafts/${d2_batch_id}`,
+    url: `${API}/d2issue/drafts/${d2_batch_id}`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -112,7 +112,7 @@ export const deleteDraft = async (d2_batch_id) => {
 export const getD2Batches = async (fromDate, toDate) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2issue/batches?from=${fromDate}&to=${toDate}`,
+    url: `${API}/d2issue/batches?from=${fromDate}&to=${toDate}`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -122,7 +122,7 @@ export const getD2Batches = async (fromDate, toDate) => {
 export const getD2BatchBobbinsForGrade = async (d2_batch_id) => {
   const response = await axios({
     method: "GET",
-    url: `${API}/api/d2issue/batches/${d2_batch_id}/grade-export`,
+    url: `${API}/d2issue/batches/${d2_batch_id}/grade-export`,
     headers: getAuthHeaders(),
   });
   return response.data;
@@ -136,7 +136,7 @@ export const getD2BatchBobbinsForGrade = async (d2_batch_id) => {
 export const processSingleFinalGrade = async (bobbin_no) => {
   const response = await axios({
     method: "POST",
-    url: `${API}/api/d2issue/final-grade/single`,
+    url: `${API}/d2issue/final-grade/single`,
     data: { bobbin_no },
     headers: getAuthHeaders(),
   });
@@ -148,7 +148,7 @@ export const processBulkFinalGrade = async (bobbins) => {
   // bobbins: array of { bobbin_no, fid, product_type, temp_grade }
   const response = await axios({
     method: "POST",
-    url: `${API}/api/d2issue/final-grade/bulk`,
+    url: `${API}/d2issue/final-grade/bulk`,
     data: { bobbins },
     headers: getAuthHeaders(),
   });

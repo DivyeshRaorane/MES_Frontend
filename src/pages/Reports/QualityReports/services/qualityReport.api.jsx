@@ -4,12 +4,12 @@ const authHeaders = () => ({ "Content-Type": "application/json", Authorization: 
 
 export const getQualityEntryReport = async (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
-  const res = await axios.get(`${API}/api/quality-reports/quality-entry?${params}`, { headers: authHeaders() });
+  const res = await axios.get(`${API}/quality-reports/quality-entry?${params}`, { headers: authHeaders() });
   return res.data;
 };
 
 export const exportQualityReport = async (reportType, filters = {}) => {
   const params = new URLSearchParams({ ...filters, report: reportType }).toString();
-  const res = await axios.get(`${API}/api/quality-reports/export?${params}`, { headers: authHeaders(), responseType: 'blob' });
+  const res = await axios.get(`${API}/quality-reports/export?${params}`, { headers: authHeaders(), responseType: 'blob' });
   return res.data;
 };

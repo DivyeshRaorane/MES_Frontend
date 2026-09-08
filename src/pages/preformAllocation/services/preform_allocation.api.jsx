@@ -7,7 +7,7 @@ export const getPreformForAllocation = createAsyncThunk(
         try {
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/getpreformforallocation`,
+                url: `${import.meta.env.VITE_API_URL}/getpreformforallocation`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -29,7 +29,7 @@ export const preformAllocationEntry = createAsyncThunk(
             const token = localStorage.getItem("token")
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
-                url: `${import.meta.env.VITE_API_URL}/api/preformallocationentry`,
+                url: `${import.meta.env.VITE_API_URL}/preformallocationentry`,
                 data: payload,
                 headers: {
                     'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ export const getRecentAllocatedPreforms = createAsyncThunk(
         try {
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_GET,
-                url: `${import.meta.env.VITE_API_URL}/api/recentallocatedpreform`,
+                url: `${import.meta.env.VITE_API_URL}/recentallocatedpreform`,
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -71,7 +71,7 @@ export const preformDiallocation = async(allocation_id)=>{
     try{
         const response = await axios({
             method : import.meta.env.VITE_METHOD_PUT,
-            url: `${import.meta.env.VITE_API_URL}/api/preformdeallocation/${allocation_id}`,
+            url: `${import.meta.env.VITE_API_URL}/preformdeallocation/${allocation_id}`,
             headers: {
                 "Content-Type": "application/json",
             }

@@ -161,7 +161,7 @@ const PTEntry = () => {
     ptBreakRef.current = false;
     setFieldValue("pt_scrap", false);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
       console.log('PT machine log response:', res.data);
       const data = res.data;
       if (data?.success && data.data) {
@@ -1208,7 +1208,7 @@ const PTEntry = () => {
                     const token = localStorage.getItem('token');
                     const spool_id = formikRef.current?.values?.spool_id;
                     const pt_machine_no = formikRef.current?.values?.pt_machine_no;
-                    await axios.put(`${import.meta.env.VITE_API_URL}/api/ptentry/spool-complete`, {
+                    await axios.put(`${import.meta.env.VITE_API_URL}/ptentry/spool-complete`, {
                       spool_id,
                       pt_machine_no,
                     }, { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } });
