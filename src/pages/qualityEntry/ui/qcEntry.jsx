@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Scan, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
@@ -144,6 +144,7 @@ const executeMbendCopyAndMac = async (bobbin_no) => {
 /* ══════════════════════════════════════════════════════════ */
 const QCEntryScreen = () => {
   const [scanInput, setScanInput] = useState('');
+  const [lastScanned, setLastScanned] = useState(''); // last successfully scanned bobbin (for display)
   const [source, setSource] = useState(null); // 'temp' | 'final' | null
   const [grade, setGrade] = useState('');
   const [graded, setGraded] = useState(false);
@@ -159,15 +160,18 @@ const QCEntryScreen = () => {
   const [rewFromFlaw, setRewFromFlaw] = useState(false); // true when opened from flaw popup
   const [manualRew, setManualRew] = useState(false); // true when opened from manual REW button
   const [manualRewType, setManualRewType] = useState(''); // 'REWINDING' | 'CUT'
+  const [rewRemark, setRewRemark] = useState('');   // free-text remark entered in rewinding popup
+  const [rewNcCause, setRewNcCause] = useState(''); // NC cause entered in rewinding popup
   const [missingPopup, setMissingPopup] = useState(false);
   const [missingParams, setMissingParams] = useState([]);
   const [missingValues, setMissingValues] = useState({});
   const [missingBobbin, setMissingBobbin] = useState('');
   const [savingMissing, setSavingMissing] = useState(false);
-  const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [] });
+  const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' });
   const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
   const [mbendRemark, setMbendRemark] = useState('');
   const formRef = useRef(null);
+  const ncCauseRef = useRef(null); // stores nc_cause for grade-fail REW (submitted later via handleSubmit)
   const valuesRef = useRef(null); // stores current Formik values for manual REW
   const scanRef = useRef(null);
 
@@ -390,8 +394,8 @@ const QCEntryScreen = () => {
 
 
 
-  const handleFetch = async (setValues) => {
-    const bobbin_no = scanInput.trim();
+  const handleFetch = async (setValues, overrideBobbin) => {
+    const bobbin_no = (overrideBobbin !== undefined ? overrideBobbin : scanInput).trim();
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
     setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
@@ -436,6 +440,11 @@ const QCEntryScreen = () => {
               setPtCheckPopup({
                 open: true,
                 messages: msgs,
+                bobbin_no,
+                bobbin_fid: ptRes.bobbin_fid || '',
+                optical_length: ptRes.optical_length ?? ptRes.fiber_length ?? '',
+                matcode: ptRes.matcode || '',
+                product_type: ptRes.product_type || '',
               });
             }
           } else {
@@ -589,6 +598,31 @@ const QCEntryScreen = () => {
     setRewPopup(true);
   };
 
+  /* ── REW from the "Bobbin Not In QC" instruction popup ──
+     Bobbin exists in PT Entry but has no QC data yet, so `source` is null
+     and Formik values are empty. We seed valuesRef from the PT-check context
+     so the existing manual-REW confirm flow works unchanged. */
+  const handlePtCheckRew = () => {
+    const bobbin_no = ptCheckPopup.bobbin_no;
+    if (!bobbin_no) { showError('Bobbin not found'); return; }
+    // Seed values for handleRewConfirm's manual path
+    valuesRef.current = {
+      bobbin_no,
+      bobbin_fid: ptCheckPopup.bobbin_fid || '',
+      matcode: ptCheckPopup.matcode || '',
+      optical_length: ptCheckPopup.optical_length || '',
+      product_type: ptCheckPopup.product_type || '',
+      no_qc_data: true, // flag: bobbin has no QC row yet — backend must INSERT into qc_entry_temp + qc_entry
+    };
+    // Close the instruction popup and open the rewinding popup in manual mode
+    setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' });
+    setManualRew(true);
+    setManualRewType('');
+    setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
+    setRewFromFlaw(false);
+    setRewPopup(true);
+  };
+
   /* ── Rewinding popup confirm ── */
   const handleRewConfirm = async () => {
     // Manual REW requires type selection
@@ -618,7 +652,8 @@ const QCEntryScreen = () => {
           bobbin_fid: flawInstrPopup.bobbin_fid,
           p1: cut.p1,
           p2: cut.p2,
-          instruction: remarkStr,
+          instruction: [remarkStr, rewRemark.trim()].filter(Boolean).join(' | '),
+          nc_cause: rewNcCause.trim() || null,
         });
         if (res?.success) {
           showSuccess('Flaw rewind instruction saved. Bobbin marked as REW.');
@@ -627,6 +662,8 @@ const QCEntryScreen = () => {
           setRewFromFlaw(false);
           setManualRew(false);
           setManualRewType('');
+          setRewRemark('');
+          setRewNcCause('');
           setFlawInstrPopup({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
         } else {
           showError(res?.message || 'Failed to save flaw rewind');
@@ -664,14 +701,22 @@ const QCEntryScreen = () => {
         const measurements = {};
         MEASUREMENT_FIELDS.forEach(f => { if (vals[f] !== '' && vals[f] !== null && vals[f] !== undefined) measurements[f] = Number(vals[f]); });
 
+        // Combine the auto-built rewind instruction with the operator's free-text remark
+        const combinedRemark = [remarkStr, rewRemark.trim()].filter(Boolean).join(' | ');
+
         const qcPayload = {
           bobbin_no: vals.bobbin_no || bobbinNo,
           bobbin_fid: vals.bobbin_fid || bobbinFid,
           matcode: vals.matcode || '',
+          product_type: vals.product_type || '',
           grade: 'REW',
           action: 'immediate_final',
           measurements,
-          remark: remarkStr,
+          remark: combinedRemark,
+          nc_cause: rewNcCause.trim() || null, // NC cause → qc_entry_temp + qc_entry
+          // When true, the bobbin has no QC row yet. Backend must INSERT a new row
+          // into qc_entry_temp AND qc_entry with temp_grade=REW and final_grade=REW.
+          no_qc_data: vals.no_qc_data === true,
         };
         const qcRes = await submitQCEntry(qcPayload);
         if (!qcRes?.success) { showError(qcRes?.message || 'QC update failed'); setLoading(false); return; }
@@ -682,11 +727,13 @@ const QCEntryScreen = () => {
         setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
         setManualRew(false);
         setManualRewType('');
+        setRewRemark('');
+        setRewNcCause('');
         // Mark as final so all buttons get disabled
         setSource('final');
         setExistingTempGrade('REW');
         setExistingFinalGrade('REW');
-        formRef.current = remarkStr;
+        formRef.current = combinedRemark;
         showSuccess('Bobbin marked as REW. Final QC completed.');
       } catch (e) {
         showError(e?.response?.data?.message || 'Rewind request failed');
@@ -703,8 +750,11 @@ const QCEntryScreen = () => {
       setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
       setManualRew(false);
       setManualRewType('');
-      // Store remark in a ref so submit can access it
-      formRef.current = gradeRemarkParts.join(', ');
+      // Store remark + nc_cause in refs so handleSubmit can access them
+      formRef.current = [gradeRemarkParts.join(', '), rewRemark.trim()].filter(Boolean).join(' | ');
+      ncCauseRef.current = rewNcCause.trim() || null;
+      setRewRemark('');
+      setRewNcCause('');
     }
   };
 
@@ -774,6 +824,7 @@ const QCEntryScreen = () => {
         action: (grade === 'FAIL' || grade === 'REW') ? 'immediate_final' : 'temp_grade',
         measurements,
         remark: grade === 'REW' ? (formRef.current || null) : null,
+        nc_cause: grade === 'REW' ? (ncCauseRef.current || null) : null,
       };
 
       const res = await submitQCEntry(payload);
@@ -829,14 +880,29 @@ const QCEntryScreen = () => {
                 {/* Scan */}
                 <div className="flex items-center border border-slate-200 rounded overflow-hidden">
                   <span className="bg-blue-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BOBBIN</span>
-                  <input ref={scanRef} value={scanInput} onChange={e => setScanInput(e.target.value.toUpperCase())}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleFetch(setValues); } }}
+                  <input ref={scanRef} value={scanInput}
+                    onChange={e => {
+                      const val = e.target.value.toUpperCase();
+                      setScanInput(val);
+                      // Auto-fetch once a full 10-character bobbin is scanned
+                      const trimmed = val.trim();
+                      if (trimmed.length === 10) {
+                        setLastScanned(trimmed);
+                        handleFetch(setValues, trimmed); // pass value explicitly (no logic change)
+                        setScanInput(''); // flush input for the next scan
+                      }
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = scanInput.trim(); setLastScanned(v); handleFetch(setValues, v); setScanInput(''); } }}
                     className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-700" placeholder="Scan..." />
                 </div>
-                <button type="button" onClick={() => handleFetch(setValues)} disabled={loading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 disabled:opacity-50 transition-all">
-                  <Scan size={10} /> {loading ? 'Loading...' : 'Fetch'}
-                </button>
+
+                {/* Last scanned bobbin display */}
+                {lastScanned && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-green-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">SCANNED</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-green-700">{lastScanned}</span>
+                  </div>
+                )}
 
                 {/* FID display */}
                 {values.bobbin_fid && (
@@ -1175,8 +1241,24 @@ const QCEntryScreen = () => {
                 </div>
               )}
 
+              {/* ── Remark + NC Cause (saved to qc_entry_temp & qc_entry) ── */}
+              <div className="grid grid-cols-1 gap-2 mb-3">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-slate-600 uppercase">Remark</label>
+                  <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                    placeholder="Enter remark..." />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-slate-600 uppercase">NC Cause</label>
+                  <input type="text" value={rewNcCause} onChange={e => setRewNcCause(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                    placeholder="Enter NC cause..." />
+                </div>
+              </div>
+
               <div className="flex gap-2">
-                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); }}
+                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); setRewRemark(''); setRewNcCause(''); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" onClick={handleRewConfirm}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
@@ -1277,8 +1359,12 @@ const QCEntryScreen = () => {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end">
-                <button type="button" onClick={() => setPtCheckPopup({ open: false, messages: [] })}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={handlePtCheckRew}
+                  className="flex items-center gap-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all">
+                  <RotateCcw size={12} /> REW
+                </button>
+                <button type="button" onClick={() => setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' })}
                   className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all">
                   OK, Understood
                 </button>

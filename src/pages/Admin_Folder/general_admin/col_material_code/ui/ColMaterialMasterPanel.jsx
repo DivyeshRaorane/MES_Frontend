@@ -11,6 +11,7 @@ import {
   createColMaterialCode,
   updateColMaterialCode,
 } from '../services/col_material_code.api';
+import { getFiberColors } from '../../fiber_color/services/fiber_color.api';
 
 /* ══════════════════════════════════════════════════════════
    COL MATERIAL MASTER PANEL (list + create/edit modal + view modal)
@@ -206,12 +207,27 @@ const ColMaterialFormModal = ({ id, onClose, onSaved }) => {
   const isEdit = id != null;
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
+  const [colorOptions, setColorOptions] = useState([]);
   const [initialValues, setInitialValues] = useState({
     product: '',
     color: '',
     material_code: '',
     is_active: true,
   });
+
+  // Load active fiber colors for the Color dropdown
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const res = await getFiberColors(true);
+        setColorOptions(res?.data || []);
+      } catch (e) {
+        console.error(e);
+        showError(e?.response?.data?.message || 'Failed to load fiber colors');
+      }
+    };
+    loadColors();
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -290,9 +306,18 @@ const ColMaterialFormModal = ({ id, onClose, onSaved }) => {
 
                   <div className="flex flex-col gap-0.5">
                     <label className={labelCls}>Color *</label>
-                    <input value={values.color} maxLength={100}
+                    <select value={values.color}
                       onChange={(e) => setFieldValue('color', e.target.value)}
-                      placeholder="e.g. Blue" className={inputCls} />
+                      className={inputCls}>
+                      <option value="">Select color</option>
+                      {/* Keep current value visible even if it's inactive/not in the active list */}
+                      {values.color && !colorOptions.some((c) => c.color === values.color) && (
+                        <option value={values.color}>{values.color}</option>
+                      )}
+                      {colorOptions.map((c) => (
+                        <option key={c.fiber_color_id} value={c.color}>{c.color}</option>
+                      ))}
+                    </select>
                     {errors.color && touched.color && (
                       <p className="text-red-500 text-[8px]">{errors.color}</p>
                     )}

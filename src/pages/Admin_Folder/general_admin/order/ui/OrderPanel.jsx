@@ -217,16 +217,19 @@ const toApiDate = (isoDate) => {
 
 const STATUS_META = {
   inserted: { label: 'Inserted', badge: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle2 },
+  updated: { label: 'Updated', badge: 'bg-sky-100 text-sky-700', Icon: RefreshCw },
   skipped: { label: 'Skipped', badge: 'bg-amber-100 text-amber-700', Icon: MinusCircle },
   failed: { label: 'Failed', badge: 'bg-rose-100 text-rose-700', Icon: XCircle },
 };
 
 const OrderSync = () => {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(''); // empty => full-sync ALL orders
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [summary, setSummary] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'inserted' | 'skipped' | 'failed'
+  const [filter, setFilter] = useState('all'); // 'all' | 'inserted' | 'updated' | 'skipped' | 'failed'
+
+  const isFullSync = !date;
 
   const handleSync = async () => {
     setLoading(true);
@@ -258,10 +261,11 @@ const OrderSync = () => {
     ? [
         { key: 'fetched', label: 'Fetched', value: summary.fetched, cls: 'text-slate-700 bg-slate-100' },
         { key: 'inserted', label: 'Inserted', value: summary.inserted, cls: 'text-emerald-700 bg-emerald-100' },
+        { key: 'updated', label: 'Updated', value: summary.updated, cls: 'text-sky-700 bg-sky-100' },
         {
           key: 'skipped',
           label: 'Skipped',
-          value: (summary.skipped_existing || 0) + (summary.skipped_no_order_no || 0) + (summary.skipped_duplicate_in_batch || 0),
+          value: (summary.skipped_no_order_no || 0) + (summary.skipped_duplicate_in_batch || 0),
           cls: 'text-amber-700 bg-amber-100',
         },
         { key: 'failed', label: 'Failed', value: summary.failed, cls: 'text-rose-700 bg-rose-100' },
@@ -280,16 +284,34 @@ const OrderSync = () => {
         </div>
         <div className="flex items-end gap-2">
           <div className="flex flex-col gap-0.5">
-            <label className="font-bold text-slate-800 uppercase ml-0.5 text-[9px]">Order Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            <label className="font-bold text-slate-800 uppercase ml-0.5 text-[9px]">
+              Order Date
+              <span className="ml-1 normal-case text-slate-400 font-medium">(leave empty to sync all)</span>
+            </label>
+            <div className="flex items-center gap-1">
+              <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                title="Pick a date to sync only that day's orders, or clear it to sync ALL orders from SAP."
+                className="bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              {date && (
+                <button type="button" onClick={() => setDate('')} disabled={loading}
+                  title="Clear date to sync ALL orders"
+                  className="px-2 py-1.5 text-[9px] font-bold rounded-lg border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-all disabled:opacity-50">
+                  Sync All
+                </button>
+              )}
+            </div>
           </div>
           <button type="button" onClick={handleSync} disabled={loading}
+            title={isFullSync
+              ? 'Full sync: fetches ALL orders from SAP. This can take a while.'
+              : 'Syncs orders created on the selected date.'}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg text-white transition-all ${
               loading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}>
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-            {loading ? 'Syncing...' : 'Load / Sync'}
+            {loading
+              ? (isFullSync ? 'Syncing all...' : 'Syncing...')
+              : (isFullSync ? 'Sync All Orders' : 'Load / Sync')}
           </button>
         </div>
       </div>
@@ -300,7 +322,11 @@ const OrderSync = () => {
         {loading && (
           <div className="flex items-center justify-center py-16 gap-2">
             <Loader2 size={20} className="text-blue-500 animate-spin" />
-            <span className="text-xs text-slate-500">Fetching from SAP, this can take a few seconds...</span>
+            <span className="text-xs text-slate-500">
+              {isFullSync
+                ? 'Full sync in progress — fetching ALL orders from SAP. This can take a while...'
+                : 'Fetching from SAP, this can take a few seconds...'}
+            </span>
           </div>
         )}
 
@@ -319,7 +345,11 @@ const OrderSync = () => {
         {!loading && !error && !summary && (
           <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
             <CloudDownload size={28} className="text-slate-300" />
-            <p className="text-xs text-slate-400">Pick a date and click <span className="font-bold">Load / Sync</span> to import process orders from SAP.</p>
+            <p className="text-xs text-slate-400">
+              Pick a date to sync a single day, or leave it empty and click{' '}
+              <span className="font-bold">Sync All Orders</span> to import <span className="font-bold">every</span> process order from SAP.
+            </p>
+            <p className="text-[10px] text-slate-400">Existing orders are refreshed with the latest SAP data.</p>
           </div>
         )}
 
@@ -329,7 +359,10 @@ const OrderSync = () => {
             {/* Summary bar */}
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-[10px] font-bold text-slate-500 uppercase">
-                Date: <span className="text-slate-700 font-mono">{summary.date}</span>
+                {summary.date === 'ALL' ? 'Scope' : 'Date'}:{' '}
+                <span className="text-slate-700 font-mono">
+                  {summary.date === 'ALL' ? 'ALL ORDERS' : summary.date}
+                </span>
               </span>
               {counters.map(c => (
                 <span key={c.key} className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${c.cls}`}>
@@ -342,7 +375,9 @@ const OrderSync = () => {
             {summary.fetched === 0 ? (
               <div className="flex flex-col items-center justify-center py-14 gap-2 text-center">
                 <MinusCircle size={26} className="text-slate-300" />
-                <p className="text-xs text-slate-400">No process orders found for this date.</p>
+                <p className="text-xs text-slate-400">
+                  {summary.date === 'ALL' ? 'No process orders found in SAP.' : 'No process orders found for this date.'}
+                </p>
               </div>
             ) : (
               <>
@@ -351,6 +386,7 @@ const OrderSync = () => {
                   {[
                     { key: 'all', label: `All (${details.length})` },
                     { key: 'inserted', label: `Inserted (${details.filter(d => d.status === 'inserted').length})` },
+                    { key: 'updated', label: `Updated (${details.filter(d => d.status === 'updated').length})` },
                     { key: 'skipped', label: `Skipped (${details.filter(d => d.status === 'skipped').length})` },
                     { key: 'failed', label: `Failed (${details.filter(d => d.status === 'failed').length})` },
                   ].map(chip => (
@@ -727,14 +763,14 @@ const OrderForm = ({ orderNo, onBack, onSaved }) => {
 
                     <div className="flex flex-col gap-0.5">
                       <label className={labelCls}>Type</label>
-                      <select value={values.type}
-                        onChange={(e) => setFieldValue('type', e.target.value)}
-                        className={inputCls}>
-                        <option value="">-- Select Type --</option>
-                        {['DRAW', 'PT', 'REW', 'COLOR'].map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
+                      {/* Read-only: type comes from SAP (ManufacturingOrderType, e.g. "ZSFG") and cannot be edited */}
+                      <input
+                        type="text"
+                        value={values.type || '—'}
+                        readOnly
+                        disabled
+                        title="Type is synced from SAP and cannot be changed"
+                        className={`${inputCls} bg-slate-200 text-slate-600 cursor-not-allowed`} />
                     </div>
 
                     <div className="flex flex-col gap-0.5">

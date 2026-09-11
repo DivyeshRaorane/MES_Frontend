@@ -139,8 +139,8 @@ const ReportViewer = () => {
     // Fetch ALL rows for export by paging through the backend (which caps
     // per-request page size), regardless of the current on-screen page size.
     try {
-      const EXPORT_PAGE_SIZE = 500; // safe size within backend limits
-      const MAX_PAGES = 1000;       // hard safety cap (500k rows)
+      const EXPORT_PAGE_SIZE = 500;   // safe size within backend limits
+      const MAX_PAGES = 1000000;      // effectively no limit; loop stops when all rows fetched
       const baseParams = {
         filters,
         sorting,

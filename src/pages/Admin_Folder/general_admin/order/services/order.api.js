@@ -55,13 +55,20 @@ export const updateOrder = async (orderNo, payload) => {
 };
 
 /**
- * Sync process orders from SAP for a given date.
- * @param {string} [date] - optional, in "DD-MM-YYYY" or "YYYY-MM-DD". Omitted => backend uses today.
+ * Sync process orders from SAP.
+ * @param {string} [date] - optional, in "DD-MM-YYYY" or "YYYY-MM-DD".
+ *   Provide a date to sync only orders created on that date.
+ *   Omit it (or pass empty) to full-sync ALL process orders from SAP.
+ *   NOTE: full-sync can return a large payload and take noticeably longer.
+ * Existing orders are UPDATED (header refreshed, components/operations re-synced),
+ * not skipped.
  * Response: { success, message, summary: {
- *   date, fetched, inserted, skipped_existing, skipped_no_order_no,
- *   skipped_duplicate_in_batch, failed,
- *   inserted_order_nos, skipped_order_nos, failed_order_nos,
+ *   date,                       // "ALL" when no date was provided, else "YYYY-MM-DD"
+ *   fetched, inserted, updated,
+ *   skipped_no_order_no, skipped_duplicate_in_batch, failed,
+ *   inserted_order_nos, updated_order_nos, failed_order_nos,
  *   details: [ { order_no, status, reason, message } ]
+ *   // status ∈ "inserted" | "updated" | "skipped" | "failed"
  * } }
  */
 export const syncProcessOrders = async (date) => {
