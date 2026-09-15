@@ -72,3 +72,19 @@ export const checkMfdCableCutoff = async (bobbin_no) => {
   const res = await axios.get(`${API}/qcentry/mfd-cable-cutoff/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Bulk temp-grade: grade many bobbins in one request ──
+   payload: { bobbin_nos: string[] }
+   returns: { summary, results: [{ bobbin_no, status, matched_grade?, failed_parameter?, failure_details?, missing_parameters?, message? }] } */
+export const gradeBobbinBulk = async (bobbin_nos) => {
+  const res = await axios.post(`${API}/qcentry/grade-bulk`, { bobbin_nos }, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Pending temp-grade list (Automatic mode) ──
+   Returns bobbins present in bobbin_entries AND qc_entry_temp with NO temp_grade yet.
+   returns: { success, data: [{ bobbin_no, product_type?, matcode? }] } */
+export const getPendingTempGrade = async () => {
+  const res = await axios.get(`${API}/qcentry/pending-temp-grade`, { headers: authHeaders() });
+  return res.data;
+};

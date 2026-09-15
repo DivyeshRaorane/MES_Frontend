@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw, Layers } from 'lucide-react';
+import BulkEntryModal from './BulkEntryModal';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
@@ -170,6 +171,7 @@ const QCEntryScreen = () => {
   const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' });
   const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
   const [mbendRemark, setMbendRemark] = useState('');
+  const [bulkOpen, setBulkOpen] = useState(false); // Bulk Temp Grade modal
   const formRef = useRef(null);
   const ncCauseRef = useRef(null); // stores nc_cause for grade-fail REW (submitted later via handleSubmit)
   const valuesRef = useRef(null); // stores current Formik values for manual REW
@@ -967,6 +969,10 @@ const QCEntryScreen = () => {
                 )}
 
                 <div className="ml-auto flex gap-2">
+                  <button type="button" onClick={() => setBulkOpen(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 text-white text-[9px] font-bold rounded hover:bg-slate-800 transition-all">
+                    <Layers size={10} /> Bulk Entry
+                  </button>
                   <button type="button" onClick={() => handleGrade(values)} disabled={locked || loading || !values.bobbin_no}
                     className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded hover:bg-amber-600 disabled:opacity-40 transition-all">
                     <Award size={10} /> Temp Grade
@@ -1153,6 +1159,9 @@ const QCEntryScreen = () => {
             </Form>
           )}
         </Formik>
+
+        {/* ── Bulk Temp Grade (additive; independent of single-bobbin flow) ── */}
+        <BulkEntryModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
 
         <FailureDialog isOpen={failDialog.open} details={failDialog.details}
           onFail={() => handleFailAction('fail')} onRew={() => handleFailAction('rew')}
