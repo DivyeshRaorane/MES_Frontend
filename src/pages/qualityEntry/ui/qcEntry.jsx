@@ -176,8 +176,33 @@ const QCEntryScreen = () => {
   const ncCauseRef = useRef(null); // stores nc_cause for grade-fail REW (submitted later via handleSubmit)
   const valuesRef = useRef(null); // stores current Formik values for manual REW
   const scanRef = useRef(null);
+  const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
 
   const locked = source === 'final';
+
+  /* ── Single guarded scan entry point ──
+     A barcode scanner types the 10 chars AND sends a trailing Enter, so BOTH the
+     onChange (length === 10) and onKeyDown (Enter) fire for one scan. This debounces
+     duplicate triggers for the same bobbin within a short window so we fetch once and
+     the SCANNED badge stays stable. Manual typing / paste hits only one path and is
+     unaffected. */
+  const triggerScan = (rawValue, setValues) => {
+    const bobbin = (rawValue || '').trim();
+    if (!bobbin) return;
+
+    const now = Date.now();
+    const { value: lastValue, ts } = scanLockRef.current;
+    // Ignore a duplicate trigger for the same bobbin within 800ms
+    if (bobbin === lastValue && now - ts < 800) {
+      setScanInput(''); // still flush the box so the next scan starts clean
+      return;
+    }
+    scanLockRef.current = { value: bobbin, ts: now };
+
+    setLastScanned(bobbin);
+    handleFetch(setValues, bobbin);
+    setScanInput(''); // flush input for the next scan
+  };
 
   /* ── Parse flaw_rewind_instr: "Cut from 38.422 km to 39.065 ("Flaw Missed")" ── */
   const parseFlawInstr = (instr) => {
@@ -886,15 +911,14 @@ const QCEntryScreen = () => {
                     onChange={e => {
                       const val = e.target.value.toUpperCase();
                       setScanInput(val);
-                      // Auto-fetch once a full 10-character bobbin is scanned
+                      // Auto-fetch once a full 10-character bobbin is scanned.
+                      // triggerScan dedupes the scanner's trailing Enter.
                       const trimmed = val.trim();
                       if (trimmed.length === 10) {
-                        setLastScanned(trimmed);
-                        handleFetch(setValues, trimmed); // pass value explicitly (no logic change)
-                        setScanInput(''); // flush input for the next scan
+                        triggerScan(trimmed, setValues);
                       }
                     }}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = scanInput.trim(); setLastScanned(v); handleFetch(setValues, v); setScanInput(''); } }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); triggerScan(scanInput, setValues); } }}
                     className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-700" placeholder="Scan..." />
                 </div>
 

@@ -93,6 +93,7 @@ const PVEntry = () => {
   const [scanInput, setScanInput]   = useState('');
   const [confirm, setConfirm]       = useState({ open: false, title: '', message: '', onYes: null, onNo: null });
   const scanRef = useRef(null);
+  const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
 
   useEffect(() => {
     const fetch = async () => {
@@ -119,8 +120,8 @@ const PVEntry = () => {
   });
 
   /* ══ ONLINE PV SCAN ══ */
-  const handleOnlineScan = async (formValues) => {
-    const bobbin_no = scanInput.trim();
+  const handleOnlineScan = async (formValues, overrideBobbin) => {
+    const bobbin_no = (overrideBobbin !== undefined ? overrideBobbin : scanInput).trim();
     if (!bobbin_no) return;
 
     if (tableRows.some(r => r.bobbin_no === bobbin_no)) {
@@ -180,8 +181,8 @@ const PVEntry = () => {
   };
 
   /* ══ RE-PV SCAN ══ */
-  const handleRePVScan = async (formValues) => {
-    const bobbin_no = scanInput.trim();
+  const handleRePVScan = async (formValues, overrideBobbin) => {
+    const bobbin_no = (overrideBobbin !== undefined ? overrideBobbin : scanInput).trim();
     if (!bobbin_no) return;
 
     if (tableRows.some(r => r.bobbin_no === bobbin_no)) {
@@ -219,7 +220,7 @@ const PVEntry = () => {
   };
 
   /* ── Unified scan handler ── */
-  const handleScan = (formValues) => {
+  const handleScan = (formValues, overrideBobbin) => {
     // Validate header fields before allowing scan
     if (!formValues.pv_type) { showError('Please select PV Type first'); refocus(); return; }
     if (!formValues.pv_operator || formValues.pv_operator === 'Select') { showError('Please select PV Operator first'); refocus(); return; }
@@ -228,8 +229,26 @@ const PVEntry = () => {
       showError('Please select Fiber Color first'); refocus(); return;
     }
 
-    if (formValues.pv_type === 'online') return handleOnlineScan(formValues);
-    if (formValues.pv_type === 're_pv') return handleRePVScan(formValues);
+    if (formValues.pv_type === 'online') return handleOnlineScan(formValues, overrideBobbin);
+    if (formValues.pv_type === 're_pv') return handleRePVScan(formValues, overrideBobbin);
+  };
+
+  /* ── Single guarded scan entry point ──
+     A barcode scanner types the 10 chars AND sends a trailing Enter, so both the
+     onChange (length === 10) and onKeyDown (Enter) can fire for one scan. This debounces
+     duplicate triggers for the same bobbin within a short window so we scan once.
+     Manual typing / paste + Enter (or the Scan button) hits only one path and is unaffected. */
+  const triggerScan = (formValues, overrideBobbin) => {
+    const bobbin = (overrideBobbin !== undefined ? overrideBobbin : scanInput || '').trim();
+    if (!bobbin) return;
+
+    const now = Date.now();
+    const { value: lastValue, ts } = scanLockRef.current;
+    // Ignore a duplicate trigger for the same bobbin within 800ms
+    if (bobbin === lastValue && now - ts < 800) return;
+    scanLockRef.current = { value: bobbin, ts: now };
+
+    handleScan(formValues, bobbin);
   };
 
   const removeRow = (id) => setTableRows(prev => prev.filter(r => r.id !== id));
@@ -262,6 +281,7 @@ const PVEntry = () => {
         has_pv_record: r.has_pv_record || false,
       }));
 
+      
       
       let res;
       if (formValues.pv_type === 'online') {
@@ -340,8 +360,17 @@ const PVEntry = () => {
                     <label className="text-[9px] font-bold text-slate-500 uppercase ml-0.5">Bobbin Barcode</label>
                     <div className="flex gap-1.5">
                       <input ref={scanRef} value={scanInput}
-                        onChange={e => setScanInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleScan(values); } }}
+                        onChange={e => {
+                          const val = e.target.value.toUpperCase();
+                          setScanInput(val);
+                          // Auto-scan once a full 10-character bobbin is entered.
+                          // Pass the fresh value explicitly so we don't depend on state timing.
+                          // triggerScan dedupes the scanner's trailing Enter.
+                          if (val.trim().length === 10) {
+                            triggerScan(values, val);
+                          }
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); triggerScan(values, scanInput); } }}
                         placeholder="Scan bobbin..." autoFocus
                         className="flex-1 bg-slate-100 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" />
                       <button type="button" onClick={() => handleScan(values)}

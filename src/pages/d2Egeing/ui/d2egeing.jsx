@@ -52,6 +52,7 @@ const D2Issue = () => {
   const [draftOpen, setDraftOpen] = useState(false);
   const draftRef = useRef(null);
   const scanRef = useRef(null);
+  const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
 
   // Close draft dropdown on outside click
   useEffect(() => {
@@ -123,8 +124,8 @@ const D2Issue = () => {
   });
 
   /* ── Scan ── */
-  const handleScan = async () => {
-    const bobbin_no = scanInput.trim();
+  const handleScan = async (overrideBobbin) => {
+    const bobbin_no = (overrideBobbin !== undefined ? overrideBobbin : scanInput).trim();
     if (!bobbin_no) return;
 
     // Validate header fields
@@ -219,6 +220,24 @@ const D2Issue = () => {
       showError(err?.response?.data?.message || 'Something went wrong');
       refocus();
     }
+  };
+
+  /* ── Single guarded scan entry point ──
+     A barcode scanner types the 10 chars AND sends a trailing Enter, so both the
+     onChange (length === 10) and onKeyDown (Enter) can fire for one scan. This debounces
+     duplicate triggers for the same bobbin within a short window so we scan once.
+     Manual typing / paste + Enter (or the Scan button) hits only one path and is unaffected. */
+  const triggerScan = (overrideBobbin) => {
+    const bobbin = (overrideBobbin !== undefined ? overrideBobbin : scanInput || '').trim();
+    if (!bobbin) return;
+
+    const now = Date.now();
+    const { value: lastValue, ts } = scanLockRef.current;
+    // Ignore a duplicate trigger for the same bobbin within 800ms
+    if (bobbin === lastValue && now - ts < 800) return;
+    scanLockRef.current = { value: bobbin, ts: now };
+
+    handleScan(bobbin);
   };
 
   /* ── Auto-save bobbin to draft ── */
@@ -487,11 +506,20 @@ const D2Issue = () => {
               <label className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Scan Barcode</label>
               <div className="flex gap-1.5">
                 <input ref={scanRef} value={scanInput} autoFocus
-                  onChange={e => setScanInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleScan(); } }}
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase();
+                    setScanInput(val);
+                    // Auto-scan once a full 10-character bobbin is entered.
+                    // Pass the fresh value explicitly so we don't depend on state timing.
+                    // triggerScan dedupes the scanner's trailing Enter.
+                    if (val.trim().length === 10) {
+                      triggerScan(val);
+                    }
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); triggerScan(scanInput); } }}
                   placeholder="Scan bobbin..."
                   className="flex-1 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-300 placeholder:text-indigo-300 transition-all" />
-                <button type="button" onClick={handleScan}
+                <button type="button" onClick={() => triggerScan()}
                   className="flex items-center justify-center w-9 h-9 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm transition-all active:scale-95">
                   <Scan size={14} />
                 </button>
