@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Field } from "formik";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
    ModuleCard
@@ -207,6 +207,124 @@ export const FormikSelect = ({
             </option>
           ))}
         </select>
+      </div>
+
+      {meta.touched && meta.error && (
+        <div className="text-red-500 text-[10px]">{meta.error}</div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────────────────────
+   FormikMultiSelect
+   Tag/checkbox style multi-select. Stores an ARRAY in Formik state.
+   compact={true}  → py-1.5, text-xs, text-[9px] label
+   options: [{ label, value }]
+   ───────────────────────────────────────────────────────────── */
+export const FormikMultiSelect = ({
+  label,
+  name,
+  options = [],
+  compact = false,
+  className = "",
+  labelClassName = "",
+  placeholder = "Select",
+  onChange,
+  disabled = false,
+}) => {
+  const [field, meta, helpers] = useField(name);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const selected = Array.isArray(field.value) ? field.value : [];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isChecked = (value) => selected.some((v) => String(v) === String(value));
+
+  const toggleValue = (value) => {
+    let next;
+    if (isChecked(value)) {
+      next = selected.filter((v) => String(v) !== String(value));
+    } else {
+      next = [...selected, value];
+    }
+    helpers.setValue(next);
+    if (onChange) onChange(next);
+  };
+
+  const removeValue = (value, e) => {
+    e.stopPropagation();
+    const next = selected.filter((v) => String(v) !== String(value));
+    helpers.setValue(next);
+    if (onChange) onChange(next);
+  };
+
+  const selectedOptions = options.filter((opt) => isChecked(opt.value));
+
+  return (
+    <div className={`flex flex-col gap-0.5 ${className}`} ref={containerRef}>
+      {label && (
+        <label className={`font-bold text-slate-800 uppercase ml-0.5 ${labelClassName} ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+          {label}
+        </label>
+      )}
+
+      <div className="relative">
+        <div
+          onClick={() => !disabled && setOpen((o) => !o)}
+          className={`w-full flex items-center flex-wrap gap-1 bg-slate-50 border rounded-lg outline-none transition-all cursor-pointer
+            ${compact ? 'px-2 py-1 min-h-[28px] text-xs' : 'px-3 py-1.5 min-h-[36px] text-sm'}
+            ${disabled ? 'bg-slate-100 cursor-not-allowed' : ''}
+            ${meta.touched && meta.error ? 'border-red-500' : 'border-slate-200'}`}
+        >
+          {selectedOptions.length === 0 && (
+            <span className="text-slate-400">{placeholder}</span>
+          )}
+          {selectedOptions.map((opt) => (
+            <span
+              key={opt.value}
+              className={`flex items-center gap-1 bg-indigo-100 text-indigo-700 font-semibold rounded ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-1 text-xs'}`}
+            >
+              {opt.label}
+              {!disabled && (
+                <X size={compact ? 9 : 11} className="cursor-pointer hover:text-indigo-900" onClick={(e) => removeValue(opt.value, e)} />
+              )}
+            </span>
+          ))}
+          <ChevronDown size={compact ? 12 : 14} className="ml-auto text-slate-400 pointer-events-none" />
+        </div>
+
+        {open && !disabled && (
+          <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+            {options.length === 0 && (
+              <div className="px-3 py-2 text-[10px] text-slate-400 italic">No options</div>
+            )}
+            {options.map((opt, index) => (
+              <label
+                key={opt.value ?? index}
+                className="flex items-center gap-2 px-2.5 py-1.5 text-[11px] hover:bg-indigo-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked(opt.value)}
+                  onChange={() => toggleValue(opt.value)}
+                  className="w-3 h-3 rounded border-slate-300 text-indigo-600 cursor-pointer accent-indigo-600"
+                />
+                <span className="text-slate-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {meta.touched && meta.error && (

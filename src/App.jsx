@@ -10,6 +10,7 @@ import DrwaSpoolEntry from './pages/drawSpoolEntry/ui/drawSpoolEntry'
 import DrawManagementPage from './components/drawmanagement'
 import PTEntry from './pages/proofTestEntry/ui/ptEntry'
 import QCEntryScreen from './pages/qualityEntry/ui/qcEntry'
+import FinalGradeScreen from './pages/qualityEntry/ui/finalGrade'
 import PVEntry from './pages/pvEntry/ui/pvEntry'
 import UnderDevelopment from './components/underDevelopmentPage'
 import PageNotFound from './components/404notfound'
@@ -35,7 +36,6 @@ import ComplaintClosure from './pages/customer_complaint/complaintClosure/ui/com
 import HandleJoining from './pages/handleJoining/ui/handleJoining'
 import PrerformAllocation from './pages/preformAllocation/ui/preformAllocation'
 import D2Combined from './pages/d2Egeing/ui/d2_combined'
-import BulkFinalGrade from './pages/d2Egeing/ui/bulkFinalGrade'
 import D2Issue from './pages/d2Egeing/ui/d2egeing'
 import D2gas_ConeEntry from './pages/d2gas_coneEntry/ui/d2gas_cone_entry'
 import D2Recieving from './pages/d2_Recieving/ui/d2_Recieving'
@@ -126,7 +126,7 @@ function App() {
         <Route path='quality/d2gasconeentry' element={<D2Combined/>}/>
         <Route path='quality/d2recieving' element={<D2Combined/>}/>
         <Route path='quality/h2egeing' element={<H2Ageing/>}/>
-        <Route path='quality/finalgrade' element={<BulkFinalGrade/>}/>
+        <Route path='quality/finalgrade' element={<FinalGradeScreen/>}/>
         <Route path='quality/qcinout' element={<QCInOut/>}/>
         <Route path='quality/userdecision' element={<UserDecision/>}/>
         <Route path='quality/reports' element={<QualityReports/>}/>

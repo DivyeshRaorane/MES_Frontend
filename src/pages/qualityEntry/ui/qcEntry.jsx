@@ -4,8 +4,8 @@ import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2,
 import BulkEntryModal from './BulkEntryModal';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
-import { showSuccess, showError } from '../../../utils/toastService';
-import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind, checkAndCopyColoredBobbinQC, checkMfdCableCutoff } from '../services/qc_entry.api';
+import { showSuccess, showError, showInfo } from '../../../utils/toastService';
+import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, submitQCEntry, submitFinalQC, updateMissingValues, copyMbendAndCalcMac, updateMbendCycleAfterFailedSample, submitFlawRewind, checkAndCopyColoredBobbinQC, checkMfdCableCutoff } from '../services/qc_entry.api';
 import { submitRewindRequest } from '../../fg_fiber_rejection/services/fg_rejection.api';
 
 /* ── Compact table-cell input ── */
@@ -28,13 +28,13 @@ const Col = ({ children }) => (
 
 /* ── Microbend rows ── */
 const MB_ROWS = [
-  { label: '100T 50mm', s1550: 'm_100T_50mm_1550', s1310: 'm_100T_50mm_1310', s1625: 'm_100T_50mm_1625' },
-  { label: '100T 60mm', s1550: 'm_100T_60mm_1550', s1310: 'm_100T_60mm_1310', s1625: 'm_100T_60mm_1625' },
-  { label: '1T 32mm', s1550: 'm_1T_32mm_1550', s1310: 'm_1T_32mm_1310', s1625: 'm_1T_32mm_1625' },
-  { label: '10T 30mm', s1550: 'm_10T_30mm_1550', s1310: 'm_10T_30mm_1310', s1625: 'm_10T_30mm_1625' },
-  { label: '1T 20mm', s1550: 'm_1T_20mm_1550', s1310: 'm_1T_20mm_1310', s1625: 'm_1T_20mm_1625' },
-  { label: '1T 15mm', s1550: 'm_1T_15mm_1550', s1310: 'm_1T_15mm_1310', s1625: 'm_1T_15mm_1625' },
-  { label: '1T 10mm', s1550: 'm_1T_10mm_1550', s1310: 'm_1T_10mm_1310', s1625: 'm_1T_10mm_1625' },
+  { label: '100T 50mm', s1550: 'm_100t_50mm_1550', s1310: 'm_100t_50mm_1310', s1625: 'm_100t_50mm_1625' },
+  { label: '100T 60mm', s1550: 'm_100t_60mm_1550', s1310: 'm_100t_60mm_1310', s1625: 'm_100t_60mm_1625' },
+  { label: '1T 32mm', s1550: 'm_1t_32mm_1550', s1310: 'm_1t_32mm_1310', s1625: 'm_1t_32mm_1625' },
+  { label: '10T 30mm', s1550: 'm_10t_30mm_1550', s1310: 'm_10t_30mm_1310', s1625: 'm_10t_30mm_1625' },
+  { label: '1T 20mm', s1550: 'm_1t_20mm_1550', s1310: 'm_1t_20mm_1310', s1625: 'm_1t_20mm_1625' },
+  { label: '1T 15mm', s1550: 'm_1t_15mm_1550', s1310: 'm_1t_15mm_1310', s1625: 'm_1t_15mm_1625' },
+  { label: '1T 10mm', s1550: 'm_1t_10mm_1550', s1310: 'm_1t_10mm_1310', s1625: 'm_1t_10mm_1625' },
 ];
 
 /* ── All measurement fields (DB columns) ── */
@@ -68,17 +68,17 @@ const MEASUREMENT_FIELDS = [
   'zero_disp_wave', 'slope_zero_disp', 'disp_1550', 'disp_1285_1330', 'disp_1270_1340',
   'disp_1575', 'cd_1460', 'disp_1625', 'disp_1570', 'disp_1260', 'disp_slope',
   'pmd_1310', 'pmd_1550',
-  'm_100T_50mm_1550', 'm_100T_50mm_1310', 'm_100T_50mm_1625',
-  'm_100T_60mm_1550', 'm_100T_60mm_1310', 'm_100T_60mm_1625',
-  'm_1T_32mm_1550', 'm_1T_32mm_1310', 'm_1T_32mm_1625',
-  'm_10T_30mm_1550', 'm_10T_30mm_1310', 'm_10T_30mm_1625',
-  'm_1T_20mm_1550', 'm_1T_20mm_1310', 'm_1T_20mm_1625',
-  'm_1T_15mm_1550', 'm_1T_15mm_1310', 'm_1T_15mm_1625',
-  'm_1T_10mm_1550', 'm_1T_10mm_1310', 'm_1T_10mm_1625',
+  'm_100t_50mm_1550', 'm_100t_50mm_1310', 'm_100t_50mm_1625',
+  'm_100t_60mm_1550', 'm_100t_60mm_1310', 'm_100t_60mm_1625',
+  'm_1t_32mm_1550', 'm_1t_32mm_1310', 'm_1t_32mm_1625',
+  'm_10t_30mm_1550', 'm_10t_30mm_1310', 'm_10t_30mm_1625',
+  'm_1t_20mm_1550', 'm_1t_20mm_1310', 'm_1t_20mm_1625',
+  'm_1t_15mm_1550', 'm_1t_15mm_1310', 'm_1t_15mm_1625',
+  'm_1t_10mm_1550', 'm_1t_10mm_1310', 'm_1t_10mm_1625',
 ];
 
 const buildInitialValues = () => {
-  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '' };
+  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '' };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
 };
@@ -147,6 +147,7 @@ const QCEntryScreen = () => {
   const [scanInput, setScanInput] = useState('');
   const [lastScanned, setLastScanned] = useState(''); // last successfully scanned bobbin (for display)
   const [source, setSource] = useState(null); // 'temp' | 'final' | null
+  const [rewEnabled, setRewEnabled] = useState(false); // from fetch API: true when source='final' and final_grade is still empty
   const [grade, setGrade] = useState('');
   const [graded, setGraded] = useState(false);
   const [failedParam, setFailedParam] = useState('');
@@ -154,6 +155,7 @@ const QCEntryScreen = () => {
   const [failDialog, setFailDialog] = useState({ open: false, details: null });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingFinal, setSubmittingFinal] = useState(false); // Submit (final) button in-flight state
   const [existingTempGrade, setExistingTempGrade] = useState('');
   const [existingFinalGrade, setExistingFinalGrade] = useState('');
   const [rewPopup, setRewPopup] = useState(false);
@@ -161,19 +163,21 @@ const QCEntryScreen = () => {
   const [rewFromFlaw, setRewFromFlaw] = useState(false); // true when opened from flaw popup
   const [manualRew, setManualRew] = useState(false); // true when opened from manual REW button
   const [manualRewType, setManualRewType] = useState(''); // 'REWINDING' | 'CUT'
-  const [rewRemark, setRewRemark] = useState('');   // free-text remark entered in rewinding popup
-  const [rewNcCause, setRewNcCause] = useState(''); // NC cause entered in rewinding popup
+  const [rewRemark, setRewRemark] = useState('');   // free-text remark entered in rewinding popup (sent to backend as `remark`)
+  const [rewReason, setRewReason] = useState('');   // free-text reason entered in rewinding popup — only for Whole Length (sent to backend as `reason`)
   const [missingPopup, setMissingPopup] = useState(false);
   const [missingParams, setMissingParams] = useState([]);
   const [missingValues, setMissingValues] = useState({});
   const [missingBobbin, setMissingBobbin] = useState('');
   const [savingMissing, setSavingMissing] = useState(false);
-  const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' });
+  const [ptCheckPopup, setPtCheckPopup] = useState({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', fiber_length: '', matcode: '', product_type: '' });
   const [flawInstrPopup, setFlawInstrPopup] = useState({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
   const [mbendRemark, setMbendRemark] = useState('');
+  const [mbendReason, setMbendReason] = useState('');
+  const [mbendNcCause, setMbendNcCause] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false); // Bulk Temp Grade modal
   const formRef = useRef(null);
-  const ncCauseRef = useRef(null); // stores nc_cause for grade-fail REW (submitted later via handleSubmit)
+  const reasonRef = useRef(null); // stores reason (from rewRemark) for grade-fail REW (submitted later via handleSubmit)
   const valuesRef = useRef(null); // stores current Formik values for manual REW
   const scanRef = useRef(null);
   const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
@@ -426,7 +430,7 @@ const QCEntryScreen = () => {
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
     setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
-    setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark('');
+    setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark(''); setMbendReason(''); setMbendNcCause(''); setRewEnabled(false);
     try {
       const res = await fetchBobbinQC(bobbin_no);
 
@@ -469,7 +473,8 @@ const QCEntryScreen = () => {
                 messages: msgs,
                 bobbin_no,
                 bobbin_fid: ptRes.bobbin_fid || '',
-                optical_length: ptRes.optical_length ?? ptRes.fiber_length ?? '',
+                optical_length: ptRes.optical_length ?? '',
+                fiber_length: ptRes.fiber_length ?? '',
                 matcode: ptRes.matcode || '',
                 product_type: ptRes.product_type || '',
               });
@@ -495,10 +500,31 @@ const QCEntryScreen = () => {
       // Show existing grades if available
       if (data.temp_grade) setExistingTempGrade(data.temp_grade);
       if (data.final_grade) setExistingFinalGrade(data.final_grade);
-      if (res.source === 'final') showError('Final QC has already been completed for this bobbin.');
 
-      // Set mbend remark from qc_entry_temp data
+      // rew_enabled only matters once source='final' — true means this finalized
+      // record has no final_grade yet (e.g. stuck/needs rewind), so the Rewind
+      // button stays actionable even though the rest of the form is locked.
+      const isRewStillEnabled = res.source === 'final' && res.rew_enabled === true;
+      setRewEnabled(isRewStillEnabled);
+
+      // Give the operator a clear, accurate notice instead of a blanket "error"
+      // whenever this bobbin's QC is already finalized. Skip the notice entirely
+      // when Rewind is still available (isRewStillEnabled) — that's a normal,
+      // actionable state (shown via the "Final QC Done" badge + enabled REW
+      // button), not something that needs an interrupting toast.
+      if (res.source === 'final' && !isRewStillEnabled) {
+        if (data.final_grade === 'REW') {
+          // Rewind was already confirmed for this bobbin — not an error, just informational.
+          showInfo(`Bobbin ${bobbin_no} is already marked as REW. Final QC completed.`);
+        } else {
+          showInfo(`Final QC has already been completed for ${bobbin_no}.`);
+        }
+      }
+
+      // Set mbend remark / reason / nc_cause from qc_entry_temp data
       setMbendRemark(data.remark || '');
+      setMbendReason(data.reason || '');
+      setMbendNcCause(data.nc_cause || '');
       console.log("Remark:", data)
 
       // NEW: MBend copy alert from mbendCopyS — sample bobbin has valid temp_grade
@@ -638,11 +664,12 @@ const QCEntryScreen = () => {
       bobbin_fid: ptCheckPopup.bobbin_fid || '',
       matcode: ptCheckPopup.matcode || '',
       optical_length: ptCheckPopup.optical_length || '',
+      fiber_length: ptCheckPopup.fiber_length || '',
       product_type: ptCheckPopup.product_type || '',
       no_qc_data: true, // flag: bobbin has no QC row yet — backend must INSERT into qc_entry_temp + qc_entry
     };
     // Close the instruction popup and open the rewinding popup in manual mode
-    setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' });
+    setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', fiber_length: '', matcode: '', product_type: '' });
     setManualRew(true);
     setManualRewType('');
     setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
@@ -655,15 +682,15 @@ const QCEntryScreen = () => {
     // Manual REW requires type selection
     if (manualRew && !manualRewType) { showError('Select Rewinding Type'); return; }
 
-    // For CUT type or grade-fail rewind, validate cuts
-    if (manualRewType === 'CUT' || (!manualRew && !rewFromFlaw) || rewFromFlaw) {
-      if (manualRewType !== 'REWINDING') {
-        const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
-        if (hasEmpty && manualRewType !== 'REWINDING') { showError('Fill all P1 and P2 values'); return; }
-      }
+    // Cut P1/P2 validation only applies to the grade-fail and flaw paths, which
+    // still use the cutting-instruction table. The manual REW popup no longer
+    // collects P1/P2 (cut table removed), so we skip validation there.
+    if ((!manualRew && !rewFromFlaw) || rewFromFlaw) {
+      const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
+      if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
     }
 
-    // Build remark string
+    // Build remark string (used only by the flaw / grade-fail paths for instruction text)
     const remarkParts = manualRewType === 'REWINDING'
       ? ['Whole Length Rewinding']
       : rewCuts.map(cut => `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`);
@@ -680,7 +707,7 @@ const QCEntryScreen = () => {
           p1: cut.p1,
           p2: cut.p2,
           instruction: [remarkStr, rewRemark.trim()].filter(Boolean).join(' | '),
-          nc_cause: rewNcCause.trim() || null,
+          reason: rewRemark.trim() || null,
         });
         if (res?.success) {
           showSuccess('Flaw rewind instruction saved. Bobbin marked as REW.');
@@ -690,7 +717,6 @@ const QCEntryScreen = () => {
           setManualRew(false);
           setManualRewType('');
           setRewRemark('');
-          setRewNcCause('');
           setFlawInstrPopup({ open: false, instrText: '', p1: '', p2: '', msg: '', bobbin_no: '', bobbin_fid: '' });
         } else {
           showError(res?.message || 'Failed to save flaw rewind');
@@ -701,13 +727,20 @@ const QCEntryScreen = () => {
       setLoading(false);
     } else if (manualRew) {
       // ── Manual REW path (same as FG fiber rejection rewind logic) ──
+      // The FG rewind endpoint now handles everything Manual REW needs — it
+      // upserts qc_entry/qc_entry_temp with temp_grade/final_grade = REW,
+      // remark, and reason, and updates bobbin_entries. So we make ONE call
+      // here; no separate submitQCEntry (that caused a "Final QC already
+      // completed" 500 because the bobbin was finalized by this call first).
       setLoading(true);
       try {
-        // 1. Submit to FG rewind endpoint (same as FG fiber rejection)
         const vals = valuesRef.current || {};
         const bobbinNo = vals.bobbin_no || scanInput.trim();
         const bobbinFid = vals.bobbin_fid || '';
         const fiberLength = vals.optical_length || '';
+
+        // Whole Length sends the operator's reason; CUT sends null.
+        const isWholeLength = manualRewType === 'REWINDING';
 
         const rewindPayload = {
           request_by: 'QC_Manual',
@@ -719,34 +752,11 @@ const QCEntryScreen = () => {
             total_length: fiberLength,
             rewinding_type: manualRewType,
             cuts: manualRewType === 'CUT' ? [...rewCuts] : [],
+            reason: isWholeLength ? (rewReason.trim() || null) : null,
           }],
         };
         const rewRes = await submitRewindRequest(rewindPayload);
         if (!rewRes?.success) { showError(rewRes?.message || 'Rewind request failed'); setLoading(false); return; }
-
-        // 2. Set grade to REW — submit QC entry immediately as immediate_final
-        const measurements = {};
-        MEASUREMENT_FIELDS.forEach(f => { if (vals[f] !== '' && vals[f] !== null && vals[f] !== undefined) measurements[f] = Number(vals[f]); });
-
-        // Combine the auto-built rewind instruction with the operator's free-text remark
-        const combinedRemark = [remarkStr, rewRemark.trim()].filter(Boolean).join(' | ');
-
-        const qcPayload = {
-          bobbin_no: vals.bobbin_no || bobbinNo,
-          bobbin_fid: vals.bobbin_fid || bobbinFid,
-          matcode: vals.matcode || '',
-          product_type: vals.product_type || '',
-          grade: 'REW',
-          action: 'immediate_final',
-          measurements,
-          remark: combinedRemark,
-          nc_cause: rewNcCause.trim() || null, // NC cause → qc_entry_temp + qc_entry
-          // When true, the bobbin has no QC row yet. Backend must INSERT a new row
-          // into qc_entry_temp AND qc_entry with temp_grade=REW and final_grade=REW.
-          no_qc_data: vals.no_qc_data === true,
-        };
-        const qcRes = await submitQCEntry(qcPayload);
-        if (!qcRes?.success) { showError(qcRes?.message || 'QC update failed'); setLoading(false); return; }
 
         setGrade('REW');
         setGraded(true);
@@ -755,12 +765,12 @@ const QCEntryScreen = () => {
         setManualRew(false);
         setManualRewType('');
         setRewRemark('');
-        setRewNcCause('');
+        setRewReason('');
         // Mark as final so all buttons get disabled
         setSource('final');
         setExistingTempGrade('REW');
         setExistingFinalGrade('REW');
-        formRef.current = combinedRemark;
+        formRef.current = rewRemark.trim() || null;
         showSuccess('Bobbin marked as REW. Final QC completed.');
       } catch (e) {
         showError(e?.response?.data?.message || 'Rewind request failed');
@@ -777,12 +787,34 @@ const QCEntryScreen = () => {
       setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
       setManualRew(false);
       setManualRewType('');
-      // Store remark + nc_cause in refs so handleSubmit can access them
+      // Store remark + reason in refs so handleSubmit can access them
       formRef.current = [gradeRemarkParts.join(', '), rewRemark.trim()].filter(Boolean).join(' | ');
-      ncCauseRef.current = rewNcCause.trim() || null;
+      reasonRef.current = rewRemark.trim() || null;
       setRewRemark('');
-      setRewNcCause('');
     }
+  };
+
+  /* ── Submit Final QC ──
+     Calls POST /qcentry/submit-final with { bobbin_no }. Follows the same
+     pattern as handleGrade: axios via the service layer, showSuccess/showError
+     from toastService, and a dedicated loading flag for the button's disabled state. */
+  const handleSubmitFinal = async (values, setValues) => {
+    if (!values.bobbin_no) { showError('Fetch a bobbin first'); return; }
+    setSubmittingFinal(true);
+    try {
+      const res = await submitFinalQC(values.bobbin_no);
+      if (res?.success) {
+        showSuccess(res?.message || `QC submitted successfully.${res?.grade ? ` Grade: ${res.grade}` : ''}`);
+        // Refresh QC entry data so the screen reflects the finalized state
+        // (locks further edits since source becomes 'final').
+        await handleFetch(setValues, values.bobbin_no);
+      } else {
+        showError(res?.message || 'QC submission failed');
+      }
+    } catch (e) {
+      showError(e?.response?.data?.message || 'QC submission failed');
+    }
+    setSubmittingFinal(false);
   };
 
   /* ── Final Grade ── */
@@ -851,7 +883,7 @@ const QCEntryScreen = () => {
         action: (grade === 'FAIL' || grade === 'REW') ? 'immediate_final' : 'temp_grade',
         measurements,
         remark: grade === 'REW' ? (formRef.current || null) : null,
-        nc_cause: grade === 'REW' ? (ncCauseRef.current || null) : null,
+        reason: grade === 'REW' ? (reasonRef.current || null) : null,
       };
 
       const res = await submitQCEntry(payload);
@@ -938,14 +970,6 @@ const QCEntryScreen = () => {
                   </div>
                 )}
 
-                {/* Optical Length display */}
-                {values.optical_length && (
-                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
-                  </div>
-                )}
-
                 {/* Product Type display */}
                 {values.product_type && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
@@ -999,16 +1023,22 @@ const QCEntryScreen = () => {
                   </button>
                   <button type="button" onClick={() => handleGrade(values)} disabled={locked || loading || !values.bobbin_no}
                     className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-bold rounded hover:bg-amber-600 disabled:opacity-40 transition-all">
-                    <Award size={10} /> Temp Grade
+                    <Award size={10} /> Grade
                   </button>
-                  <button type="button" onClick={() => handleManualRew(values)} disabled={locked || loading || !values.bobbin_no}
+                  <button type="button" onClick={() => handleSubmitFinal(values, setValues)} disabled={locked || loading || submittingFinal || !values.bobbin_no}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-[9px] font-bold rounded hover:bg-emerald-700 disabled:opacity-40 transition-all">
+                    <CheckCircle2 size={10} /> {submittingFinal ? 'Submitting...' : 'Submit'}
+                  </button>
+                  <button type="button" onClick={() => handleManualRew(values)}
+                    disabled={loading || !values.bobbin_no || (locked ? !rewEnabled : false)}
+                    title={locked && !rewEnabled ? 'Final QC already has a grade — Rewind is no longer available' : undefined}
                     className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 disabled:opacity-40 transition-all">
                     <RotateCcw size={10} /> REW
                   </button>
-                  <button type="button" onClick={() => handleFinalGrade(values)} disabled={locked || loading || !values.bobbin_no}
+                  {/* <button type="button" onClick={() => handleFinalGrade(values)} disabled={locked || loading || !values.bobbin_no}
                     className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-bold rounded hover:bg-indigo-700 disabled:opacity-40 transition-all">
                     <CheckCircle2 size={10} /> Final Grade
-                  </button>
+                  </button> */}
                   {/* <ResetButton compact type="button" onClick={() => {
                     setValues(buildInitialValues()); setScanInput(''); setSource(null); setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null); setExistingTempGrade(''); setExistingFinalGrade('');
                   }}>Reset</ResetButton>
@@ -1027,80 +1057,28 @@ const QCEntryScreen = () => {
                   {fi('Avg LSA 1550', 'avg_lsa_atn_1550')}
                   {fi('Avg LSA 1625', 'avg_lsa_atn_1625')}
                   {fi('Avg LSA 1383', 'avg_lsa_atn_1383')}
-                  {fi('Max LSA 1310', 'max_lsa_atn_1310')}
-                  {fi('Max LSA 1550', 'max_lsa_atn_1550')}
-                  {fi('Max LSA 1625', 'max_lsa_atn_1625')}
-                  {fi('Max LSA 1383', 'max_lsa_atn_1383')}
-                  {fi('Min LSA 1310', 'min_lsa_atn_1310')}
-                  {fi('Min LSA 1550', 'min_lsa_atn_1550')}
-                  {fi('Min LSA 1625', 'min_lsa_atn_1625')}
-                  {fi('Min LSA 1383', 'min_lsa_atn_1383')}
-                  <GridDivider label="ATN Top/Bottom" />
-                  {fi('ATN 1310 T', 'atn_1310_top')}
-                  {fi('ATN 1550 T', 'atn_1550_top')}
-                  {fi('ATN 1625 T', 'atn_1625_top')}
-                  {fi('ATN 1383 T', 'atn_1383_top')}
-                  {fi('ATN 1310 B', 'atn_1310_bottom')}
-                  {fi('ATN 1550 B', 'atn_1550_bottom')}
-                  {fi('ATN 1625 B', 'atn_1625_bottom')}
-                  {fi('ATN 1383 B', 'atn_1383_bottom')}
-                </Col>
-
-                {/* ── COL 2 ── */}
-                <Col>
-                  {fi('Max ATN 1310 T', 'max_atn_1310_top')}
-                  {fi('Max ATN 1550 T', 'max_atn_1550_top')}
-                  {fi('Max ATN 1625 T', 'max_atn_1625_top')}
-                  {fi('Max ATN 1383 T', 'max_atn_1383_top')}
-                  {fi('Max ATN 1310 B', 'max_atn_1310_bottom')}
-                  {fi('Max ATN 1550 B', 'max_atn_1550_bottom')}
-                  {fi('Max ATN 1625 B', 'max_atn_1625_bottom')}
-                  {fi('Max ATN 1383 B', 'max_atn_1383_bottom')}
-                  <GridDivider label="TB / Uniformity" />
-                  {fi('Max TB 1310', 'max_tb_1310')}
-                  {fi('Max TB 1550', 'max_tb_1550')}
-                  {fi('Max TB 1625', 'max_tb_1625')}
-                  {fi('Max TB 1383', 'max_tb_1383')}
-                  {fi('ATN TB 1310', 'atn_1310_tb')}
-                  {fi('ATN TB 1550', 'atn_1550_tb')}
-                  {fi('ATN TB 1625', 'atn_1625_tb')}
-                  {fi('ATN TB 1383', 'atn_1383_tb')}
-                  {fi('ATN Uni 1310', 'atn_uniformity_1310')}
-                  {fi('ATN Uni 1550', 'atn_uniformity_1550')}
-                  {fi('ATN Uni 1625', 'atn_uniformity_1625')}
-                  {fi('ATN Uni 1383', 'atn_uniformity_1383')}
-                </Col>
-
-                {/* ── COL 3 ── */}
-                <Col>
+                  {fi('MFD Uni 1310', 'mfd_uniformity_1310')}
+                  {fi('MFD Uni 1550', 'mfd_uniformity_1550')}
+                  {fi('Cutoff T', 'cut_off_top')}
+                  {fi('Cutoff B', 'cut_off_bottom')}
                   {fi('MFD 1310 T', 'mfd_1310_top')}
                   {fi('MFD 1310 B', 'mfd_1310_bottom')}
                   {fi('MFD 1550 T', 'mfd_1550_top')}
                   {fi('MFD 1550 B', 'mfd_1550_bottom')}
-                  {fi('MFD Uni 1310', 'mfd_uniformity_1310')}
-                  {fi('MFD Uni 1550', 'mfd_uniformity_1550')}
-                  {fi('MFD Uni 1625', 'mfd_uniformity_1625')}
-                  {fi('MFD Uni 1383', 'mfd_uniformity_1383')}
-                  <GridDivider label="Geometry" />
                   {fi('Clad Dia T', 'clad_dia_top')}
                   {fi('Clad Dia B', 'clad_dia_bottom')}
+                  {fi('Core Dia T', 'core_dia_top')}
+                  {fi('Core Dia B', 'core_dia_bottom')}
                   {fi('Core Clad T', 'core_clad_concentricity_top')}
                   {fi('Core Clad B', 'core_clad_concentricity_bottom')}
                   {fi('Clad Oval T', 'clad_ovality_top')}
                   {fi('Clad Oval B', 'clad_ovality_bottom')}
-                  {fi('Core Dia T', 'core_dia_top')}
-                  {fi('Core Dia B', 'core_dia_bottom')}
                   {fi('Core Oval T', 'core_ovality_top')}
                   {fi('Core Oval B', 'core_ovality_bottom')}
-                  {fi('Cutoff T', 'cut_off_top')}
-                  {fi('Cutoff B', 'cut_off_bottom')}
-                  {fi('Cable Cut', 'cable_cut_off')}
-                  {fi('MAC Value', 'mac_value')}
-                  {fi('Eff Area 1310', 'effective_area_1310')}
-                  {fi('Eff Area 1550', 'effective_area_1550')}
-                </Col>
+                  
+                  </Col>
 
-                {/* ── COL 4 ── */}
+                {/* ── COL 2 ── */}
                 <Col>
                   {fi('Pri Coat T', 'primary_coating_dia_top')}
                   {fi('Pri Coat B', 'primary_coating_dia_bottom')}
@@ -1114,38 +1092,83 @@ const QCEntryScreen = () => {
                   {fi('Coat Oval B', 'coating_ovality_bottom')}
                   {fi('Fiber Curl T', 'fiber_curl_top')}
                   {fi('Fiber Curl B', 'fiber_curl_bottom')}
-                  {fi('Curl Def T', 'curl_defection_top')}
-                  {fi('Curl Def B', 'curl_defection_bottom')}
-                  <GridDivider label="Dispersion / PMD" />
                   {fi('Zero Disp', 'zero_disp_wave')}
                   {fi('Slope Zero', 'slope_zero_disp')}
                   {fi('Disp 1550', 'disp_1550')}
-                  {fi('Disp 1285', 'disp_1285_1330')}
-                  {fi('Disp 1270', 'disp_1270_1340')}
+                  {fi('Disp 1270 1360', 'disp_1270_1360')}
+                  {fi('Disp 1285 1330', 'disp_1285_1330')}
                   {fi('Disp 1575', 'disp_1575')}
-                  {fi('CD 1460', 'cd_1460')}
-                  {fi('Disp 1625', 'disp_1625')}
                   {fi('Disp 1570', 'disp_1570')}
-                  {fi('Disp 1260', 'disp_1260')}
-                  {fi('Disp Slope', 'disp_slope')}
-                  {fi('PMD 1310', 'pmd_1310')}
-                  {fi('PMD 1550', 'pmd_1550')}
-                </Col>
+                  {fi('Disp 1625', 'disp_1625')}
+                  {fi('Cable Cut', 'cable_cut_off')}
+                  {fi('MAC Value', 'mac_value')}
+                  {fi('Eff Area 1310', 'effective_area_1310')}
+                  {fi('Eff Area 1550', 'effective_area_1550')}
+
+                  </Col>
+
+                {/* ── COL 3 ── */}
+                <Col>
+                {fi('PMD Coee', 'pmd_1550')}
+                {fi('Spec 1285', 'spec_1285_1330')}
+                {fi('Step 1310', 'step_1310_size')}
+                {fi('Step 1550', 'step_1550_size')}
+                {fi('Spike 1310', 'spike_1310_size')}
+                {fi('Spike 1550', 'spike_1550_size')}
+                {fi('Spec 1310', 'spec_1310')}
+                {fi('Spec 1550', 'spec_1550')}
+                {fi('Max ATN 1310 T', 'max_atn_1310_top')}
+                {fi('Max ATN 1310 B', 'max_atn_1310_bottom')}
+                {fi('Max ATN 1550 T', 'max_atn_1550_top')}
+                {fi('Max ATN 1550 B', 'max_atn_1550_bottom')}
+                {fi('Max ATN 1625 T', 'max_atn_1625_top')}
+                {fi('Max ATN 1625 B', 'max_atn_1625_bottom')}
+                {fi('Max ATN 1383 T', 'max_atn_1383_top')}
+                {fi('Max ATN 1383 B', 'max_atn_1383_bottom')}
+                {fi('ATN TB 1310', 'atn_1310_tb')}
+                {fi('ATN TB 1550', 'atn_1550_tb')}
+                {fi('ATN TB 1625', 'atn_1625_tb')}
+                {fi('ATN TB 1383', 'atn_1383_tb')}
+                {fi('Max TB 1310', 'max_tb_1310')}
+                {fi('Max TB 1550', 'max_tb_1550')}
+                {fi('Max TB 1625', 'max_tb_1625')}
+                {fi('Max TB 1383', 'max_tb_1383')}
+                            
+                  
+                                  </Col>
+
+                {/* ── COL 4 ── */}
+                <Col>
+                  <GridDivider label="TB / Uniformity" />
+                  {fi('ATN Uni 1310', 'atn_uniformity_1310')}
+                  {fi('ATN Uni 1550', 'atn_uniformity_1550')}
+                  {fi('ATN Uni 1625', 'atn_uniformity_1625')}
+                  {fi('ATN Uni 1383', 'atn_uniformity_1383')}
+                  {fi('Max LSA 1310', 'max_lsa_atn_1310')}
+                  {fi('Max LSA 1550', 'max_lsa_atn_1550')}
+                  {fi('Max LSA 1625', 'max_lsa_atn_1625')}
+                  {fi('Max LSA 1383', 'max_lsa_atn_1383')}
+                  {fi('Min LSA 1310', 'min_lsa_atn_1310')}
+                  {fi('Min LSA 1550', 'min_lsa_atn_1550')}
+                  {fi('Min LSA 1625', 'min_lsa_atn_1625')}
+                  {fi('Min LSA 1383', 'min_lsa_atn_1383')}
+                  
+                  {fi('ATN 1310 T', 'atn_1310_top')}
+                  {fi('ATN 1550 T', 'atn_1550_top')}
+                  {fi('ATN 1625 T', 'atn_1625_top')}
+                  {fi('ATN 1383 T', 'atn_1383_top')}
+                  {fi('ATN 1310 B', 'atn_1310_bottom')}
+                  {fi('ATN 1550 B', 'atn_1550_bottom')}
+                  {fi('ATN 1625 B', 'atn_1625_bottom')}
+                  {fi('ATN 1383 B', 'atn_1383_bottom')}
+                  {fi('MFD Uni 1625', 'mfd_uniformity_1625')}
+                  {fi('MFD Uni 1383', 'mfd_uniformity_1383')}
+                  
+                  </Col>
 
                 {/* ── COL 5: Microbend + Step/Spike ── */}
                 <Col>
                   <GridDivider label="Step / Spike" />
-                  {fi('Step 1310', 'step_1310_size')}
-                  {fi('Step 1550', 'step_1550_size')}
-                  {fi('Step 1625', 'step_1625_size')}
-                  {fi('Step 1383', 'step_1383_size')}
-                  {fi('Spike 1310', 'spike_1310_size')}
-                  {fi('Spike 1550', 'spike_1550_size')}
-                  {fi('Spike 1625', 'spike_1625_size')}
-                  {fi('Spike 1383', 'spike_1383_size')}
-                  {fi('Spec 1310', 'spec_1310')}
-                  {fi('Spec 1550', 'spec_1550')}
-                  {fi('Spec 1285', 'spec_1285_1330')}
                   {/* Microbend table */}
                   <div className="col-span-2 mt-1">
                     <table className="w-full text-[8px] border-collapse border border-slate-200 rounded overflow-hidden">
@@ -1169,11 +1192,45 @@ const QCEntryScreen = () => {
                       </tbody>
                     </table>
                   </div>
-                  {/* MBend Remark from qc_entry_temp */}
-                  {mbendRemark && (
-                    <div className="col-span-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
-                      <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5"><strong>REWinding Remark</strong></p>
-                      <p className="text-[9px] text-slate-700 font-medium break-words">{mbendRemark}</p>
+                  {/* MBend Remark / Reason / NC Cause — shown when grade is REW */}
+                  {(existingTempGrade === 'REW' || existingFinalGrade === 'REW') && (mbendRemark || mbendReason || mbendNcCause) && (
+                    <div className="col-span-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 space-y-1">
+                      {mbendRemark && (
+                        <div>
+                          <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5"><strong>REWinding Remark</strong></p>
+                          <p className="text-[9px] text-slate-700 font-medium break-words">{mbendRemark}</p>
+                        </div>
+                      )}
+                      {mbendReason && (
+                        <div>
+                          <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5"><strong>Reason</strong></p>
+                          <p className="text-[9px] text-slate-700 font-medium break-words">{mbendReason}</p>
+                        </div>
+                      )}
+                      {mbendNcCause && (
+                        <div>
+                          <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider mb-0.5"><strong>NC Cause</strong></p>
+                          <p className="text-[9px] text-slate-700 font-medium break-words">{mbendNcCause}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Optical Length & PT Length — same line */}
+                  {(values.optical_length || values.fiber_length) && (
+                    <div className="col-span-2 mt-1 grid grid-cols-2 gap-1">
+                      {values.optical_length && (
+                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                          <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
+                          <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
+                        </div>
+                      )}
+                      {values.fiber_length && (
+                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                          <span className="bg-purple-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">PT LEN</span>
+                          <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.fiber_length}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Col>
@@ -1217,7 +1274,9 @@ const QCEntryScreen = () => {
                 </div>
               )}
 
-              {/* ── Cut instructions (show for CUT type in manual, or always for grade-fail/flaw) ── */}
+              {/* ── Cut instructions (P1/P2 table) — COMMENTED OUT ──
+                  No longer sent to the backend. For CUT we now send only the
+                  operator's Remark; for Whole Length we send Remark + Reason.
               {((!manualRew) || (manualRew && manualRewType === 'CUT')) && (
                 <div className="border border-slate-200 rounded-lg p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
@@ -1266,15 +1325,16 @@ const QCEntryScreen = () => {
                   </table>
                 </div>
               )}
+              ── end commented Cut instructions ── */}
 
               {/* Whole Length confirmation message */}
               {manualRew && manualRewType === 'REWINDING' && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
-                  <p className="text-xs text-emerald-700 font-medium">This bobbin will be rewound at full / whole length. No cut instructions needed.</p>
+                  <p className="text-xs text-emerald-700 font-medium">This bobbin will be rewound at full / whole length.</p>
                 </div>
               )}
 
-              {/* ── Remark + NC Cause (saved to qc_entry_temp & qc_entry) ── */}
+              {/* ── Remark (always) + Reason (Whole Length only) ── */}
               <div className="grid grid-cols-1 gap-2 mb-3">
                 <div className="flex flex-col gap-0.5">
                   <label className="text-[9px] font-bold text-slate-600 uppercase">Remark</label>
@@ -1282,16 +1342,19 @@ const QCEntryScreen = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
                     placeholder="Enter remark..." />
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-slate-600 uppercase">NC Cause</label>
-                  <input type="text" value={rewNcCause} onChange={e => setRewNcCause(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
-                    placeholder="Enter NC cause..." />
-                </div>
+                {/* Reason only applies to Whole Length rewind */}
+                {manualRew && manualRewType === 'REWINDING' && (
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-600 uppercase">Reason</label>
+                    <input type="text" value={rewReason} onChange={e => setRewReason(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                      placeholder="Enter reason..." />
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
-                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); setRewRemark(''); setRewNcCause(''); }}
+                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); setRewRemark(''); setRewReason(''); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
                 <button type="button" onClick={handleRewConfirm}
                   className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
@@ -1397,7 +1460,7 @@ const QCEntryScreen = () => {
                   className="flex items-center gap-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-all">
                   <RotateCcw size={12} /> REW
                 </button>
-                <button type="button" onClick={() => setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', matcode: '', product_type: '' })}
+                <button type="button" onClick={() => setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', fiber_length: '', matcode: '', product_type: '' })}
                   className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-all">
                   OK, Understood
                 </button>

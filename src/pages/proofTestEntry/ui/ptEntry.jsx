@@ -155,6 +155,7 @@ const PTEntry = () => {
   /* ── Bobbin No onBlur: fetch PT machine log data ── */
   const handleBobbinBlur = async (bobbin_no, setFieldValue, pt_machine_no) => {
     if (!bobbin_no) return;
+    const hasValidBobbin = bobbin_no.length === 10;
     console.log('Fetching PT machine log for:', bobbin_no, pt_machine_no);
     // Reset break/scrap flags before checking new bobbin
     setFieldValue("pt_break", false);
@@ -195,28 +196,40 @@ const PTEntry = () => {
           
         }
 
-        // Auto-generate FID if no rejection condition detected
+        // Auto-generate FID only when bobbin no is valid (10 chars), length is at/above
+        // GOOD_LENGTH, and no rejection condition detected
         const formik = formikRef.current;
         const currentRejType = formik?.values?.active_rejection_type || '';
-        if (!isRejection && !currentRejType && formik?.values?.spool_id) {
+        if (!isRejection && !currentRejType && hasValidBobbin && formik?.values?.spool_id) {
           await genFid(formik.values.spool_id, setFieldValue);
+        } else {
+          // Below good length, invalid/missing bobbin no, or rejection active — never assign a FID
+          setFieldValue('fid', '');
         }
       } else {
         console.log('No machine log data found in response');
-        // Even if no machine log, attempt auto FID if spool loaded and no rejection
+        // No machine log length available — fall back to whatever pt_length is already
+        // in the form (manual entry) and apply the same good-length + bobbin-no rule.
         const formik = formikRef.current;
         const currentRejType = formik?.values?.active_rejection_type || '';
-        if (!currentRejType && formik?.values?.spool_id) {
+        const currentLen = parseFloat(formik?.values?.pt_length) || 0;
+        if (!currentRejType && hasValidBobbin && formik?.values?.spool_id && currentLen >= GOOD_LENGTH) {
           await genFid(formik.values.spool_id, setFieldValue);
+        } else {
+          setFieldValue('fid', '');
         }
       }
     } catch (e) {
       console.log('PT machine log error:', e?.response?.status, e?.message);
-      // Even on error, attempt auto FID if spool loaded and no rejection
+      // Machine log lookup failed — fall back to whatever pt_length is already
+      // in the form (manual entry) and apply the same good-length + bobbin-no rule.
       const formik = formikRef.current;
       const currentRejType = formik?.values?.active_rejection_type || '';
-      if (!currentRejType && formik?.values?.spool_id) {
+      const currentLen = parseFloat(formik?.values?.pt_length) || 0;
+      if (!currentRejType && hasValidBobbin && formik?.values?.spool_id && currentLen >= GOOD_LENGTH) {
         await genFid(formik.values.spool_id, setFieldValue);
+      } else {
+        setFieldValue('fid', '');
       }
     }
   };
@@ -621,6 +634,20 @@ const PTEntry = () => {
               return;
             }
 
+            // FID validation: FID is not valid for lengths below the good length threshold
+            if (!values.active_rejection_type && values.fid && (parseFloat(values.pt_length) || 0) < GOOD_LENGTH) {
+              setFieldValue('fid', '');
+              showError(`PT Length (${values.pt_length} km) is below the good length threshold (${GOOD_LENGTH} km). FID cleared — cannot submit with a FID for a below-good-length entry.`);
+              return;
+            }
+
+            // FID validation: FID requires a valid 10-character bobbin no
+            if (!values.active_rejection_type && values.fid && (!values.bobbin_no || values.bobbin_no.length !== 10)) {
+              setFieldValue('fid', '');
+              showError("Bobbin No must be exactly 10 characters to keep a FID. FID cleared — please scan the PT Barcode again.");
+              return;
+            }
+
             // Check if PT length range overlaps with a pending flaw and no rejection selected
             if (!values.active_rejection_type && ptFlawsData?.length > 0) {
               const ptDone = parseFloat(values.pt_done_so_far) || 0;
@@ -772,7 +799,21 @@ const PTEntry = () => {
                         <FormikSelect compact label="Shift" name="shift" options={shiftOptions} />
                         <FormikSelect compact label="Bobbin Color" name="bobbin_color" options={bobbinColorsOption} />
                         <FormikSelect compact label="Bobbin Type" name="bobbin_type" options={bobbinTypesOption} />
-                        <FormikInput compact label="PT Length (km)" name="pt_length" type="number" step="0.001" placeholder="0.000" />
+                        <FormikInput compact label="PT Length (km)" name="pt_length" type="number" step="0.001" placeholder="0.000"
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            setFieldValue('pt_length', val);
+                            if (values.active_rejection_type) return; // rejections never get a FID
+                            const len = parseFloat(val) || 0;
+                            const hasValidBobbin = !!values.bobbin_no && values.bobbin_no.length === 10;
+                            if (len < GOOD_LENGTH || !hasValidBobbin) {
+                              // Below good length, or bobbin no missing/invalid — FID is no longer valid
+                              if (values.fid) setFieldValue('fid', '');
+                            } else if (!values.fid && values.spool_id) {
+                              // Length reached good length and bobbin no is valid — generate FID
+                              await genFid(values.spool_id, setFieldValue);
+                            }
+                          }} />
                         <FormikSelect compact label="Payoff Vibration" name="payoff_vibration" options={['Yes', 'No']} />
                         <FormikSelect compact label="Dancer Vibration" name="dancer_vibration" options={['Yes', 'No']} />
                         <FormikInput compact label="PT Strain" name="pt_strain" readOnly/>

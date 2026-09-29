@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, XCircle, FileText } from 'lucide-react';
+import { Plus, Edit2, XCircle, FileText, Eye, X } from 'lucide-react';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getSpecList, deactivateSpec } from './SpecService';
 
@@ -7,6 +7,7 @@ const SpecList = ({ onCreateNew, onEdit }) => {
   const [specs, setSpecs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewSpec, setViewSpec] = useState(null);
 
   const fetchSpecs = async () => {
     setLoading(true);
@@ -57,7 +58,7 @@ const SpecList = ({ onCreateNew, onEdit }) => {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-800 text-white z-10">
               <tr>
-                {['Customer', 'Spec Name', 'PO No', 'PT Strain', 'Product', 'Coating', 'Priority', 'Qty (KM)', 'Created', 'Actions'].map(h => (
+                {['Customer', 'Spec Name', 'PO No', 'PT Strain', 'Preform Vendor', 'Product', 'Coating', 'Customer Type', 'Priority', 'Created', 'Actions'].map(h => (
                   <th key={h} className="px-3 py-2 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -69,13 +70,35 @@ const SpecList = ({ onCreateNew, onEdit }) => {
                   <td className="px-3 py-2 text-[10px] text-blue-700 font-mono">{s.cust_spec_name}</td>
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.po_number || '—'}</td>
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.pt_strain || '—'}</td>
+                  <td className="px-3 py-2 text-[10px] text-slate-600">
+                    {s.preform_vendor_name ? (
+                      <div className="flex flex-wrap gap-1">
+                        {s.preform_vendor_name.split(',').map((name, i) => name.trim() && (
+                          <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[9px] font-semibold">{name.trim()}</span>
+                        ))}
+                      </div>
+                    ) : '—'}
+                  </td>
                   <td className="px-3 py-2 text-[10px] text-slate-600">{s.product_type || '—'}</td>
-                  <td className="px-3 py-2 text-[10px] text-slate-600">{s.coating_type || '—'}</td>
+                  <td className="px-3 py-2 text-[10px] text-slate-600">
+                    {s.coating_type ? (
+                      <div className="flex flex-wrap gap-1">
+                        {s.coating_type.split(',').map((type, i) => type.trim() && (
+                          <span key={i} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[9px] font-semibold">{type.trim()}</span>
+                        ))}
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-[10px] text-slate-600">
+                    {s.customer_type ? (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${s.customer_type === 'INTERNAL' ? 'bg-amber-50 text-amber-700' : 'bg-sky-50 text-sky-700'}`}>{s.customer_type}</span>
+                    ) : '—'}
+                  </td>
                   <td className="px-3 py-2 text-[10px] text-center font-bold text-amber-700">{s.priority}</td>
-                  <td className="px-3 py-2 text-[10px] font-mono text-emerald-700">{s.quantity_km || '—'}</td>
                   <td className="px-3 py-2 text-[9px] text-slate-400">{s.created_at ? s.created_at.split('T')[0] : '—'}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
+                      <button onClick={() => setViewSpec(s)} className="px-2 py-1 bg-slate-50 text-slate-600 text-[8px] font-bold rounded hover:bg-slate-100"><Eye size={9} className="inline mr-0.5" />View</button>
                       <button onClick={() => onEdit(s.spec_id)} className="px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded hover:bg-blue-100"><Edit2 size={9} className="inline mr-0.5" />Edit</button>
                       <button onClick={() => setConfirmId(s.spec_id)} className="px-2 py-1 bg-rose-50 text-rose-700 text-[8px] font-bold rounded hover:bg-rose-100"><XCircle size={9} className="inline mr-0.5" />Deactivate</button>
                     </div>
@@ -86,6 +109,40 @@ const SpecList = ({ onCreateNew, onEdit }) => {
           </table>
         )}
       </div>
+
+      {/* View Detail Modal */}
+      {viewSpec && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-xl shadow-2xl p-5 w-96 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-800">Specification Details</h3>
+              <button onClick={() => setViewSpec(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ['Customer', viewSpec.customer_name],
+                ['Spec Name', viewSpec.cust_spec_name],
+                ['PO Number', viewSpec.po_number],
+                ['PT Strain', viewSpec.pt_strain],
+                ['Preform Vendor', viewSpec.preform_vendor_name],
+                ['Product Type', viewSpec.product_type],
+                ['Coating Type', viewSpec.coating_type],
+                ['Customer Type', viewSpec.customer_type],
+                ['Priority', viewSpec.priority],
+                ['Created', viewSpec.created_at ? viewSpec.created_at.split('T')[0] : null],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+                  <span className="text-xs text-slate-700 font-semibold">{value || '—'}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 text-right">
+              <button onClick={() => setViewSpec(null)} className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Dialog */}
       {confirmId && (

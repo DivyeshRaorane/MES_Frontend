@@ -2,9 +2,9 @@ import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   X, FileSpreadsheet, Sparkles, Download, Upload, Play, Loader2,
-  CheckCircle2, XCircle, MinusCircle, AlertTriangle, RotateCcw, FileDown,
+  CheckCircle2, XCircle, MinusCircle, AlertTriangle, RotateCcw, FileDown, Send,
 } from 'lucide-react';
-import { gradeBobbinBulk, getPendingTempGrade } from '../services/qc_entry.api';
+import { gradeBobbinBulk, getPendingTempGrade, submitFinalQCBulk } from '../services/qc_entry.api';
 import { showSuccess, showError } from '../../../utils/toastService';
 
 /* ══════════════════════════════════════════════════════════
@@ -29,6 +29,14 @@ const STATUS_META = {
 };
 const metaFor = (status) => STATUS_META[status] || { label: status || 'Unknown', cls: 'bg-slate-100 text-slate-600 border-slate-300', row: '', Icon: MinusCircle };
 
+/* Per-status presentation for the Submit-Final-Bulk results (separate status vocabulary). */
+const SUBMIT_STATUS_META = {
+  SUCCESS: { label: 'Success', cls: 'bg-emerald-100 text-emerald-700 border-emerald-300', row: 'bg-emerald-50/40', Icon: CheckCircle2 },
+  FAILED:  { label: 'Failed',  cls: 'bg-red-100 text-red-700 border-red-300',             row: 'bg-red-50/40',    Icon: XCircle },
+  ERROR:   { label: 'Error',   cls: 'bg-rose-100 text-rose-700 border-rose-300',          row: 'bg-rose-50/40',   Icon: XCircle },
+};
+const submitMetaFor = (status) => SUBMIT_STATUS_META[status] || { label: status || 'Unknown', cls: 'bg-slate-100 text-slate-600 border-slate-300', row: '', Icon: MinusCircle };
+
 /* Short human message for the "Detail" column when the backend didn't send one. */
 const detailFor = (r) => {
   if (r.message) return r.message;
@@ -47,9 +55,17 @@ const BulkEntryModal = ({ open, onClose }) => {
   const [grading, setGrading] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
 
+  // ── Submit Selected (bulk final submit) state ──
+  const [selected, setSelected] = useState(new Set()); // bobbin_no set, checked in the results table
+  const [submittingBulk, setSubmittingBulk] = useState(false);
+  const [submitResults, setSubmitResults] = useState(null); // { summary, results:[] } | null
+
   if (!open) return null;
 
-  const reset = () => { setMode(null); setBobbins([]); setResults(null); setGrading(false); setLoadingList(false); };
+  const reset = () => {
+    setMode(null); setBobbins([]); setResults(null); setGrading(false); setLoadingList(false);
+    setSelected(new Set()); setSubmittingBulk(false); setSubmitResults(null);
+  };
   const close = () => { reset(); onClose?.(); };
 
   /* ── Download a single-column (bobbin_no) template ── */
@@ -127,12 +143,68 @@ const BulkEntryModal = ({ open, onClose }) => {
       const list = res?.results || [];
       const summary = res?.summary || null;
       setResults({ results: list, summary });
+      setSelected(new Set());        // fresh grading run — clear any prior selection
+      setSubmitResults(null);        // and any prior submit-final results
       const passed = summary?.passed ?? list.filter(r => r.status === 'PASSED').length;
       showSuccess(`Grading complete. ${passed} passed.`);
     } catch (err) {
       showError(err?.response?.data?.message || 'Bulk grading failed.');
     }
     setGrading(false);
+  };
+
+  /* ── Selection helpers for the "Submit Selected" (final QC) step ──
+     Only PASSED bobbins are selectable — those are the ones that have a temp
+     grade and are eligible for final submission. ── */
+  const passedBobbins = (results?.results || []).filter(r => r.status === 'PASSED').map(r => r.bobbin_no);
+
+  const toggleSelected = (bobbin_no) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(bobbin_no)) next.delete(bobbin_no); else next.add(bobbin_no);
+      return next;
+    });
+  };
+
+  const toggleSelectAllPassed = () => {
+    setSelected(prev => (prev.size === passedBobbins.length ? new Set() : new Set(passedBobbins)));
+  };
+
+  /* ── Submit Selected: finalize QC for the chosen (passed) bobbins ── */
+  const submitSelected = async () => {
+    const bobbin_nos = [...selected];
+    if (bobbin_nos.length === 0) { showError('Select at least one bobbin to submit.'); return; }
+    setSubmittingBulk(true);
+    try {
+      const res = await submitFinalQCBulk(bobbin_nos);
+      const list = res?.results || [];
+      const summary = res?.summary || null;
+      setSubmitResults({ results: list, summary });
+      if (summary) {
+        showSuccess(`Submit complete: ${summary.success} succeeded, ${summary.failed} failed out of ${summary.total}.`);
+      } else {
+        showSuccess('Submit complete.');
+      }
+      // Drop successfully submitted bobbins from the selection so re-submitting
+      // only targets the ones that still need attention.
+      const succeededSet = new Set(list.filter(r => r.status === 'SUCCESS').map(r => r.bobbin_no));
+      setSelected(prev => new Set([...prev].filter(b => !succeededSet.has(b))));
+
+      // Refresh: re-run bulk grading for the full list so the results table
+      // reflects the new state (submitted bobbins already have final_grade
+      // and will show up as SKIPPED_HAS_GRADE / already-graded on a re-check).
+      if (bobbins.length > 0) {
+        try {
+          const refreshed = await gradeBobbinBulk(bobbins);
+          setResults({ results: refreshed?.results || [], summary: refreshed?.summary || null });
+        } catch {
+          // Non-fatal — the submit results are still shown even if refresh fails.
+        }
+      }
+    } catch (err) {
+      showError(err?.response?.data?.message || 'Bulk submit failed.');
+    }
+    setSubmittingBulk(false);
   };
 
   /* ── Export the results table to Excel ── */
@@ -257,6 +329,13 @@ const BulkEntryModal = ({ open, onClose }) => {
                   <table className="w-full text-[10px]">
                     <thead className="sticky top-0 bg-slate-100 text-slate-700">
                       <tr>
+                        <th className="px-3 py-2 font-bold w-8">
+                          <input type="checkbox"
+                            checked={passedBobbins.length > 0 && selected.size === passedBobbins.length}
+                            onChange={toggleSelectAllPassed}
+                            disabled={passedBobbins.length === 0}
+                            title="Select all Passed bobbins" />
+                        </th>
                         <th className="text-left px-3 py-2 font-bold">Bobbin</th>
                         <th className="text-left px-3 py-2 font-bold">Status</th>
                         <th className="text-left px-3 py-2 font-bold">Grade</th>
@@ -267,8 +346,16 @@ const BulkEntryModal = ({ open, onClose }) => {
                       {results.results.map((r, i) => {
                         const m = metaFor(r.status);
                         const Icon = m.Icon;
+                        const selectable = r.status === 'PASSED';
                         return (
                           <tr key={`${r.bobbin_no}-${i}`} className={`border-t border-slate-100 ${m.row}`}>
+                            <td className="px-3 py-1.5">
+                              <input type="checkbox"
+                                checked={selected.has(r.bobbin_no)}
+                                disabled={!selectable}
+                                onChange={() => toggleSelected(r.bobbin_no)}
+                                title={selectable ? '' : 'Only Passed bobbins can be submitted'} />
+                            </td>
                             <td className="px-3 py-1.5 font-mono font-bold text-slate-800">{r.bobbin_no}</td>
                             <td className="px-3 py-1.5">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border font-bold ${m.cls}`}>
@@ -277,6 +364,60 @@ const BulkEntryModal = ({ open, onClose }) => {
                             </td>
                             <td className="px-3 py-1.5 font-bold text-slate-800">{r.matched_grade || '—'}</td>
                             <td className="px-3 py-1.5 text-slate-600">{detailFor(r)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {passedBobbins.length > 0 && (
+                <p className="text-[10px] text-slate-500 mt-1.5">
+                  {selected.size} of {passedBobbins.length} passed bobbin{passedBobbins.length > 1 ? 's' : ''} selected for final submit.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Submit Final (bulk) results breakdown ── */}
+          {submitResults && (
+            <div className="mt-4">
+              <h4 className="text-[11px] font-bold text-slate-700 mb-2">Final Submit Results</h4>
+              {submitResults.summary && (
+                <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                  <span className="text-[10px] font-bold px-2 py-1 rounded border bg-slate-100 text-slate-700 border-slate-300">Total: {submitResults.summary.total}</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded border bg-emerald-100 text-emerald-700 border-emerald-300">Succeeded: {submitResults.summary.success}</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded border bg-red-100 text-red-700 border-red-300">Failed: {submitResults.summary.failed}</span>
+                  {submitResults.summary.error > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded border bg-rose-100 text-rose-700 border-rose-300">Error: {submitResults.summary.error}</span>
+                  )}
+                </div>
+              )}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="max-h-[280px] overflow-y-auto">
+                  <table className="w-full text-[10px]">
+                    <thead className="sticky top-0 bg-slate-100 text-slate-700">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-bold">Bobbin</th>
+                        <th className="text-left px-3 py-2 font-bold">Status</th>
+                        <th className="text-left px-3 py-2 font-bold">Grade</th>
+                        <th className="text-left px-3 py-2 font-bold">Message</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submitResults.results.map((r, i) => {
+                        const m = submitMetaFor(r.status);
+                        const Icon = m.Icon;
+                        return (
+                          <tr key={`${r.bobbin_no}-submit-${i}`} className={`border-t border-slate-100 ${m.row}`}>
+                            <td className="px-3 py-1.5 font-mono font-bold text-slate-800">{r.bobbin_no}</td>
+                            <td className="px-3 py-1.5">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border font-bold ${m.cls}`}>
+                                <Icon size={10} /> {m.label}
+                              </span>
+                            </td>
+                            <td className="px-3 py-1.5 font-bold text-slate-800">{r.grade || '—'}</td>
+                            <td className="px-3 py-1.5 text-slate-600">{r.message || '—'}</td>
                           </tr>
                         );
                       })}
@@ -305,6 +446,13 @@ const BulkEntryModal = ({ open, onClose }) => {
                   className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-[10px] font-bold rounded-lg hover:bg-amber-600 disabled:opacity-40">
                   {grading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
                   {grading ? 'Grading...' : `Start Grading${bobbins.length ? ` (${bobbins.length})` : ''}`}
+                </button>
+              )}
+              {results && (
+                <button type="button" onClick={submitSelected} disabled={submittingBulk || selected.size === 0}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-40">
+                  {submittingBulk ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                  {submittingBulk ? 'Submitting...' : `Submit Selected${selected.size ? ` (${selected.size})` : ''}`}
                 </button>
               )}
             </div>

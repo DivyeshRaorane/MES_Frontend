@@ -20,15 +20,9 @@ export const submitQCOut = async (payload) => {
   return res.data;
 };
 
-/* ── Bulk validate bobbins for QC Out (Excel import) ── */
+/* ── Bulk validate bobbins for QC Out (dry-run, no auth required) ── */
 export const bulkValidateQCOut = async (bobbins) => {
-  const token = localStorage.getItem("token");
-  const res = await axios.post(`${API}/qcout/bulk-validate`, { bobbins }, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await axios.post(`${API}/qcout/bulk-validate`, { bobbins });
   return res.data;
 };
 

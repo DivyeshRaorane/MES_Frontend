@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ClipboardList, Award } from 'lucide-react';
 import { Formik, Form, Field } from 'formik';
-import { FormikInput, FormikSelect } from '../../../components/common_fields';
+import { FormikInput, FormikSelect, FormikMultiSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { createSpec, updateSpec, getSpecById, getGradeList, getGradeById, getPreformVendors, getBobbinColors } from './SpecService';
@@ -37,14 +37,24 @@ const PARAM_GROUPS = [
 const ALL_FIELDS = [];
 PARAM_GROUPS.forEach(g => g.fields.forEach(([f]) => { ALL_FIELDS.push(`min_${f}`, `max_${f}`); }));
 
+/* Normalize a value that may be an array, a comma-separated string, or empty
+   into an array of trimmed values (used for multi-select fields). */
+const toMultiSelectArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    return value.split(',').map(v => v.trim()).filter(v => v !== '');
+  }
+  return [];
+};
+
 const buildInitialValues = (data) => {
   const vals = {
     customer_name: data?.customer_name || '', po_number: data?.po_number || '',
-    pt_strain: data?.pt_strain || '', cust_spec_name: data?.cust_spec_name || '',
-    product_type: data?.product_type || '', coating_type: data?.coating_type || '',
-    quantity_km: data?.quantity_km || '',
+    pt_strain: toMultiSelectArray(data?.pt_strain), cust_spec_name: data?.cust_spec_name || '',
+    product_type: data?.product_type || '', coating_type: toMultiSelectArray(data?.coating_type),
+    customer_type: data?.customer_type || '',
     priority: data?.priority || 1, remarks: data?.remarks || '',
-    preform_vendor_id: data?.preform_vendor_id || '',
+    preform_vendor_id: toMultiSelectArray(data?.preform_vendor_id),
     color_type: data?.color_type || '',
     fiber_color: data?.fiber_color || '',
     allocation_ratio: data?.allocation_ratio || '',
@@ -156,17 +166,22 @@ const SpecForm = ({ specId, onBack }) => {
 
   const handleSubmit = async (values) => {
     if (!values.customer_name || !values.cust_spec_name) { showError('Customer Name and Spec Name are required'); return; }
+    if (!Array.isArray(values.pt_strain) || values.pt_strain.length === 0) { showError('PT Strain is required'); return; }
     setSubmitting(true);
     try {
       const payload = { ...values };
       // Convert numeric fields
       ALL_FIELDS.forEach(f => { if (payload[f] !== '' && payload[f] !== null) payload[f] = Number(payload[f]); else payload[f] = null; });
-      if (payload.quantity_km) payload.quantity_km = Number(payload.quantity_km);
       if (payload.priority) payload.priority = Number(payload.priority);
 
-      // Convert new dropdown fields to proper types
-      if (payload.preform_vendor_id) payload.preform_vendor_id = Number(payload.preform_vendor_id);
-      else payload.preform_vendor_id = null;
+      // Multi-select fields — send as arrays (backend normalizes to comma-separated string)
+      payload.pt_strain = Array.isArray(values.pt_strain) ? values.pt_strain : [];
+      payload.preform_vendor_id = Array.isArray(values.preform_vendor_id) ? values.preform_vendor_id : [];
+      payload.coating_type = Array.isArray(values.coating_type) ? values.coating_type : [];
+
+      // Single-value enum — plain string, not multi-select
+      payload.customer_type = values.customer_type || null;
+
       if (payload.fiber_color) payload.fiber_color = Number(payload.fiber_color);
       else payload.fiber_color = null;
       if (!payload.color_type) payload.color_type = null;
@@ -190,7 +205,7 @@ const SpecForm = ({ specId, onBack }) => {
   };
 
   const customerOptions = customers.map(c => ({ label: c.customer_name, value: c.customer_name }));
-  const preformVendorOptions = preformVendors.map(v => ({ label: `${v.vendor_name} (${v.vendor_code})`, value: v.preform_vendor_id }));
+  const preformVendorOptions = preformVendors.map(v => ({ label: v.vendor_name, value: v.preform_vendor_id }));
   const colorTypeOptions = [
     { label: 'NATURAL', value: 'NATURAL' },
     { label: 'COLORED', value: 'COLORED' },
@@ -256,14 +271,14 @@ const SpecForm = ({ specId, onBack }) => {
                 <div className="grid grid-cols-5 gap-2">
                   <FormikSelect compact label="Customer Name *" name="customer_name" options={customerOptions} />
                   <FormikInput compact label="PO Number" name="po_number" />
-                  <FormikSelect compact label="PT Strain" name="pt_strain" options={[{ label: '1%', value: 1 }, { label: '2%', value: 2 }]} />
+                  <FormikMultiSelect compact label="PT Strain *" name="pt_strain" options={[{ label: '1%', value: 1 }, { label: '2%', value: 2 }]} />
                   <FormikInput compact label="Spec Name *" name="cust_spec_name" />
                   <FormikInput compact label="Product Type" name="product_type" />
-                  <FormikSelect compact label="Coating Type" name="coating_type" options={['Single', 'Dual']} />
-                  <FormikInput compact label="Quantity (KM)" name="quantity_km" type="number" />
+                  <FormikMultiSelect compact label="Coating Type" name="coating_type" options={[{ label: 'PHICHEM', value: 'PHICHEM' }, { label: 'ZTT', value: 'ZTT' }, { label: 'DSM', value: 'DSM' }]} />
+                  <FormikSelect compact label="Customer Type" name="customer_type" options={[{ label: 'EXTERNAL', value: 'EXTERNAL' }, { label: 'INTERNAL', value: 'INTERNAL' }]} />
                   <FormikInput compact label="Priority" name="priority" type="number" />
                   <FormikInput compact label="Remarks" name="remarks" />
-                  <FormikSelect compact label="Preform Vendor" name="preform_vendor_id" options={preformVendorOptions} />
+                  <FormikMultiSelect compact label="Preform Vendor" name="preform_vendor_id" options={preformVendorOptions} />
                   <FormikSelect compact label="Color Type" name="color_type" options={colorTypeOptions}
                     onChange={(e) => {
                       const val = e.target.value;

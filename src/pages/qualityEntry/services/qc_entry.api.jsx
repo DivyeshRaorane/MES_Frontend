@@ -36,6 +36,43 @@ export const submitQCEntry = async (payload) => {
   return res.data;
 };
 
+/* ── Submit final QC ──
+   body: { bobbin_no }
+   success: { success: true, message, grade }
+   failure: { success: false, message } */
+export const submitFinalQC = async (bobbin_no) => {
+  const res = await axios.post(`${API}/qcentry/submit-final`, { bobbin_no }, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Submit final QC (bulk) ──
+   body: { bobbin_nos: string[] }
+   returns: { success, summary: { total, success, failed, error },
+              results: [{ bobbin_no, status: 'SUCCESS'|'FAILED'|'ERROR', message, grade? }] } */
+export const submitFinalQCBulk = async (bobbin_nos) => {
+  const res = await axios.post(`${API}/qcentry/submit-final-bulk`, { bobbin_nos }, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Final Grade (promote temp_grade → final_grade) — single bobbin ──
+   body: { bobbin_no }
+   success: { success: true, bobbin_no, status: 'success', message, final_grade }
+   failure (400): { success: false, bobbin_no, status: 'error', message }
+   message may be: "Bobbin not found" | "First submit Grade on QC entry page" | "QC grading already done" */
+export const submitFinalGrade = async (bobbin_no) => {
+  const res = await axios.post(`${API}/qcentry/final-grade`, { bobbin_no }, { headers: authHeaders() });
+  return res.data;
+};
+
+/* ── Final Grade (promote temp_grade → final_grade) — bulk ──
+   body: { bobbin_nos: string[] }
+   returns (always 200): { success, summary: { total, success, error },
+     results: [{ bobbin_no, status: 'success'|'error', message, final_grade? }] } */
+export const submitFinalGradeBulk = async (bobbin_nos) => {
+  const res = await axios.post(`${API}/qcentry/final-grade-bulk`, { bobbin_nos }, { headers: authHeaders() });
+  return res.data;
+};
+
 /* ── Update missing QC values ── */
 export const updateMissingValues = async (payload) => {
   const res = await axios.post(`${API}/qc/update-missing-values`, payload, { headers: authHeaders() });

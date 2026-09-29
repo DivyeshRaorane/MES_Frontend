@@ -129,28 +129,7 @@ export const getD2BatchBobbinsForGrade = async (d2_batch_id) => {
 };
 
 /* ══════════════════════════════════════════════════════════════
-   BULK FINAL GRADE APIs
+   BULK FINAL GRADE APIs — removed (old /d2issue/final-grade/*
+   endpoints). New Final Grade screen now calls /qcentry/final-grade
+   and /qcentry/final-grade-bulk instead — see qc_entry.api.jsx.
    ══════════════════════════════════════════════════════════════ */
-
-/* ── Single bobbin final grade (scan mode) ── */
-export const processSingleFinalGrade = async (bobbin_no) => {
-  const response = await axios({
-    method: "POST",
-    url: `${API}/d2issue/final-grade/single`,
-    data: { bobbin_no },
-    headers: getAuthHeaders(),
-  });
-  return response.data;
-};
-
-/* ── Bulk final grade (excel import mode) ── */
-export const processBulkFinalGrade = async (bobbins) => {
-  // bobbins: array of { bobbin_no, fid, product_type, temp_grade }
-  const response = await axios({
-    method: "POST",
-    url: `${API}/d2issue/final-grade/bulk`,
-    data: { bobbins },
-    headers: getAuthHeaders(),
-  });
-  return response.data;
-};

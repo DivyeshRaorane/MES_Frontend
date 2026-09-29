@@ -7,6 +7,7 @@ import {
   validateBobbinForRewind, submitRewindRequest, getQCUsers,
 } from '../services/fg_rejection.api';
 import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
+import { getCustomers } from '../../order_register/services/order.api';
 import FiberInformationPanel from './FiberInformationPanel';
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -22,12 +23,14 @@ const FGFiberRejection = () => {
   const [mode, setMode] = useState(''); // '' | 'color' | 'rewind' | 'fiberinfo'
   const [qcUsers, setQcUsers] = useState([]);
   const [bobbinColors, setBobbinColors] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [lastScannedBobbin, setLastScannedBobbin] = useState(null);
 
   useEffect(() => {
     (async () => {
       try { const res = await getQCUsers(); setQcUsers(res?.data || []); } catch (_) {}
       try { const res = await getBobbinColors(); setBobbinColors(res?.data || []); } catch (_) {}
+      try { const res = await getCustomers(); setCustomers((res?.data || []).filter(c => !c.disable)); } catch (_) {}
     })();
   }, []);
 
@@ -57,7 +60,7 @@ const FGFiberRejection = () => {
         {/* ── Content (all panels stay mounted to preserve state) ── */}
         <div className="flex-1 overflow-hidden relative">
           <div className={`absolute inset-0 ${mode === 'color' ? '' : 'invisible pointer-events-none'}`}>
-            <ColorPanel qcUsers={qcUsers} bobbinColors={bobbinColors} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
+            <ColorPanel qcUsers={qcUsers} bobbinColors={bobbinColors} customers={customers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
           </div>
           <div className={`absolute inset-0 ${mode === 'rewind' ? '' : 'invisible pointer-events-none'}`}>
             <RewindPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
@@ -79,8 +82,9 @@ const FGFiberRejection = () => {
 /* ══════════════════════════════════════════════════════════
    COLOR PANEL
    ══════════════════════════════════════════════════════════ */
-const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo }) => {
+const ColorPanel = ({ qcUsers, bobbinColors, customers = [], onBobbinScanned, onViewFiberInfo }) => {
   const [colJcardNo, setColJcardNo] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [requireColor, setRequireColor] = useState('');
   const [requestBy, setRequestBy] = useState('');
   const [scanInput, setScanInput] = useState('');
@@ -118,6 +122,7 @@ const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo })
         request_by: requestBy,
         date: today(),
         time: nowTime(),
+        customer_name: customerName.trim() || null,
         bobbins: rows.map(r => ({
           bobbin_no: r.bobbin_no,
           bobbin_fid: r.bobbin_fid,
@@ -127,7 +132,7 @@ const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo })
         })),
       };
       const res = await submitColorRequest(payload);
-      if (res?.success) { showSuccess(`${rows.length} bobbin(s) submitted for color change!`); setRows([]); setColJcardNo(''); }
+      if (res?.success) { showSuccess(`${rows.length} bobbin(s) submitted for color change!`); setRows([]); setColJcardNo(''); setCustomerName(''); }
       else showError(res?.message || 'Submit failed');
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); }
     setSubmitting(false);
@@ -142,6 +147,14 @@ const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo })
             <input value={colJcardNo} onChange={e => setColJcardNo(e.target.value)}
               placeholder="Enter Job Card No"
               className="w-full bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-rose-300 placeholder:text-rose-300" />
+          </div>
+          <div className="w-40 flex flex-col gap-0.5">
+            <label className="text-[9px] font-bold text-slate-500 uppercase">Customer Name</label>
+            <select value={customerName} onChange={e => setCustomerName(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+              <option value="">Select</option>
+              {customers.map(c => <option key={c.customer_id || c.customer_name} value={c.customer_name}>{c.customer_name}</option>)}
+            </select>
           </div>
           <div className="w-36 flex flex-col gap-0.5">
             <label className="text-[9px] font-bold text-slate-500 uppercase">Required Color</label>
@@ -173,7 +186,7 @@ const ColorPanel = ({ qcUsers, bobbinColors, onBobbinScanned, onViewFiberInfo })
             </div>
           </div>
           <div className="flex gap-1.5">
-            <ResetButton compact type="button" onClick={() => { setRows([]); setRequireColor(''); setRequestBy(''); setColJcardNo(''); }}>Reset</ResetButton>
+            <ResetButton compact type="button" onClick={() => { setRows([]); setRequireColor(''); setRequestBy(''); setColJcardNo(''); setCustomerName(''); }}>Reset</ResetButton>
             <SubmitButton compact type="button" disabled={submitting || !rows.length} onClick={handleSubmit}>
               {submitting ? 'Saving...' : `Submit (${rows.length})`}
             </SubmitButton>
@@ -225,6 +238,8 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
   const [popup, setPopup] = useState(null); // { bobbin data for popup }
   const [rewindType, setRewindType] = useState(''); // 'REWINDING' | 'CUT'
   const [cuts, setCuts] = useState([{ p1: '', p2: '', c_remark: '' }]);
+  const [rewRemark, setRewRemark] = useState(''); // free-text remark (sent to backend as `remark`)
+  const [rewReason, setRewReason] = useState(''); // free-text reason — only for Whole Length (sent to backend as `reason`)
   const [submitting, setSubmitting] = useState(false);
   const scanRef = useRef(null);
 
@@ -243,6 +258,8 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
       setPopup(res.data);
       setRewindType('');
       setCuts([{ p1: '', p2: '', c_remark: '' }]);
+      setRewRemark('');
+      setRewReason('');
       // Store last scanned bobbin for Fiber Information tab
       onBobbinScanned(bobbin_no);
     } catch (e) { showError(e?.response?.data?.message || 'Something went wrong'); refocus(); }
@@ -250,20 +267,21 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
 
   const handlePopupConfirm = () => {
     if (!rewindType) { showError('Select Rewinding Type'); return; }
-    if (rewindType === 'CUT') {
-      const hasEmpty = cuts.some(c => !c.p1 || !c.p2);
-      if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
-    }
 
+    const isWholeLength = rewindType === 'REWINDING';
     setRows(prev => [...prev, {
       id: Date.now(),
       ...popup,
       rewinding_type: rewindType,
-      cuts: rewindType === 'CUT' ? [...cuts] : [],
+      cuts: [], // cutting-instruction table removed; no P1/P2 sent
+      remark: rewRemark.trim() || null, // operator's remark → backend as `remark`
+      reason: isWholeLength ? (rewReason.trim() || null) : null, // Whole Length only
     }]);
     setPopup(null);
     setRewindType('');
     setCuts([{ p1: '', p2: '', c_remark: '' }]);
+    setRewRemark('');
+    setRewReason('');
     refocus();
   };
 
@@ -272,6 +290,7 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
     setSubmitting(true);
     try {
       const payload = {
+        from: 'FG', // tells backend to queue an SAP stock-transfer (LTL) txn per bobbin
         request_by: requestBy,
         date: today(),
         time: nowTime(),
@@ -281,6 +300,8 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
           total_length: r.fiber_length,
           rewinding_type: r.rewinding_type,
           cuts: r.cuts || [],
+          remark: r.remark || null,
+          reason: r.reason || null,
         })),
       };
       const res = await submitRewindRequest(payload);
@@ -329,7 +350,7 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10">
             <tr className="border-b border-slate-200">
-              {['#', 'Bobbin No', 'Bobbin FID', 'Fiber Length', 'Type', 'Cuts', ''].map(h => (
+              {['#', 'Bobbin No', 'Bobbin FID', 'Fiber Length', 'Type', 'Remark / Reason', ''].map(h => (
                 <th key={h} className="px-3 py-2 text-[9px] font-bold text-slate-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -350,7 +371,7 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                   }`}>{r.rewinding_type}</span>
                 </td>
                 <td className="px-3 py-2 text-[9px] text-slate-500">
-                  {r.cuts?.length > 0 ? r.cuts.map((c, ci) => `(${c.p1}-${c.p2})`).join(', ') : '—'}
+                  {[r.remark, r.reason].filter(Boolean).join(' | ') || '—'}
                 </td>
                 <td className="px-3 py-2">
                   <button type="button" onClick={(e) => { e.stopPropagation(); setRows(prev => prev.filter(x => x.id !== r.id)); }}
@@ -381,7 +402,9 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                 }`}>Cut</button>
             </div>
 
-            {/* Cut instructions (FieldArray) */}
+            {/* Cut instructions (P1/P2 table) — COMMENTED OUT ──
+                No longer sent to the backend. For CUT we now send only the
+                operator's Remark; for Whole Length we send Remark + Reason.
             {rewindType === 'CUT' && (
               <div className="border border-slate-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -427,9 +450,37 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                 </table>
               </div>
             )}
+            ── end commented Cut instructions ── */}
+
+            {/* Whole Length confirmation message */}
+            {rewindType === 'REWINDING' && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
+                <p className="text-xs text-emerald-700 font-medium">This bobbin will be rewound at full / whole length.</p>
+              </div>
+            )}
+
+            {/* ── Remark (always) + Reason (Whole Length only) ── */}
+            {rewindType && (
+              <div className="grid grid-cols-1 gap-2 mb-3">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[9px] font-bold text-slate-600 uppercase">Remark</label>
+                  <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                    placeholder="Enter remark..." />
+                </div>
+                {rewindType === 'REWINDING' && (
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[9px] font-bold text-slate-600 uppercase">Reason</label>
+                    <input type="text" value={rewReason} onChange={e => setRewReason(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                      placeholder="Enter reason..." />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-2">
-              <button type="button" onClick={() => { setPopup(null); refocus(); }}
+              <button type="button" onClick={() => { setPopup(null); setRewRemark(''); setRewReason(''); refocus(); }}
                 className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
               <button type="button" onClick={onViewFiberInfo}
                 className="flex-1 px-3 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg text-xs font-bold hover:bg-teal-100 flex items-center justify-center gap-1">
