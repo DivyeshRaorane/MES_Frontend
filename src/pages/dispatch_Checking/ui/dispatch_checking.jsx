@@ -49,8 +49,7 @@ const DispatchChecking = () => {
     fid: Yup.string().required('Required'),
   });
 
-  const onSubmit = (values) => {
-    console.log('Dispatch Specs Saved:', values);
+  const onSubmit = () => {
     alert('Master Record Saved Successfully');
   };
 

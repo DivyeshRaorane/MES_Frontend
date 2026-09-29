@@ -118,8 +118,6 @@ useEffect(() => {
             validationSchema={validationSchema}
             onSubmit={async (values, { resetForm }) => {
               try {
-                console.log("Submitting:", values);
-
                 const result = await dispatch(preformAccept(values));
 
                 if (preformAccept.fulfilled.match(result)) {

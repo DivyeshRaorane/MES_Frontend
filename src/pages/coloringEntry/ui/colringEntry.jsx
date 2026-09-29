@@ -34,7 +34,6 @@ const ColoringEntry = () => {
   const [submitting, setSubmitting] = useState(false);
   const [generatedFid, setGeneratedFid] = useState('');
   const scanRef = useRef(null);
-console.log("fgcolor:", fgColor)
   useEffect(() => {
     (async () => {
       try {
@@ -58,7 +57,6 @@ console.log("fgcolor:", fgColor)
     if (!bobbin_no) return;
     try {
       const res = await scanBobbinForColoring(bobbin_no);
-      console.log("what is the bobbin res", res)
       if (!res?.success) {
         showError(res?.message || 'No pending coloring request found for this bobbin.');
         setFgColor(null); setHistory([]); setGeneratedFid('');
@@ -103,7 +101,6 @@ console.log("fgcolor:", fgColor)
 
   /* ── Submit ── */
   const handleSubmit = async (values, { setFieldValue }) => {
-    console.log('Submit clicked, fgColor:', fgColor, 'values:', values);
     if (!fgColor) { showError('Scan a bobbin first'); return; }
     const len = parseFloat(values.fiber_length) || 0;
     const isScrap = values.is_scrap;
@@ -130,7 +127,6 @@ console.log("fgcolor:", fgColor)
         operator: values.operator, bobbin_color: values.bobbin_color, remark: values.remark,
       };
 
-      console.log("payload:", payload);
       const res = await saveColourEntry(payload);
       if (res?.success) {
         if (remaining === 0) showSuccess('Coloring completed successfully.');
@@ -163,7 +159,6 @@ console.log("fgcolor:", fgColor)
             const len = parseFloat(values.fiber_length) || 0;
             const available = parseFloat(values.balance_length) || 0;
             const remaining = available - len;
-            if (Object.keys(errors).length > 0) console.log('Formik errors:', errors);
 
             return (
               <Form className="flex flex-col flex-1 overflow-hidden gap-2">

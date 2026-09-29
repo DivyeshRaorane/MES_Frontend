@@ -56,7 +56,7 @@ const PTAutomation = () => {
       drawFlaws: [{ type: '', p1: '', p2: '', defectLen: '', actCuttingLen: '' }],
       ptLogs:    [{ identifier: '', length: '', reason: 'OK' }],
     },
-    onSubmit: (values) => console.log('PT Automation Submit:', values),
+    onSubmit: () => {},
   });
 
   return (

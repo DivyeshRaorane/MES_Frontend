@@ -30,7 +30,6 @@ export const createDrawEntry = createAsyncThunk(
 export const getTowerEvent = createAsyncThunk(
     "tower/getTowerEventS",
     async(payload, {rejectWithValue})=>{
-        console.log("Payload:", payload)
         try{
             const response = await axios({
                             method: import.meta.env.VITE_METHOD_POST,

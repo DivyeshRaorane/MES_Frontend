@@ -15,8 +15,8 @@ import {
  */
 const PageNotFound=()=> {
   // Mock navigation function
-  const goBack = () => console.log("Navigating back...");
-  const goHome = () => console.log("Navigating to dashboard...");
+  const goBack = () => {};
+  const goHome = () => {};
 
   return (
     <div className="min-h-screen bg-[#f4f7f9] flex items-center justify-center p-6 font-sans">

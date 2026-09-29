@@ -24,7 +24,6 @@ const OrderRegister = () => {
     } catch (e) { console.error('Orders fetch error:', e); }
     try {
       const cRes = await getCustomers();
-      console.log('Customers response:', cRes);
       setCustomers((cRes?.data || []).filter(c => !c.disable));
     } catch (e) { console.error('Customers fetch error:', e); }
     setLoading(false);

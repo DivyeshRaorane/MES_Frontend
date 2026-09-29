@@ -100,7 +100,6 @@ useEffect(() => {
 
   try {
     const res = await getDrawEntryDetails(spool_id);
-    console.log("what is the response:", res)
     if (res?.data) {
       formikRef.current.setValues((prev) => ({
         ...prev,
@@ -143,12 +142,10 @@ useEffect(() => {
             try {
               const response = await dispatch(ptAllocationEntry(values))
               if (response.payload?.success) {
-                console.log("show success", response)
                 showSuccess(response.payload?.message || "Allocation Saved Successfully")
                 await fetchPtWip();
                 resetForm();
               } else {
-                console.log("Error:", response)
                 showError(response.payload?.message || "Allocation Failed")
               }
             } catch (error) {

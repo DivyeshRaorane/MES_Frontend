@@ -22,7 +22,7 @@ const ShortTermTensileTest = () => (
   <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
     <div className="flex flex-col flex-1 overflow-hidden px-3 py-2">
       <Formik initialValues={initialValues}
-        onSubmit={(v) => { console.log('Short Term Tensile:', v); alert('Saved!'); }}>
+        onSubmit={() => { alert('Saved!'); }}>
         {({ resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden gap-2">
 

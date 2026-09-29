@@ -39,7 +39,6 @@ const [selectedAllocation, setSelectedAllocation] = useState(null);
 
 
   const { preformForAllocationData, paLoading, paError } = useSelector((state) => state.preformForAllocation);
-  console.log("preform allocations:", preformForAllocationData)
   //For diallocation preform
 const confirmDeallocation = async () => {
     try {
@@ -149,7 +148,6 @@ const confirmDeallocation = async () => {
       dispatch(getPreformForAllocation());
         dispatch(getTowerForAllocation(true))
         dispatch(getRecentAllocatedPreforms())
-      console.log("result preform allocation:", result)
       showSuccess(result?.payload?.message)
       setSelectedPreform(null);
       resetForm({ values: { ...FORM_INIT, shift: autoShift, allocation_date: new Date().toISOString().split('T')[0] } });

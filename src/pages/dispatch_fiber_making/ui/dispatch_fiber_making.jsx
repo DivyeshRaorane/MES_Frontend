@@ -28,8 +28,7 @@ const FiberMakingCheck = () => {
     colour: Yup.string().required('Required'), // Changed to string as colors are usually text
   });
 
-  const onSubmit = (values) => {
-    console.log('Form Data:', values);
+  const onSubmit = () => {
     alert('Entry Submitted Successfully');
   };
 

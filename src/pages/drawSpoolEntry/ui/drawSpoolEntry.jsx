@@ -336,7 +336,6 @@ const DrawSpoolEntry = () => {
 
   const handleGetDrawFlaws = async (values, setFieldValue) => {
     try {
-      console.log("What is the date:", values.start_date, values.start_time, values.end_date, values.end_time)
       const res = await dispatch(
         getTowerEvent({
           tower_id: values.tower_no,
@@ -348,10 +347,8 @@ const DrawSpoolEntry = () => {
       );
 
       const events = res.payload?.data || [];
-      console.log("WHat is the events:", events)
 
       const mappedFlaws = drawFlawAutomation(events);
-      console.log("Mapped:", mappedFlaws)
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
       setFieldValue("drawn_length", parseFloat((mappedFlaws?.totalKm || 0).toFixed(2)))
@@ -362,7 +359,7 @@ const DrawSpoolEntry = () => {
       
 
     } catch (err) {
-      console.log("Error fetching flaws:", err);
+      showError(err?.message || "Failed to fetch flaws");
     }
   };
 
@@ -507,7 +504,6 @@ const DrawSpoolEntry = () => {
                       setTouched(touched);
                       const firstErr = Object.values(errs).find(e => typeof e === 'string');
                       if (firstErr) showError(firstErr);
-                      console.log("Validation errors:", errs);
                       return;
                     }
                     setShowDrawnLengthConfirm(true);

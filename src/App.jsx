@@ -162,7 +162,7 @@ function App() {
         <Route path='underdev' element={<UnderDevelopment/>}/>
         <Route path='admin/users' element={<UserHomeScreen/>}/>
         <Route path='admin/general' element={<GeneralAdmin/>}/>
-        <Route path='admin/usercreation' element={<UserCreationForm onSubmit={(v) => console.log('Create:', v)} title="Create New User" />}/>
+        <Route path='admin/usercreation' element={<UserCreationForm onSubmit={() => {}} title="Create New User" />}/>
         <Route path='admin/drawmanagement' element={<DrawManagementAdmin/>}/>
         <Route path='admin/prooftesting' element={<PTAdmin/>}/>
         <Route path='admin/quality' element={<QualityAdmin/>}/>

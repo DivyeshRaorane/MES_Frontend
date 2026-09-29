@@ -35,7 +35,7 @@ const FGRejection = () => {
       <div className="mt-8 flex justify-end border-t border-gray-100 pt-4">
         <button 
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-1.5 rounded text-sm font-medium transition-colors shadow-sm"
-          onClick={() => console.log("Submitting...")}
+          onClick={() => {}}
         >
           Submit
         </button>

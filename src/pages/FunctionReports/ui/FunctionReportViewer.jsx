@@ -309,8 +309,6 @@ const ReportExecutionPanel = ({ report, onBack }) => {
       normalizedParams[p.param_name] = normalizeParamForExecution(paramValues[p.param_name]);
     });
 
-    console.log('REPORT PARAMS:', normalizedParams);
-
     dispatch(runFunctionReport({ reportId: report.id, params: normalizedParams }));
   };
 

@@ -149,8 +149,6 @@ const Sidebar = () => {
   const dispatch  = useDispatch();
   const user = useSelector(state => state.auth?.user);
 
-  console.log("USer:", user)
-
   // Determine which menu keys are allowed
   const getAllowedMenuKeys = () => {
     if (!user) return ['dashboard']; // Not logged in — only dashboard

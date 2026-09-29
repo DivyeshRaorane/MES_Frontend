@@ -38,7 +38,6 @@ const CustomerAllocation = () => {
     setResults(null);
     try {
       const res = await runAllocationEngine(selectedSpecs);
-      console.log("Data spec:,", res)
       if (res?.success) {
         setResults(res.data);
         showSuccess(`Allocation complete. ${res.data.specs?.length || 0} spec(s) processed.`);

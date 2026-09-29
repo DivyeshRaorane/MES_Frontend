@@ -46,7 +46,7 @@ const DrawTimelossEntry = () => (
 
       <Formik
         initialValues={initialValues}
-        onSubmit={(v) => { console.log('Draw Timeloss Entry:', v); alert('Saved!'); }}
+        onSubmit={() => { alert('Saved!'); }}
       >
         {({ values, setFieldValue, resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">

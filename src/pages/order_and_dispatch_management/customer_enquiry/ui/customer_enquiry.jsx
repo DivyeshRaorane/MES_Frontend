@@ -42,7 +42,6 @@ const CustomerEnquiry = () => {
   const handleSubmit = (values, { resetForm }) => {
     const id = generateTicketId();
     setTicketId(id);
-    console.log('Customer Enquiry Submitted:', { ticketId: id, ...values });
     resetForm();
   };
 

@@ -18,7 +18,7 @@ const ShortTermEntry = () => (
   <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
     <div className="flex flex-col flex-1 overflow-hidden px-3 py-2">
       <Formik initialValues={initialValues}
-        onSubmit={(v) => { console.log('Short Term Entry:', v); alert('Saved!'); }}>
+        onSubmit={() => { alert('Saved!'); }}>
         {({ resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden gap-2">
             <ModuleCard compact title="Short Term Entry" icon={<ClipboardList size={12} className="text-blue-600" />}>

@@ -32,8 +32,6 @@ const [loading, setLoading] = useState(true);
     fetchRejectedSpools();
 }, []);
 
-console.log("rejected spools:,", rejectedData)
-  
   return(
   <div className="h-full flex flex-col overflow-hidden">
 

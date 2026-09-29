@@ -125,7 +125,6 @@ const PTEntry = () => {
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
   const { ptAllocatedSpoolData, ptASLoading } = useSelector((state) => state.ptAllocatedSpool);
-  console.log("What is the ptAlert:", ptAlert)
 
   /* ── Reusable FID generation logic ── */
   const genFid = async (spool_id, setFieldValue) => {
@@ -156,21 +155,18 @@ const PTEntry = () => {
   const handleBobbinBlur = async (bobbin_no, setFieldValue, pt_machine_no) => {
     if (!bobbin_no) return;
     const hasValidBobbin = bobbin_no.length === 10;
-    console.log('Fetching PT machine log for:', bobbin_no, pt_machine_no);
     // Reset break/scrap flags before checking new bobbin
     setFieldValue("pt_break", false);
     ptBreakRef.current = false;
     setFieldValue("pt_scrap", false);
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
-      console.log('PT machine log response:', res.data);
       const data = res.data;
       if (data?.success && data.data) {
         const log = data.data;
         const realLength = parseFloat(log.real_length) || 0;
         const setLength = parseFloat(log.set_length) || 0;
         const realLengthKm = (realLength / 1000).toFixed(3);
-        console.log('Setting pt_length to:', realLengthKm, 'km');
 
         // Set pt_length as real_length converted to km
         setFieldValue('pt_length', String(realLengthKm));
@@ -207,7 +203,6 @@ const PTEntry = () => {
           setFieldValue('fid', '');
         }
       } else {
-        console.log('No machine log data found in response');
         // No machine log length available — fall back to whatever pt_length is already
         // in the form (manual entry) and apply the same good-length + bobbin-no rule.
         const formik = formikRef.current;
@@ -220,7 +215,6 @@ const PTEntry = () => {
         }
       }
     } catch (e) {
-      console.log('PT machine log error:', e?.response?.status, e?.message);
       // Machine log lookup failed — fall back to whatever pt_length is already
       // in the form (manual entry) and apply the same good-length + bobbin-no rule.
       const formik = formikRef.current;
@@ -354,7 +348,6 @@ const PTEntry = () => {
 
   /* ── Actual PT submit logic (extracted for reuse with confirmation) ── */
   const doPtSubmit = async (values, setFieldValue) => {
-    console.log("Pt Break:", values)
     // pt_break can be lost from Formik state when multiple setFieldValue calls
     // fire concurrently (e.g. selecting multiple_end after bobbin scan).
     // ptBreakRef.current is the authoritative source — use OR to guard both.
@@ -614,8 +607,6 @@ const PTEntry = () => {
           validateOnBlur={true}
           innerRef={formikRef}
           onSubmit={async (values, { setFieldValue }) => {
-            console.log("payload:", values)
-
             // Validation: bobbin_no must be exactly 10 characters if provided (only for non-rejection entries)
             if (!values.active_rejection_type && values.bobbin_no && values.bobbin_no.length !== 10) {
               showError("PT Bobbin No must be exactly 10 characters.");

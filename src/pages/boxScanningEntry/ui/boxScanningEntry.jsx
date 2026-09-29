@@ -36,8 +36,7 @@ const BoxScanningEntry = () => {
     bobbinCount: Yup.number().typeError('Must be a number').required('Required'),
   });
 
-  const onSubmit = (values) => {
-    console.log('Form Submitted:', values);
+  const onSubmit = () => {
     alert('Box Entry Saved Successfully');
   };
 

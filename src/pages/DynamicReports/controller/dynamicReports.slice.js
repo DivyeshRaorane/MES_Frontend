@@ -36,7 +36,6 @@ export const runReport = createAsyncThunk(
   async ({ reportId, params }, { rejectWithValue }) => {
     try {
       const data = await executeUserReport(reportId, params);
-      console.log('[DynamicReports] runReport API response:', data);
       return data;
     } catch (error) {
       console.error('[DynamicReports] runReport error:', error);
@@ -180,8 +179,6 @@ const dynamicReportsSlice = createSlice({
           state.responseColumns = payload.columns;
         }
 
-        console.log('[DynamicReports] Stored reportData:', rows.length, 'rows');
-        console.log('[DynamicReports] responseColumns:', state.responseColumns);
       })
       .addCase(runReport.rejected, (state, action) => {
         state.loading.data = false;

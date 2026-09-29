@@ -209,7 +209,6 @@ const CustomerEnquiryFormPage = () => {
       setCompletedUpTo(prev => Math.max(prev, nextIdx));
     } else {
       /* All stages done */
-      console.log('All stages complete:', stageData);
       alert('Enquiry workflow completed successfully!');
       navigate('/order/enquirylist');
     }

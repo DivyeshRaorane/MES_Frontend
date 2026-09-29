@@ -76,7 +76,6 @@ const DrawBrakAnalysis = () => {
       setSelectedFid(fid);
       setSelectedSource(source);
       const data = await getBobbinByFid(fid);
-      console.log("WHat is the data:", data)
       setBobbinInfo(data?.data);
     } catch (err) {
       showError('Failed to load bobbin details');

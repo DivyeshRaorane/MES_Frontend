@@ -87,7 +87,7 @@ const DrawShiftReport = () => (
 
       <Formik
         initialValues={initialValues}
-        onSubmit={(v) => { console.log('Draw Shift Report:', v); alert('Saved!'); }}
+        onSubmit={() => { alert('Saved!'); }}
       >
         {({ values, resetForm }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">

@@ -26,7 +26,7 @@ const PTReport = () => {
       shiftTo: '',
       shiftId: 'A'
     },
-    onSubmit: (values) => console.log('Generating Report:', values),
+    onSubmit: () => {},
   });
 
   return (

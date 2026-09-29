@@ -43,8 +43,6 @@ const PreformEntryForm = () => {
     try {
         const response = await getmaterialmasterMC(materialCode);
 
-        console.log("material:", response)
-
         const material = response.data[0]; // adjust according to your API response
 
         if (!material) {
@@ -64,8 +62,6 @@ const PreformEntryForm = () => {
 
   const handleSubmit = async(values, { resetForm }) => {
     try{
-    console.log('Form Data Submitted:', values);
-
    const response=  await dispatch(preformEntrySap(values)).unwrap();
     const successMsg = response?.message || "Preform Creation Successful SAP";
     showSuccess(successMsg);

@@ -42,7 +42,6 @@ const TRHForm = ({ entryId, onClose }) => {
         setLoading(true);
         try {
           const res = await getTrhEntryById(entryId);
-          console.log('TRH entry response:', res);
           if (res?.success) {
             const m = res.data?.master || res.data || {};
             setMaster({

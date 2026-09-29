@@ -43,7 +43,7 @@ const ComplaintClosure = () => {
       
 
         <Formik initialValues={initVals} enableReinitialize
-          onSubmit={(v) => { console.log('Complaint Closure:', v); alert('Saved!'); }}>
+          onSubmit={() => { alert('Saved!'); }}>
           {({ resetForm }) => (
             <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
 

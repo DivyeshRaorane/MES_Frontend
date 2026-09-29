@@ -26,7 +26,6 @@ export const handleJoin = createAsyncThunk(
     'handleJoin/handleJoin',
     async (payload, { rejectWithValue }) => {
         try {
-            console.log("What is the payload:",payload)
             const response = await axios({
                 method: import.meta.env.VITE_METHOD_POST,
                 url: `${import.meta.env.VITE_API_URL}/handlejoin`,

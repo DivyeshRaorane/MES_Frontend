@@ -126,14 +126,10 @@ const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
 const executeMbendCopyAndMac = async (bobbin_no) => {
   if (!bobbin_no) return null;
   try {
-    console.log('[MBEnd] Triggering MBEnd copy + MAC calc for:', bobbin_no);
     const res = await copyMbendAndCalcMac(bobbin_no);
     if (res?.success) {
-      if (res.mbend_copied) console.log('[MBEnd] MBEnd values copied from sample:', res.sample_fid);
-      if (res.mac_calculated) console.log('[MBEnd] MAC value calculated:', res.mac_value);
       return res;
     } else {
-      console.log('[MBEnd] Skipped:', res?.message || 'No action needed');
       return res;
     }
   } catch (e) {
@@ -445,7 +441,6 @@ const QCEntryScreen = () => {
         // colored-bobbin copy internally) — check PT Entry table for flags
         try {
           const ptRes = await checkBobbinInPtEntry(bobbin_no);
-          console.log("Res:", ptRes)
           if (ptRes?.success && ptRes?.found) {
             const msgs = [];
             if (ptRes.full_mbend) {
@@ -525,7 +520,6 @@ const QCEntryScreen = () => {
       setMbendRemark(data.remark || '');
       setMbendReason(data.reason || '');
       setMbendNcCause(data.nc_cause || '');
-      console.log("Remark:", data)
 
       // NEW: MBend copy alert from mbendCopyS — sample bobbin has valid temp_grade
       // but zero MBend values filled in, so backend skipped the copy instead of
@@ -581,7 +575,6 @@ const QCEntryScreen = () => {
       const res = await gradeBobbin(values.bobbin_no);
       // Handle response — res is already axios res.data, may have nested .data
       const data = res?.data?.status ? res.data : res;
-      console.log("grade:", data)
 
       if (data?.status === 'PASSED') {
         const matchedGrade = data.matched_grade;
@@ -898,7 +891,7 @@ const QCEntryScreen = () => {
           try {
             const mbendRes = await updateMbendCycleAfterFailedSample(values.bobbin_no);
             if (mbendRes?.success && mbendRes?.reassigned) {
-              console.log('[MBend Reassign] New sample assigned:', mbendRes.new_sample_bobbin);
+              // sample reassigned
             }
           } catch (mbErr) {
             console.error('[MBend Reassign] Error:', mbErr?.response?.data?.message || mbErr.message);
@@ -970,17 +963,27 @@ const QCEntryScreen = () => {
                   </div>
                 )}
 
+                {/* Optical Length display — beside FID */}
+                {values.optical_length && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
+                  </div>
+                )}
+
+                {/* PT Length display — beside FID */}
+                {values.fiber_length && (
+                  <div className="flex items-center border border-slate-200 rounded overflow-hidden">
+                    <span className="bg-purple-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">PT LEN</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.fiber_length}</span>
+                  </div>
+                )}
+
                 {/* Product Type display */}
                 {values.product_type && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
                     <span className="px-2 py-1 text-xs font-bold font-mono text-slate-800">{values.product_type}</span>
                   </div>
-                )}
-
-                {/* Source badge */}
-                {source && (
-                  <span className={`text-[9px] font-bold px-2 py-1 rounded border ${source === 'final' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-blue-100 text-blue-700 border-blue-300'
-                    }`}>{source === 'final' ? 'Final QC Done' : 'Temp QC'}</span>
                 )}
 
                 {/* Existing Temp Grade badge */}
@@ -1216,23 +1219,14 @@ const QCEntryScreen = () => {
                     </div>
                   )}
 
-                  {/* Optical Length & PT Length — same line */}
-                  {(values.optical_length || values.fiber_length) && (
-                    <div className="col-span-2 mt-1 grid grid-cols-2 gap-1">
-                      {values.optical_length && (
-                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                          <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
-                          <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
-                        </div>
-                      )}
-                      {values.fiber_length && (
-                        <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                          <span className="bg-purple-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">PT LEN</span>
-                          <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.fiber_length}</span>
-                        </div>
-                      )}
+                  {/* Source badge — below rewinding remark */}
+                  {source && (
+                    <div className="col-span-2 mt-1">
+                      <span className={`text-[9px] font-bold px-2 py-1 rounded border ${source === 'final' ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-blue-100 text-blue-700 border-blue-300'
+                        }`}>{source === 'final' ? 'Final QC Done' : 'Temp QC'}</span>
                     </div>
                   )}
+
                 </Col>
 
               </div>
