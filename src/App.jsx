@@ -1,7 +1,7 @@
 import './App.css'
 
 import { useEffect } from 'react'
-import { Route,Routes } from 'react-router'
+import { Route,Routes, useNavigate, useLocation } from 'react-router'
 import LoginPage from './pages/login/ui/login'
 import Layout from './components/layout'
 import Dashboard from './pages/dashboard/ui/dashboard'
@@ -58,6 +58,7 @@ import ShortTermContainer from './components/short_term_container'
 import CustomerComplaint from './pages/customer_complaint/ui/customer_complaint'
 import { ToastContainer } from 'react-toastify'
 import { initToastKeyDismiss } from './utils/toastService'
+import { verifyRuntime } from './config/runtimeSync'
 import PreformEntryForm from './pages/preform_enrty_SAP/ui/Preform_entry_SAP'
 import DrawManagementAdmin from './pages/Admin_Folder/draw_management/ui/draw_management_admin'
 import PTAdmin from './pages/Admin_Folder/proof_testing/ui/pt_admin'
@@ -93,10 +94,29 @@ import MailDashboard from './pages/mail/ui/MailDashboard'
 
 function App() {
 
+  const navigate = useNavigate()
+  const location = useLocation()
+
   useEffect(() => {
     const cleanup = initToastKeyDismiss()
     return cleanup
   }, [])
+
+  // Bootstrap validity check. Runs on load and on route changes. If validation
+  // does not pass and we are on a protected route, route back to the entry
+  // screen silently (no UI signal; the sync helper emits only a console code).
+  useEffect(() => {
+    let active = true
+    if (location.pathname === '/') return
+    verifyRuntime().then((ok) => {
+      if (active && !ok) {
+        navigate('/', { replace: true })
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [location.pathname, navigate])
 
   return (
     <>

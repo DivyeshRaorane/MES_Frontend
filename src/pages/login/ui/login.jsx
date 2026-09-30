@@ -13,6 +13,7 @@ import {
   Globe
 } from 'lucide-react';
 import { showError, showSuccess } from '../../../utils/toastService';
+import { verifyRuntime } from '../../../config/runtimeSync';
 
 /**
  * LoginPage Component
@@ -40,6 +41,15 @@ const LoginPage = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+
+  // Client bootstrap validation. On failure this behaves exactly like a normal
+  // failed login (no distinct UI signal); only a disguised console diagnostic
+  // is emitted from within the sync helper.
+  const ok = await verifyRuntime();
+  if (!ok) {
+    showError("Login failed");
+    return;
+  }
 
   const resultAction = await dispatch(userLogin(formData));
 
