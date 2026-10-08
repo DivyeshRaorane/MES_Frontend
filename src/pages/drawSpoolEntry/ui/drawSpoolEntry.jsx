@@ -71,13 +71,13 @@ const initialValues = {
   uv_air: '', winding_observation: '', scr_observation: '', top_end_scrap: '',
   bottom_end_scrap: '', die_clean: '', spool_status: '', indication_fiber_cut: '',
   indication_reason: "", remark: '', primary_coating: '', secondary_coating: '', coating_type: '',
-  primary_pressure: '', secondary_pressure: '', primary_batch: '', secondary_batch: '',
+  primary_pressure: '', secondary_pressure: '',
   process_type: '', preform_type: '', product_type: '', logged_in_user: '', shift_incharge: '', furnace_operator: '',
   die_operator: '', ground_operator: '',
   draw_flaws: [], pt_flaws: []
 };
 
-const CONSUMPTION_TABS = ['Coating'];
+
 
 /* ── Yup Validation Schema ── */
 const validationSchema = Yup.object({
@@ -119,8 +119,7 @@ const validationSchema = Yup.object({
   coating_type: Yup.string().required('Coating Type is required'),
   primary_pressure: Yup.string().required('Primary Pressure is required'),
   secondary_pressure: Yup.string().required('Secondary Pressure is required'),
-  primary_batch: Yup.string().required('Primary Batch is required'),
-  secondary_batch: Yup.string().required('Secondary Batch is required'),
+
   shift_incharge: Yup.string().required('Shift Incharge is required'),
   furnace_operator: Yup.string().required('Furnace Operator is required'),
   die_operator: Yup.string().required('Die Operator is required'),
@@ -131,7 +130,7 @@ const validationSchema = Yup.object({
 /* ══════════════════════════════════════════════════════════ */
 const DrawSpoolEntry = () => {
   const dispatch = useDispatch();
-  const [activeConsTab, setActiveConsTab] = useState('Coating');
+
   const [shifts, setShifts] = useState([]);
   const [drawUsers, setDrawUsers] = useState([]);
   const [drawWindingObs, setDrawWindingObs] = useState([]);
@@ -143,6 +142,8 @@ const DrawSpoolEntry = () => {
   const [pendingResetForm, setPendingResetForm] = useState(null);
   const [showDrawnLengthConfirm, setShowDrawnLengthConfirm] = useState(false);
   const [processTypeOptions, setProcessTypeOptions] = useState([]);
+  const [processOrder, setProcessOrder] = useState(null); // { order_no, order_qty, gr_qty }
+  const [processOrderError, setProcessOrderError] = useState(null);
   const formikRef = React.useRef(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
   const { preformByTowerData, pbtLoading, pbtError } = useSelector((state) => state.preformByTower)
@@ -216,6 +217,38 @@ const DrawSpoolEntry = () => {
     } catch (e) {
       console.error("Error fetching process types:", e);
       setProcessTypeOptions([]);
+    }
+  };
+
+  /* ── Fetch process order when process_type is selected ── */
+  const fetchProcessOrder = async (processType, productType) => {
+    if (!processType || !productType) {
+      setProcessOrder(null);
+      setProcessOrderError(null);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      // Material code: DT + product_type + process_type (trimmed and whitespace removed)
+      const trimmedProcessType = processType.trim().replace(/\s+/g, '');
+      const trimmedProductType = productType.trim().replace(/\s+/g, '');
+      const materialCode = `DT${trimmedProductType}${trimmedProcessType}`;
+      console.log(materialCode)
+      const res = await axios.get(`${API}/sap-transaction/released-order/${materialCode}?orderType=ZSFG`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data?.success && res.data?.data) {
+        setProcessOrder(res.data.data);
+        setProcessOrderError(null);
+      } else {
+        setProcessOrder(null);
+        setProcessOrderError(res.data?.message || "Process order not released");
+      }
+    } catch (error) {
+      console.error("Error fetching process order:", error);
+      setProcessOrder(null);
+      setProcessOrderError(error?.response?.data?.message || "Failed to fetch process order");
     }
   };
 
@@ -468,7 +501,18 @@ const DrawSpoolEntry = () => {
               {/* ── Top action bar ── */}
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  {/* Process Order Display */}
+                  {processOrder && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-[9px] font-bold rounded border border-green-300">
+                      Order No: {processOrder.order_no}
+                    </span>
+                  )}
+                  {processOrderError && (
+                    <span className="px-2 py-1 bg-red-100 text-red-800 text-[9px] font-bold rounded border border-red-300">
+                      {processOrderError}
+                    </span>
+                  )}
                   <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
                   {/* Show Preform End button when balance_weight is low */}
                   {Number(values.preform_weight) > 0 && Number(values.balance_weight) <= PRE_END_THRESHOLD && values.balance_weight !== '' && (
@@ -549,6 +593,8 @@ const DrawSpoolEntry = () => {
                             setFieldValue("drawn_weight", '');
                             setFieldValue("balance_weight", '');
                             setProcessTypeOptions([]);
+                            setProcessOrder(null);
+                            setProcessOrderError(null);
                             return;
                           }
 
@@ -572,6 +618,10 @@ const DrawSpoolEntry = () => {
                             setFieldValue("co2_flow", 5 || '');
                             setFieldValue("n2_flow", 5 || '');
                             setFieldValue("uv_air", 10 || '');
+                            
+                            // Clear previous process order when tower changes
+                            setProcessOrder(null);
+                            setProcessOrderError(null);
 
                             // Load process type options for this preform type
                             fetchProcessTypesByPreformType(data.preform_type);
@@ -600,6 +650,8 @@ const DrawSpoolEntry = () => {
                             setFieldValue("drawn_weight", '');
                             setFieldValue("balance_weight", '');
                             setProcessTypeOptions([]);
+                            setProcessOrder(null);
+                            setProcessOrderError(null);
                           }
                         }} />
                       <FormikInput compact label="Preform ID" name="preform_id" readOnly />
@@ -650,7 +702,13 @@ const DrawSpoolEntry = () => {
 
                       <FormikInput compact label="Spool ID" name="spool_id" type='text' maxLength={10} />
                       <FormikInput compact label="Spool FID" name="spool_fid" readOnly />
-                      <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions} />
+                      <FormikSelect compact label="Process Type" name="process_type" options={processTypeOptions}
+                        onChange={(e) => {
+                          const selectedProcessType = e.target.value;
+                          setFieldValue("process_type", selectedProcessType);
+                          // Fetch process order when process_type is selected
+                          fetchProcessOrder(selectedProcessType, values.product_type);
+                        }} />
 
                     </div>
                   </div>
@@ -710,46 +768,22 @@ const DrawSpoolEntry = () => {
                     </div>
                   </div>
 
-                  {/* Consumption Details */}
+                  {/* Coating Details */}
                   <div className="border border-slate-200 rounded bg-white px-2 py-1.5 flex-1 min-h-0">
-                    <SL title="Consumption Details" />
-                    {/* Tab bar */}
-                    <div className="flex gap-1 mb-1.5">
-                      {CONSUMPTION_TABS.map(tab => (
-                        <button key={tab} type="button" onClick={() => setActiveConsTab(tab)}
-                          className={`px-2.5 py-0.5 text-[9px] font-bold rounded transition-all ${activeConsTab === tab ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}>
-                          {tab}
-                        </button>
-                      ))}
+                    <SL title="Coating Details" />
+                    <div className="grid grid-cols-5 gap-x-2 gap-y-1">
+                      <FormikSelect compact label="Primary Coating" name="primary_coating" options={[
+                        { label: "P-COAT-V1", value: "P-COAT-V1" },
+                        { label: "P-COAT-V2", value: "P-COAT-V2" }
+                      ]} />
+                      <FormikSelect compact label="Secondary Coating" name="secondary_coating" options={[
+                        { label: "P-COAT-V1", value: "P-COAT-V1" },
+                        { label: "P-COAT-V2", value: "P-COAT-V2" }
+                      ]} />
+                      <FormikSelect compact label="Coating Type" name="coating_type" options={['PHICHEM', 'ZTT','DSM']} />
+                      <FormikInput compact label="Primary Pressure" name="primary_pressure" type="number" />
+                      <FormikInput compact label="Secondary Pressure" name="secondary_pressure" type="number" />
                     </div>
-                    {activeConsTab === 'Coating' && (
-                      <div className="grid grid-cols-5 gap-x-2 gap-y-1">
-                        <FormikSelect compact label="Primary Coating" name="primary_coating" options={[
-                          { label: "P-COAT-V1", value: "P-COAT-V1" },
-                          { label: "P-COAT-V2", value: "P-COAT-V2" }
-                        ]} />
-                        <FormikSelect compact label="Secondary Coating" name="secondary_coating" options={[
-                          { label: "P-COAT-V1", value: "P-COAT-V1" },
-                          { label: "P-COAT-V2", value: "P-COAT-V2" }
-                        ]} />
-                        <FormikSelect compact label="Coating Type" name="coating_type" options={['PHICHEM', 'ZTT','DSM']} />
-                        <FormikInput compact label="Primary Pressure" name="primary_pressure" type="number" />
-                        <FormikInput compact label="Secondary Pressure" name="secondary_pressure" type="number" />
-                        <FormikSelect compact label="Primary Batch" name="primary_batch" options={[
-                          { label: "P-BATCH-V1", value: "P-BATCH-V1" },
-                          { label: "P-BATCH-V2", value: "P-BATCH-V2" }
-                        ]} />
-                        <FormikSelect compact label="Secondary Batch" name="secondary_batch" options={[
-                          { label: "P-BATCH-V1", value: "P-BATCH-V1" },
-                          { label: "P-BATCH-V2", value: "P-BATCH-V2" }
-                        ]} />
-
-                      </div>
-                    )}
-                    {activeConsTab !== 'Coating' && (
-                      <p className="text-[9px] text-slate-400 text-center py-3">{activeConsTab} fields — coming soon</p>
-                    )}
                   </div>
 
                 </div>

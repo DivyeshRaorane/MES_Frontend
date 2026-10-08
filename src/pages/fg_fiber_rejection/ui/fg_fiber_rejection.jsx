@@ -269,14 +269,49 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
     if (!rewindType) { showError('Select Rewinding Type'); return; }
 
     const isWholeLength = rewindType === 'REWINDING';
-    setRows(prev => [...prev, {
-      id: Date.now(),
-      ...popup,
-      rewinding_type: rewindType,
-      cuts: [], // cutting-instruction table removed; no P1/P2 sent
-      remark: rewRemark.trim() || null, // operator's remark → backend as `remark`
-      reason: isWholeLength ? (rewReason.trim() || null) : null, // Whole Length only
-    }]);
+    
+    // For CUT type: check if at least one of instructions or remark is filled
+    if (!isWholeLength) {
+      const hasAnyInstruction = cuts.some(c => c.p1 || c.p2);
+      const hasRemark = rewRemark.trim();
+      
+      if (!hasAnyInstruction && !hasRemark) {
+        showError('Fill at least Cutting Instructions OR Remark');
+        return;
+      }
+      
+      // If P1/P2 filled, send as remark; otherwise send the remark field
+      let finalRemark = null;
+      if (hasAnyInstruction) {
+        // Format: "Cut from {p1} km to {p2} km ({c_remark})"
+        finalRemark = cuts
+          .filter(c => c.p1 && c.p2)
+          .map(cut => `Cut from ${cut.p1} km to ${cut.p2} km${cut.c_remark ? ` (${cut.c_remark})` : ''}`)
+          .join(', ');
+      } else {
+        finalRemark = rewRemark.trim() || null;
+      }
+      
+      setRows(prev => [...prev, {
+        id: Date.now(),
+        ...popup,
+        rewinding_type: rewindType,
+        cuts: [],
+        remark: finalRemark,
+        reason: null,
+      }]);
+    } else {
+      // Whole Length: send remark and reason
+      setRows(prev => [...prev, {
+        id: Date.now(),
+        ...popup,
+        rewinding_type: rewindType,
+        cuts: [],
+        remark: rewRemark.trim() || null,
+        reason: rewReason.trim() || null,
+      }]);
+    }
+    
     setPopup(null);
     setRewindType('');
     setCuts([{ p1: '', p2: '', c_remark: '' }]);
@@ -402,13 +437,11 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                 }`}>Cut</button>
             </div>
 
-            {/* Cut instructions (P1/P2 table) — COMMENTED OUT ──
-                No longer sent to the backend. For CUT we now send only the
-                operator's Remark; for Whole Length we send Remark + Reason.
+            {/* Cut instructions (P1/P2 table) */}
             {rewindType === 'CUT' && (
               <div className="border border-slate-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Cutting Instructions</span>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">Cutting Instructions (optional if Remark is filled)</span>
                   <button type="button" onClick={() => setCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
                     className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
                     <Plus size={9} /> Add Row
@@ -450,7 +483,6 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
                 </table>
               </div>
             )}
-            ── end commented Cut instructions ── */}
 
             {/* Whole Length confirmation message */}
             {rewindType === 'REWINDING' && (
@@ -463,7 +495,9 @@ const RewindPanel = ({ qcUsers, onBobbinScanned, onViewFiberInfo }) => {
             {rewindType && (
               <div className="grid grid-cols-1 gap-2 mb-3">
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-slate-600 uppercase">Remark</label>
+                  <label className="text-[9px] font-bold text-slate-600 uppercase">
+                    {rewindType === 'CUT' ? 'Remark (optional if Cutting Instructions filled)' : 'Remark'}
+                  </label>
                   <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
                     placeholder="Enter remark..." />

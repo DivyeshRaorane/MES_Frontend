@@ -164,11 +164,22 @@ const D2Recieving = () => {
         try {
           const cRes = await getD2ChambersInUse();
           if (cRes?.success) setChambers(cRes.data || []);
-        } catch (_) {}
+        } catch (refreshErr) {
+          console.error('Chamber list refresh failed:', refreshErr);
+        }
       } else {
         showError(res?.message || 'Receiving failed');
       }
     } catch (e) {
+      // No token locally, or backend rejected the token (expired / invalid).
+      const status = e?.response?.status;
+      if (e?.code === 'NO_TOKEN' || status === 401) {
+        showError('Your session has expired. Please log in again.');
+        localStorage.removeItem('token');
+        setSubmitting(false);
+        window.location.href = '/'; // login route
+        return;
+      }
       showError(e?.response?.data?.message || 'Something went wrong');
     }
     setSubmitting(false);

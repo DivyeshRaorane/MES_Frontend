@@ -103,7 +103,7 @@ const QCInOut = () => {
         refocus(setFieldValue); return;
       }
 
-      setRows(prev => [...prev, {
+      setRows(prev => [{
         id: Date.now(),
         bobbin_no: bobbin.bobbin_no,
         bobbin_fid: bobbin.bobbin_fid || '',
@@ -115,7 +115,7 @@ const QCInOut = () => {
         out_time: nowTime(),
         is_qc_out: null, // unknown until /qcout/submit responds
         reason: '',
-      }]);
+      }, ...prev]);
 
       refocus(setFieldValue);
     } catch (e) {

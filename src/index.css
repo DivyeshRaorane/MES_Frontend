@@ -82,3 +82,19 @@ thead th {
   background: #e2e8f0;
   border-radius: 10px;
 }
+
+/* Ensure toast error messages are visible in red */
+.Toastify__toast--error {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.Toastify__toast--error .Toastify__toast-message {
+  color: #ffffff !important;
+}
+
+/* Ensure field error messages are red */
+.text-red-500,
+.text-rose-500 {
+  color: #ef4444 !important;
+}

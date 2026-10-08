@@ -424,18 +424,20 @@ const RewindingEntry = () => {
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 bg-slate-50 z-10">
                         <tr className="border-b border-slate-200">
-                          {['#', 'Date', 'Length', 'Type', 'FID', 'Machine', 'Reason', 'Operator'].map(h => (
+                          {['#', 'Date', 'Parent Bobbin', 'Bobbin No', 'Length', 'Type', 'FID', 'Machine', 'Reason', 'Operator'].map(h => (
                             <th key={h} className="px-2 py-1.5 text-[8px] font-bold text-slate-500 uppercase whitespace-nowrap border-r border-slate-100 last:border-0">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {history.length === 0 ? (
-                          <tr><td colSpan={8} className="px-3 py-6 text-center text-[9px] text-slate-400">No entries yet — scan a bobbin to begin</td></tr>
+                          <tr><td colSpan={10} className="px-3 py-6 text-center text-[9px] text-slate-400">No entries yet — scan a bobbin to begin</td></tr>
                         ) : history.map((h, i) => (
                           <tr key={i} className="hover:bg-blue-50/20">
                             <td className="px-2 py-1.5 text-[9px] text-slate-400 font-bold border-r border-slate-100">{i + 1}</td>
                             <td className="px-2 py-1.5 text-[9px] text-slate-500 border-r border-slate-100">{h.created_at ? new Date(h.created_at).toLocaleDateString('en-IN') : '—'}</td>
+                            <td className="px-2 py-1.5 text-[9px] font-mono font-bold text-slate-600 border-r border-slate-100">{h.parent_bobbin_no || '—'}</td>
+                            <td className="px-2 py-1.5 text-[9px] font-mono font-bold text-blue-700 border-r border-slate-100">{h.bobbin_no || '—'}</td>
                             <td className="px-2 py-1.5 text-[9px] font-mono font-bold text-emerald-700 border-r border-slate-100">{h.fiber_length}</td>
                             <td className="px-2 py-1.5 border-r border-slate-100"><span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${h.is_scrap ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>{h.is_scrap ? 'Scrap' : 'Rewind'}</span></td>
                             <td className="px-2 py-1.5 text-[8px] font-mono text-indigo-700 border-r border-slate-100">{h.generated_fid || '—'}</td>

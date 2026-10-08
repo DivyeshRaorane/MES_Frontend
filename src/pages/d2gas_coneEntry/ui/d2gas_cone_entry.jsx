@@ -22,7 +22,10 @@ const validationSchema = Yup.object().shape({
   fresh_gas: Yup.number().typeError('Must be a number').required('Fresh gas is required'),
   used_gas: Yup.number().typeError('Must be a number').required('Used gas is required'),
   n2_gas: Yup.number().typeError('Must be a number').required('N2 gas is required'),
-  tank_pressure: Yup.number().typeError('Must be a number').required('Tank pressure is required'),
+  tank_pressure: Yup.number()
+    .typeError('Must be a number')
+    .required('Tank pressure is required')
+    .oneOf([1550], 'Total gas (Fresh + Used + N2) must equal exactly 1550'),
   cycle_time_min: Yup.number().typeError('Must be a number').required('Cycle time is required'),
   shift: Yup.string().required('Shift is required'),
   d2_gas_operator: Yup.string().required('Operator is required'),
@@ -107,6 +110,11 @@ const D2GasConeEntry = () => {
       return;
     }
 
+    if (Number(values.tank_pressure) !== 1550) {
+      showError('Total gas (Fresh + Used + N2) must equal exactly 1550');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -150,7 +158,28 @@ const D2GasConeEntry = () => {
           validateOnBlur={true}
           onSubmit={handleSubmit}
         >
-          {({ values, setFieldValue, resetForm, isValid }) => (
+          {({ values, setFieldValue, resetForm }) => {
+
+            /* Recalculate Tank Pressure = Fresh Gas + Used Gas + N2 Gas */
+            const recalcTankPressure = (field, rawValue, setFieldValue) => {
+              setFieldValue(field, rawValue);
+
+              const gases = {
+                fresh_gas: values.fresh_gas,
+                used_gas: values.used_gas,
+                n2_gas: values.n2_gas,
+                [field]: rawValue,
+              };
+
+              const sum =
+                (parseFloat(gases.fresh_gas) || 0) +
+                (parseFloat(gases.used_gas) || 0) +
+                (parseFloat(gases.n2_gas) || 0);
+
+              setFieldValue('tank_pressure', sum ? Number(sum.toFixed(3)) : '');
+            };
+
+            return (
             <Form className="flex flex-col flex-1 overflow-hidden">
 
               {/* ── Action bar ── */}
@@ -241,15 +270,18 @@ const D2GasConeEntry = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                           <FormikInput compact label="Gas Concentration" name="gas_concentration" type="number" step="0.01" placeholder="0.00" />
-                          <FormikInput compact label="Tank Pressure" name="tank_pressure" type="number" step="0.01" placeholder="0.00" />
+                          <FormikInput compact label="Tank Pressure" name="tank_pressure" type="number" step="0.01" placeholder="Auto-calculated..." readOnly />
                         </div>
 
                         <div className="bg-slate-50 rounded-lg border border-slate-100 p-3">
                           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Gas Consumption</p>
                           <div className="grid grid-cols-3 gap-3">
-                            <FormikInput compact label="Fresh Gas" name="fresh_gas" type="number" step="0.001" placeholder="0.000" />
-                            <FormikInput compact label="Used Gas" name="used_gas" type="number" step="0.001" placeholder="0.000" />
-                            <FormikInput compact label="N2 Gas" name="n2_gas" type="number" step="0.001" placeholder="0.000" />
+                            <FormikInput compact label="Fresh Gas" name="fresh_gas" type="number" step="0.001" placeholder="0.000"
+                              onChange={(e) => recalcTankPressure('fresh_gas', e.target.value, setFieldValue)} />
+                            <FormikInput compact label="Used Gas" name="used_gas" type="number" step="0.001" placeholder="0.000"
+                              onChange={(e) => recalcTankPressure('used_gas', e.target.value, setFieldValue)} />
+                            <FormikInput compact label="N2 Gas" name="n2_gas" type="number" step="0.001" placeholder="0.000"
+                              onChange={(e) => recalcTankPressure('n2_gas', e.target.value, setFieldValue)} />
                           </div>
                         </div>
 
@@ -284,7 +316,8 @@ const D2GasConeEntry = () => {
               </div>
 
             </Form>
-          )}
+            );
+          }}
         </Formik>
       </div>
     </div>

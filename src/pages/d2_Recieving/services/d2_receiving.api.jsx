@@ -35,13 +35,34 @@ export const getQCUsers = async () => {
 /* ── Complete D2 Receiving (update d2_issue + bobbin_entries) ── */
 export const completeD2Receiving = async (payload) => {
   const token = localStorage.getItem("token");
+
+  // Safety check: don't fire the request without a token.
+  // The backend uses this JWT to identify the user and check their role
+  // (admins may receive before the 18-hour minimum; regular users cannot).
+  if (!token) {
+    const err = new Error("No authentication token found. Please log in again.");
+    err.code = "NO_TOKEN";
+    throw err;
+  }
+
+  const authHeader = `Bearer ${token}`;
+
+  // Debug: confirm the Authorization header right before the request.
+  // Only logs a masked preview of the token, never the full JWT.
+  if (import.meta.env.DEV) {
+    console.debug(
+      "[completeD2Receiving] Authorization: Bearer",
+      `${token.slice(0, 12)}...(${token.length} chars)`
+    );
+  }
+
   const response = await axios({
     method: "PUT",
     url: `${API}/d2receiving/complete`,
     data: payload,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: authHeader,
     },
   });
   return response.data;

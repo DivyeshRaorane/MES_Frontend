@@ -125,3 +125,12 @@ export const getPendingTempGrade = async () => {
   const res = await axios.get(`${API}/qcentry/pending-temp-grade`, { headers: authHeaders() });
   return res.data;
 };
+
+/* ── Pending final-submit list (Automatic Bulk Submit mode) ──
+   Returns bobbins that are ready to be finalized: present in qc_entry_temp with a
+   temp_grade set but no final_grade yet, AND not already present in qc_entry.
+   returns: { success, data: [{ bobbin_no, temp_grade?, product_type?, matcode? }] } */
+export const getPendingFinalSubmit = async () => {
+  const res = await axios.get(`${API}/qcentry/pending-final-submit`, { headers: authHeaders() });
+  return res.data;
+};

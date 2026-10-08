@@ -84,6 +84,10 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('REL'); // default: show REL orders on load
+
+  // Only these order statuses are shown in the Process Order table.
+  const STATUS_FILTERS = ['REL', 'TECO', 'PCNF'];
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -101,7 +105,12 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
     fetchOrders();
   }, []);
 
-  const filtered = orders.filter(o => {
+  // Restrict the table to the selected order status (REL / TECO / PCNF).
+  const byStatus = orders.filter(
+    o => (o.order_status || '').toUpperCase() === statusFilter
+  );
+
+  const filtered = byStatus.filter(o => {
     const q = search.toLowerCase();
     return !q
       || o.order_no?.toLowerCase().includes(q)
@@ -128,10 +137,23 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
             </div>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Order Master</span>
             <span className="text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold">
-              {orders.length}
+              {byStatus.length}
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Order status filter: REL (default) / TECO / PCNF */}
+            <div className="flex items-center gap-1">
+              {STATUS_FILTERS.map(s => (
+                <button key={s} type="button" onClick={() => setStatusFilter(s)}
+                  className={`px-2.5 py-1 text-[9px] font-bold rounded-full border transition-all ${
+                    statusFilter === s
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}>
+                  {s} ({orders.filter(o => (o.order_status || '').toUpperCase() === s).length})
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."

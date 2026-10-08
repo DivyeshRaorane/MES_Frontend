@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import { ShieldCheck, Scan, ClipboardCheck, User, Trash2 } from 'lucide-react';
+import { ShieldCheck, Scan, ClipboardCheck, User, Trash2, FileSpreadsheet } from 'lucide-react';
 import { ModuleCard, FormikSelect, FormikTextarea } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import { getAllShifts } from '../../Admin_Folder/shift/service/shift.api';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import axios from 'axios';
 
 /* ── APIs ── */
@@ -92,6 +94,8 @@ const PVEntry = () => {
   const [qcUsers, setQcUsers]       = useState([]);
   const [scanInput, setScanInput]   = useState('');
   const [confirm, setConfirm]       = useState({ open: false, title: '', message: '', onYes: null, onNo: null });
+  // Rows from the last successful submit, kept so the user can export them to Excel after the grid is cleared.
+  const [exportData, setExportData] = useState(null); // { rows, pv_type } | null
   const scanRef = useRef(null);
   const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
 
@@ -168,7 +172,7 @@ const PVEntry = () => {
       refocus(); return;
     }
 
-    setTableRows(prev => [...prev, {
+    setTableRows(prev => [{
       id: Date.now(), bobbin_no, bobbin_fid: data.fid || '', spool_id: data.spool_id || '',
       spool_fid: data.spool_fid || '', preform_id: data.preform_id || '', fiber_type: data.fiber_type || '',
       fiber_color: data.fiber_color || '', drawn_length: data.drawn_length || '', qty_kms: data.fiber_length || '',
@@ -176,7 +180,7 @@ const PVEntry = () => {
       has_pv_record: !!has_pv_record,
       pv_color: formValues.fiber_color || '',
       pv_remark: formValues.pv_remark || '',
-    }]);
+    }, ...prev]);
     refocus();
   };
 
@@ -209,13 +213,13 @@ const PVEntry = () => {
       refocus(); return;
     }
 
-    setTableRows(prev => [...prev, {
+    setTableRows(prev => [{
       id: Date.now(), bobbin_no, bobbin_fid: data.fid || '', spool_id: data.spool_id || '',
       spool_fid: data.spool_fid || '', preform_id: data.preform_id || '', fiber_type: data.fiber_type || '',
       fiber_color: data.fiber_color || '', drawn_length: data.drawn_length || '', qty_kms: data.fiber_length || '',
       temp_grade: data.temp_grade || '', final_grade: data.final_grade || '', operator: formValues.pv_operator || '',
       pv_remark: formValues.pv_remark || '',
-    }]);
+    }, ...prev]);
     refocus();
   };
 
@@ -248,10 +252,57 @@ const PVEntry = () => {
     if (bobbin === lastValue && now - ts < 800) return;
     scanLockRef.current = { value: bobbin, ts: now };
 
+    // Starting a fresh batch — dismiss the previous export banner.
+    if (exportData) setExportData(null);
+
     handleScan(formValues, bobbin);
   };
 
   const removeRow = (id) => setTableRows(prev => prev.filter(r => r.id !== id));
+
+  /* ── Export the last successfully-submitted bobbins to Excel ──
+     Same columns shown in the on-screen grid, plus an extra "PV Done" column = true. */
+  const exportToExcel = () => {
+    if (!exportData?.rows?.length) return;
+
+    const headers = [
+      '#', 'Bobbin No', 'Bobbin FID', 'Spool ID', 'Spool FID', 'Preform ID',
+      'Fiber Type', 'Fiber Color', 'PV Color', 'Drawn Len', 'Qty (KM)',
+      'Temp Grade', 'Final Grade', 'Operator', 'Remark', 'PV Done',
+    ];
+
+    const rows = exportData.rows.map((r, idx) => [
+      idx + 1,
+      r.bobbin_no || '',
+      r.bobbin_fid || '',
+      r.spool_id || '',
+      r.spool_fid || '',
+      r.preform_id || '',
+      r.fiber_type || '',
+      r.fiber_color || '',
+      r.pv_color || '',
+      r.drawn_length || '',
+      r.qty_kms || '',
+      r.temp_grade || '',
+      r.final_grade || '',
+      r.operator || '',
+      r.pv_remark || '',
+      true, // PV Done
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 2, 12) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PV Entries');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const label = exportData.pv_type === 're_pv' ? 'RePV' : 'PV';
+    saveAs(
+      new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `${label}_Entries_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
+    showSuccess('Excel exported successfully');
+    setExportData(null); // close the popup once exported
+  };
 
   /* ── Submit ── */
   const handleSubmit = async (formValues, resetForm) => {
@@ -296,6 +347,8 @@ const PVEntry = () => {
           ? `${tableRows.length} bobbin(s) verified successfully!`
           : `${tableRows.length} PV record(s) updated successfully!`;
         showSuccess(msg);
+        // Snapshot the submitted rows so the user can still export them after the grid clears.
+        setExportData({ rows: tableRows, pv_type: formValues.pv_type });
         setTableRows([]);
         resetForm();
       } else {
@@ -319,7 +372,7 @@ const PVEntry = () => {
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Physical Verification</span>
                 <div className="flex gap-1.5">
-                  <ResetButton compact type="button" onClick={() => { resetForm(); setTableRows([]); setScanInput(''); }}>Reset</ResetButton>
+                  <ResetButton compact type="button" onClick={() => { resetForm(); setTableRows([]); setScanInput(''); setExportData(null); }}>Reset</ResetButton>
                   <SubmitButton compact type="button" disabled={submitting || tableRows.length === 0}
                     onClick={() => handleSubmit(values, resetForm)}>
                     {submitting ? 'Saving...' : `Submit (${tableRows.length})`}
@@ -443,6 +496,32 @@ const PVEntry = () => {
         </Formik>
 
         <ConfirmDialog {...confirm} isOpen={confirm.open} />
+
+        {/* ── Export to Excel popup (after a successful submit) ── */}
+        {exportData?.rows?.length > 0 && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+            <div className="bg-white rounded-xl shadow-2xl p-5 w-80">
+              <div className="flex items-center gap-2 mb-2">
+                <FileSpreadsheet size={16} className="text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800">Export to Excel</h3>
+              </div>
+              <p className="text-xs text-slate-600 mb-4">
+                {exportData.rows.length} bobbin{exportData.rows.length !== 1 ? 's' : ''} submitted successfully.
+                Do you want to export the details to Excel?
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setExportData(null)}
+                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">
+                  Cancel
+                </button>
+                <button type="button" onClick={exportToExcel}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">
+                  <FileSpreadsheet size={12} /> Export
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

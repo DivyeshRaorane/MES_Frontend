@@ -70,18 +70,19 @@ const D2Batches = () => {
       }
       const bobbins = res.data || [];
       if (bobbins.length === 0) {
-        showError('No bobbins pending final grade for this batch');
+        showError('No bobbins found for this batch');
         setExporting(null);
         return;
       }
 
       // Build Excel data
-      const headers = ['Bobbin No', 'FID', 'Product Type', 'Temp Grade'];
+      const headers = ['Bobbin No', 'FID', 'Product Type', 'Temp Grade', 'Final Grade'];
       const rows = bobbins.map((b) => [
         b.bobbin_no || '',
         b.fid || '',
         b.product_type || '',
         b.temp_grade || '',
+        b.final_grade || '',
       ]);
 
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -89,6 +90,7 @@ const D2Batches = () => {
         { wch: 18 },
         { wch: 20 },
         { wch: 18 },
+        { wch: 14 },
         { wch: 14 },
       ];
 
@@ -311,11 +313,11 @@ const D2Batches = () => {
                       <button
                         onClick={(e) => handleExportGrade(batch, e)}
                         disabled={exporting === batch.d2_batch_id}
-                        title="Export bobbins pending final grade"
+                        title="Export all bobbins for this batch"
                         className="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-all disabled:opacity-50"
                       >
                         <Download size={10} />
-                        {exporting === batch.d2_batch_id ? '...' : 'Grade'}
+                        {exporting === batch.d2_batch_id ? '...' : 'Export'}
                       </button>
                     </td>
                   </tr>

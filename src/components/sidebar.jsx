@@ -25,7 +25,6 @@ const MENU = [
     icon: Box,
     color: 'text-blue-400',
     children: [
-      { label: 'SAP Entry Temp', path: '/drawmange/prefromentrysap' },
       { label: 'Preform Acceptance', path: '/drawmange/acceptance' },
       { label: 'Handle Joining',     path: '/drawmange/handlejoining' },
       { label: 'Preform Allocation', path: '/drawmange/allocation' },

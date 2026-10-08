@@ -675,12 +675,20 @@ const QCEntryScreen = () => {
     // Manual REW requires type selection
     if (manualRew && !manualRewType) { showError('Select Rewinding Type'); return; }
 
-    // Cut P1/P2 validation only applies to the grade-fail and flaw paths, which
-    // still use the cutting-instruction table. The manual REW popup no longer
-    // collects P1/P2 (cut table removed), so we skip validation there.
-    if ((!manualRew && !rewFromFlaw) || rewFromFlaw) {
+    // Flaw path still requires P1/P2 (single cut) for the instruction.
+    if (rewFromFlaw) {
       const hasEmpty = rewCuts.some(c => !c.p1 || !c.p2);
       if (hasEmpty) { showError('Fill all P1 and P2 values'); return; }
+    }
+
+    // Manual CUT path: require either Cutting Instructions (P1/P2) OR Remark.
+    if (manualRew && manualRewType === 'CUT') {
+      const hasAnyInstruction = rewCuts.some(c => c.p1 || c.p2);
+      const hasRemark = rewRemark.trim();
+      if (!hasAnyInstruction && !hasRemark) {
+        showError('Fill at least Cutting Instructions OR Remark');
+        return;
+      }
     }
 
     // Build remark string (used only by the flaw / grade-fail paths for instruction text)
@@ -735,6 +743,25 @@ const QCEntryScreen = () => {
         // Whole Length sends the operator's reason; CUT sends null.
         const isWholeLength = manualRewType === 'REWINDING';
 
+        // Resolve the remark to send:
+        //  - CUT with P1/P2 filled → build instruction text as remark
+        //  - CUT without P1/P2     → use the free-text Remark field
+        //  - Whole Length          → use the free-text Remark field
+        let finalRemark;
+        if (!isWholeLength) {
+          const hasAnyInstruction = rewCuts.some(c => c.p1 || c.p2);
+          if (hasAnyInstruction) {
+            finalRemark = rewCuts
+              .filter(c => c.p1 && c.p2)
+              .map(cut => `Cut from ${cut.p1} km to ${cut.p2} km${cut.c_remark ? ` (${cut.c_remark})` : ''}`)
+              .join(', ');
+          } else {
+            finalRemark = rewRemark.trim() || null;
+          }
+        } else {
+          finalRemark = rewRemark.trim() || null;
+        }
+
         const rewindPayload = {
           request_by: 'QC_Manual',
           date: new Date().toISOString().split('T')[0],
@@ -744,7 +771,8 @@ const QCEntryScreen = () => {
             bobbin_fid: bobbinFid,
             total_length: fiberLength,
             rewinding_type: manualRewType,
-            cuts: manualRewType === 'CUT' ? [...rewCuts] : [],
+            cuts: [],
+            remark: finalRemark,
             reason: isWholeLength ? (rewReason.trim() || null) : null,
           }],
         };
@@ -1268,13 +1296,13 @@ const QCEntryScreen = () => {
                 </div>
               )}
 
-              {/* ── Cut instructions (P1/P2 table) — COMMENTED OUT ──
-                  No longer sent to the backend. For CUT we now send only the
-                  operator's Remark; for Whole Length we send Remark + Reason.
+              {/* ── Cut instructions (P1/P2 table) ──
+                  CUT type: either Cutting Instructions (P1/P2) OR Remark is required.
+                  If P1/P2 filled, they are sent as the remark; otherwise the Remark field is sent. */}
               {((!manualRew) || (manualRew && manualRewType === 'CUT')) && (
                 <div className="border border-slate-200 rounded-lg p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-bold text-slate-700 uppercase">Cutting Instructions</span>
+                    <span className="text-[9px] font-bold text-slate-700 uppercase">Cutting Instructions (optional if Remark is filled)</span>
                     <button type="button" onClick={() => setRewCuts(prev => [...prev, { p1: '', p2: '', c_remark: '' }])}
                       className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-bold rounded border border-blue-200 hover:bg-blue-100">
                       <Plus size={9} /> Add Row
@@ -1319,7 +1347,6 @@ const QCEntryScreen = () => {
                   </table>
                 </div>
               )}
-              ── end commented Cut instructions ── */}
 
               {/* Whole Length confirmation message */}
               {manualRew && manualRewType === 'REWINDING' && (
@@ -1331,7 +1358,9 @@ const QCEntryScreen = () => {
               {/* ── Remark (always) + Reason (Whole Length only) ── */}
               <div className="grid grid-cols-1 gap-2 mb-3">
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-slate-600 uppercase">Remark</label>
+                  <label className="text-[9px] font-bold text-slate-600 uppercase">
+                    {(manualRew && manualRewType === 'CUT') ? 'Remark (optional if Cutting Instructions filled)' : 'Remark'}
+                  </label>
                   <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
                     placeholder="Enter remark..." />

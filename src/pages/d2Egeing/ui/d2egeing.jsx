@@ -94,6 +94,9 @@ const D2Issue = () => {
         if (draft.d2_type) setRestricted(draft.d2_type === 'restricted');
         setBatchId(draftBatchId);
         setSelectedDraft(draftBatchId);
+        // Reset start date/time to current so user can set/change it on load
+        setD2StartDate(new Date().toISOString().split('T')[0]);
+        setD2StartTime(nowTime());
         // Restore bobbins
         const bobbins = (draft.bobbins || []).map((b, i) => ({
           id: Date.now() + i,
@@ -188,7 +191,7 @@ const D2Issue = () => {
           final_grade: data.final_grade || '',
           d2_type: 'restricted',
         };
-        setRows(prev => [...prev, newRow]);
+        setRows(prev => [newRow, ...prev]);
 
         // Auto-save to draft
         autoSaveDraft(newRow);
@@ -210,7 +213,7 @@ const D2Issue = () => {
           final_grade: data.final_grade || '',
           d2_type: 'not-restricted',
         };
-        setRows(prev => [...prev, newRow]);
+        setRows(prev => [newRow, ...prev]);
 
         // Auto-save to draft
         autoSaveDraft(newRow);

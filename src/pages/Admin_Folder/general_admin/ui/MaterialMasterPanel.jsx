@@ -185,7 +185,7 @@ const MaterialFormModal = ({ item, onClose, onSaved }) => {
   };
 
   const CATEGORY_OPTIONS = [
-    { value: '', label: 'Select Category' },
+    { value: 'PREFORM', label: 'Preform' },
     { value: 'RAW_MATERIAL', label: 'Raw Material' },
     { value: 'FINISHED_GOOD', label: 'Finished Good' },
     { value: 'SEMI_FINISHED', label: 'Semi Finished' },

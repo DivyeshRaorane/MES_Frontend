@@ -93,7 +93,7 @@ const initialValues = {
   pt_machine_no: '', operator_name: '', shift_incharge: '', shift: '', bobbin_color: 'BLUE', bobbin_type: '50KM',
   pt_length: '', pt_break: false, pt_scrap: false, status: 'PENDING', payoff_vibration: 'No', dancer_vibration: 'No',
   active_rejection_type: '', // radio token architecture: 'rejection', 'bal_draw_rejection', etc.
-  rejection_reason: '', bal_draw_rejection_reason: '', ztmd_id: '', doc_id: '',product_type: "", pt_strain: "",pt_break_count: "",
+  rejection_reason: '', bal_draw_rejection_reason: '', pt_scrap_reason: '', ztmd_id: '', doc_id: '',product_type: "", pt_strain: "",pt_break_count: "",
   multiple_end_weight: '', drawn_remark: '', pt_logs: [], pt_flaws: []
 };
 
@@ -619,6 +619,12 @@ const PTEntry = () => {
               return;
             }
 
+            // Validation: if pt_scrap is checked, reason must be selected
+            if (values.active_rejection_type === 'pt_scrap' && (!values.pt_scrap_reason || values.pt_scrap_reason === 'Select')) {
+              showError("Please select a PT Scrap Reason");
+              return;
+            }
+
             // FID validation: if no rejection type selected, FID is mandatory
             if (!values.active_rejection_type && !values.fid) {
               showError("FID not generated. Cannot submit without FID. Please scan the PT Barcode.");
@@ -677,6 +683,11 @@ const PTEntry = () => {
                 setFieldValue('active_rejection_type', '');
                 setFieldValue('pt_length', ''); // Now sets pt_length to empty string
                 setActiveFlaw(null);            // Unlocks the readOnly constraint
+                // Reset pt_break when unchecking any rejection type (except multiple_end which manages it separately)
+                if (typeKey !== 'multiple_end') {
+                  setFieldValue('pt_break', false);
+                  ptBreakRef.current = false;
+                }
               } else {
                 setFieldValue('active_rejection_type', typeKey);
                 setFieldValue('fid', ''); // Clear FID when any rejection is checked
@@ -690,6 +701,7 @@ const PTEntry = () => {
               // Reset sub-input data rules cleanly
               setFieldValue('rejection_reason', '');
               setFieldValue('bal_draw_rejection_reason', '');
+              setFieldValue('pt_scrap_reason', '');
               setFieldValue('multiple_end_weight', '');
               setFieldValue('ztmd_id', '');
               setFieldValue('doc_id', '');
@@ -965,9 +977,33 @@ const PTEntry = () => {
                           </div>
                         </RejRowLayout>
 
-                        <RejRowLayout label="Scratch" checked={values.active_rejection_type === 'scratch'} onChange={e => handleRadioSelection('scratch', e.target.checked)} />
+                        {/*<RejRowLayout label="Scratch" checked={values.active_rejection_type === 'scratch'} onChange={e => handleRadioSelection('scratch', e.target.checked)} />*/}
 
-                        <RejRowLayout label="PT Scrap" checked={values.active_rejection_type === 'pt_scrap'} onChange={e => handleRadioSelection('pt_scrap', e.target.checked)} />
+                        <RejRowLayout label="PT Scrap" checked={values.active_rejection_type === 'pt_scrap'} onChange={e => handleRadioSelection('pt_scrap', e.target.checked)}>
+                          <select
+                            name="pt_scrap_reason"
+                            value={values.pt_scrap_reason}
+                            className="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[9px] font-semibold text-slate-800 outline-none focus:ring-1 focus:ring-indigo-400"
+                            onChange={(e) => {
+                              const selected = e.target.value;
+                              setFieldValue('pt_scrap_reason', selected);
+                              
+                              // Auto-set pt_break = true when "BREAK" is selected
+                              if (selected === 'BREAK') {
+                                setFieldValue('pt_break', true);
+                                ptBreakRef.current = true;
+                              } else {
+                                // Reset pt_break for other selections
+                                setFieldValue('pt_break', false);
+                                ptBreakRef.current = false;
+                              }
+                            }}
+                          >
+                            {['Select', 'NO GOOD LENGTH', 'BREAK', 'WEAK FIBER'].map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </RejRowLayout>
 
                         <RejRowLayout label="ZTMD" checked={values.active_rejection_type === 'ztmd'} onChange={(e) => {
                           const isChecked = e.target.checked;
@@ -985,6 +1021,7 @@ const PTEntry = () => {
                           // Clean up other unrelated row inputs
                           setFieldValue('rejection_reason', '');
                           setFieldValue('bal_draw_rejection_reason', '');
+                          setFieldValue('pt_scrap_reason', '');
                           setFieldValue('multiple_end_weight', '');
                           setFieldValue('doc_id', '');
                         }}>
@@ -1007,6 +1044,7 @@ const PTEntry = () => {
                           // Clean up other unrelated row inputs
                           setFieldValue('rejection_reason', '');
                           setFieldValue('bal_draw_rejection_reason', '');
+                          setFieldValue('pt_scrap_reason', '');
                           setFieldValue('multiple_end_weight', '');
                           setFieldValue('ztmd_id', '');
                         }}>
