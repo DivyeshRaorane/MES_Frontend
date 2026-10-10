@@ -15,4 +15,4 @@
 
 
   {/*{ label: 'SAP Entry Temp', path: '/drawmange/prefromentrysap' },*/},
-      
+      { label: 'Draw Timeloss Entry',   path: '/drawmange/drawtimeloss'},

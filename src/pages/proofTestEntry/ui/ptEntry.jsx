@@ -105,6 +105,9 @@ const PTEntry = () => {
   const [showFlawConfirm, setShowFlawConfirm] = useState(false);
   const [showBreakScrapAlert, setShowBreakScrapAlert] = useState(false);
   const [breakAlertContext, setBreakAlertContext] = useState('');
+  // Holds the finished spool's identifiers for the Spool End popup, captured
+  // before the form is reset so the "spool-complete" API still has them.
+  const [completedSpool, setCompletedSpool] = useState({ spool_id: '', pt_machine_no: '' });
   const [pendingPtSubmit, setPendingPtSubmit] = useState(null);
   const [isSpoolModalOpen, setIsSpoolModalOpen] = useState(false);
   const [ptUsers, setPTUsers] = useState([]);
@@ -125,6 +128,25 @@ const PTEntry = () => {
   const { ptFlawsData } = useSelector((state) => state.ptFlaws);
   const { ptLogsData, ptLLoading, ptLError } = useSelector((state) => state.ptLogs);
   const { ptAllocatedSpoolData, ptASLoading } = useSelector((state) => state.ptAllocatedSpool);
+
+  /* ── Reset the entire PT Entry screen to a blank state ──
+     Used when a spool is fully processed (balance = 0) so the finished
+     spool is not left loaded in the form. */
+  const resetPTScreen = () => {
+    if (formikRef.current) {
+      formikRef.current.resetForm({ values: initialValues });
+    }
+    ptBreakRef.current = false;
+    setActiveFlaw(null);
+    setBalanceLength(0);
+    setLastFidInfo({ last_fid: '', p_count: 0 });
+    setPtAlert({ message: '', nextFlawMessage: '' });
+    // Clear any flaw/log data cached in Redux for the finished spool
+    dispatch(clearPtFlaws());
+    dispatch(clearPtLogs());
+    // Refresh the allocated spool list so the completed spool drops off
+    dispatch(getPTAllocatedSpool(false));
+  };
 
   /* ── Reusable FID generation logic ── */
   const genFid = async (spool_id, setFieldValue) => {
@@ -557,12 +579,26 @@ const PTEntry = () => {
         ptBreakRef.current = false;
         setFieldValue("pt_scrap", false);
         setFieldValue("multiple_end_weight", "");
-        const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
-        await handleScan(values.spool_id, setFieldValue);
-        setBalanceLength(spoolResponse.data.balance_qty);
 
-        if (Number(spoolResponse.data.balance_qty) <= 0) {
+        // Re-fetch spool to get the updated balance after this entry
+        const spoolResponse = await getSpoolDetailsForPT(values.spool_id);
+        const newBalance = Number(spoolResponse.data.balance_qty);
+
+        if (newBalance <= 0) {
+          // Capture the finished spool's identifiers BEFORE resetting the form,
+          // so the Spool End popup can still call the spool-complete API.
+          setCompletedSpool({
+            spool_id: values.spool_id,
+            pt_machine_no: values.pt_machine_no,
+          });
+          // Spool is fully processed — reset the whole screen to a blank state
+          // so the finished spool is not left loaded in the form.
+          resetPTScreen();
           setShowSpoolEndPopup(true);
+        } else {
+          // Spool still has balance — reload it to continue the next bobbin entry
+          await handleScan(values.spool_id, setFieldValue);
+          setBalanceLength(newBalance);
         }
       } else {
         const errMsg = response.payload?.message || "Failed to save PT Entry";
@@ -1225,6 +1261,11 @@ const PTEntry = () => {
               formikRef.current.setFieldValue('doc_id', '');
 
               formikRef.current.setFieldValue('active_rejection_type', 'bal_draw_rejection');
+              // Bal. Draw Rejection scraps the remaining balance — auto-fill
+              // pt_length with the current balance length.
+              formikRef.current.setFieldValue('pt_length', String(balanceLength ?? ''));
+              // Rejections never carry a FID
+              formikRef.current.setFieldValue('fid', '');
             }
           }}
         />
@@ -1268,7 +1309,7 @@ const PTEntry = () => {
                 Would you like to mark this spool as <strong>PT Complete</strong> and <strong>free the PT machine</strong>?
               </p>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setShowSpoolEndPopup(false)}
+                <button type="button" onClick={() => { setShowSpoolEndPopup(false); setCompletedSpool({ spool_id: '', pt_machine_no: '' }); }}
                   className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">
                   Skip
                 </button>
@@ -1276,8 +1317,7 @@ const PTEntry = () => {
                   setShowSpoolEndPopup(false);
                   try {
                     const token = localStorage.getItem('token');
-                    const spool_id = formikRef.current?.values?.spool_id;
-                    const pt_machine_no = formikRef.current?.values?.pt_machine_no;
+                    const { spool_id, pt_machine_no } = completedSpool;
                     await axios.put(`${import.meta.env.VITE_API_URL}/ptentry/spool-complete`, {
                       spool_id,
                       pt_machine_no,
@@ -1285,6 +1325,8 @@ const PTEntry = () => {
                     showSuccess('Spool marked as PT Complete. Machine freed.');
                   } catch (e) {
                     showError(e?.response?.data?.message || 'Failed to mark spool complete');
+                  } finally {
+                    setCompletedSpool({ spool_id: '', pt_machine_no: '' });
                   }
                 }}
                   className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">

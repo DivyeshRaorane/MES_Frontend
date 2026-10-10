@@ -144,6 +144,7 @@ const DrawSpoolEntry = () => {
   const [processTypeOptions, setProcessTypeOptions] = useState([]);
   const [processOrder, setProcessOrder] = useState(null); // { order_no, order_qty, gr_qty }
   const [processOrderError, setProcessOrderError] = useState(null);
+  const [mesConnectionError, setMesConnectionError] = useState(null); // tower/MES not reachable (e.g. 500)
   const formikRef = React.useRef(null);
   const { towerForAllocationData, taLoading, taError } = useSelector((state) => state.towersForAllocation)
   const { preformByTowerData, pbtLoading, pbtError } = useSelector((state) => state.preformByTower)
@@ -379,8 +380,17 @@ const DrawSpoolEntry = () => {
         })
       );
 
-      const events = res.payload?.data || [];
+      // Thunk was rejected (e.g. 500 — DB down / tower not reachable)
+      if (getTowerEvent.rejected.match(res)) {
+        setMesConnectionError("Tower not Connected with MES");
+        showError(res.payload?.message || "Tower not Connected with MES");
+        return;
+      }
 
+      // Success — clear any previous connection error
+      setMesConnectionError(null);
+
+      const events = res.payload?.data || [];
       const mappedFlaws = drawFlawAutomation(events);
 
       setFieldValue("draw_flaws", mappedFlaws?.results);
@@ -502,6 +512,12 @@ const DrawSpoolEntry = () => {
               <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Spool Entry</span>
                 <div className="flex items-center gap-1.5">
+                  {/* MES / Tower connection error — shown before Order No */}
+                  {mesConnectionError && (
+                    <span className="px-2 py-1 bg-red-100 text-red-800 text-[9px] font-bold rounded border border-red-300 animate-pulse">
+                      {mesConnectionError}
+                    </span>
+                  )}
                   {/* Process Order Display */}
                   {processOrder && (
                     <span className="px-2 py-1 bg-green-100 text-green-800 text-[9px] font-bold rounded border border-green-300">
@@ -578,6 +594,9 @@ const DrawSpoolEntry = () => {
 
                         onChange={async (e) => {
                           const towerId = e.target.value;
+
+                          // Clear MES/tower connection error whenever tower changes
+                          setMesConnectionError(null);
 
                           // If tower deselected or no value, clear all auto-filled fields
                           if (!towerId || towerId === 'Select') {

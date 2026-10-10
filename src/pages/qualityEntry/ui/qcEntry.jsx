@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
-import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw, Layers } from 'lucide-react';
+import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw, Layers, X } from 'lucide-react';
 import BulkEntryModal from './BulkEntryModal';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
@@ -78,7 +78,7 @@ const MEASUREMENT_FIELDS = [
 ];
 
 const buildInitialValues = () => {
-  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '' };
+  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '', fiber_color: '' };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
 };
@@ -95,8 +95,13 @@ const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-      <div className="bg-white rounded-xl shadow-2xl p-5 w-[420px]">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="relative bg-white rounded-xl shadow-2xl p-5 w-[420px]">
+        {/* Cancel = X in top-right corner */}
+        <button type="button" aria-label="Close" onClick={onCancel}
+          className="absolute top-3 right-3 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+          <X size={16} />
+        </button>
+        <div className="flex items-center gap-2 mb-3 pr-6">
           <AlertTriangle size={18} className="text-red-500" />
           <h3 className="text-sm font-bold text-red-700">QC Evaluation Failed</h3>
         </div>
@@ -111,7 +116,6 @@ const FailureDialog = ({ isOpen, details, onFail, onRew, onCancel }) => {
         <div className="flex gap-2">
           <button onClick={onFail} className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-all">FAIL</button>
           <button onClick={onRew} className="flex-1 px-3 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition-all">REWINDING</button>
-          <button onClick={onCancel} className="flex-1 px-3 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300 transition-all">CANCEL</button>
         </div>
       </div>
     </div>
@@ -429,7 +433,7 @@ const QCEntryScreen = () => {
     setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark(''); setMbendReason(''); setMbendNcCause(''); setRewEnabled(false);
     try {
       const res = await fetchBobbinQC(bobbin_no);
-
+console.log("res:", res)
       if (!res?.success) {
         // Bobbin not in bobbin_entries at all — stop, no PT check
         if (res?.in_bobbin_entries === false) {
@@ -670,10 +674,24 @@ const QCEntryScreen = () => {
     setRewPopup(true);
   };
 
-  /* ── Rewinding popup confirm ── */
-  const handleRewConfirm = async () => {
-    // Manual REW requires type selection
-    if (manualRew && !manualRewType) { showError('Select Rewinding Type'); return; }
+  /* ── FAIL button (footer, manual mode) ──
+     FAIL is a separate service from Rewinding. The footer FAIL button runs the
+     manual confirm flow with an explicit 'FAIL' type override so it doesn't
+     depend on async setState. */
+  const handleFailConfirm = () => handleRewConfirm('FAIL');
+
+  /* ── Rewinding popup confirm ──
+     `typeOverride` lets the footer FAIL button force the FAIL path. When not
+     provided, the selected rewinding type (Whole Length / Cut) is used. */
+  const handleRewConfirm = async (typeOverride) => {
+    // Resolve the effective type: footer FAIL overrides; otherwise use selection.
+    const effectiveType = (typeof typeOverride === 'string' && typeOverride) ? typeOverride : manualRewType;
+
+    // Manual REW requires a resolved type (FAIL via override is always valid).
+    // REW_CHOOSE is the transient "Rewinding picked, sub-type pending" state.
+    if (manualRew && (!effectiveType || effectiveType === 'REW_CHOOSE')) {
+      showError('Select Whole Length or Cut'); return;
+    }
 
     // Flaw path still requires P1/P2 (single cut) for the instruction.
     if (rewFromFlaw) {
@@ -682,7 +700,7 @@ const QCEntryScreen = () => {
     }
 
     // Manual CUT path: require either Cutting Instructions (P1/P2) OR Remark.
-    if (manualRew && manualRewType === 'CUT') {
+    if (manualRew && effectiveType === 'CUT') {
       const hasAnyInstruction = rewCuts.some(c => c.p1 || c.p2);
       const hasRemark = rewRemark.trim();
       if (!hasAnyInstruction && !hasRemark) {
@@ -691,8 +709,16 @@ const QCEntryScreen = () => {
       }
     }
 
+    // Manual FAIL path: require a Remark.
+    if (manualRew && effectiveType === 'FAIL') {
+      if (!rewRemark.trim()) {
+        showError('Enter a remark');
+        return;
+      }
+    }
+
     // Build remark string (used only by the flaw / grade-fail paths for instruction text)
-    const remarkParts = manualRewType === 'REWINDING'
+    const remarkParts = effectiveType === 'REWINDING'
       ? ['Whole Length Rewinding']
       : rewCuts.map(cut => `Cut from ${cut.p1} km to ${cut.p2}(${cut.c_remark}:)`);
     const remarkStr = remarkParts.join(', ');
@@ -741,14 +767,15 @@ const QCEntryScreen = () => {
         const fiberLength = vals.optical_length || '';
 
         // Whole Length sends the operator's reason; CUT sends null.
-        const isWholeLength = manualRewType === 'REWINDING';
+        const isWholeLength = effectiveType === 'REWINDING';
+        const isFail = effectiveType === 'FAIL';
 
         // Resolve the remark to send:
         //  - CUT with P1/P2 filled → build instruction text as remark
         //  - CUT without P1/P2     → use the free-text Remark field
-        //  - Whole Length          → use the free-text Remark field
+        //  - Whole Length / FAIL   → use the free-text Remark field
         let finalRemark;
-        if (!isWholeLength) {
+        if (effectiveType === 'CUT') {
           const hasAnyInstruction = rewCuts.some(c => c.p1 || c.p2);
           if (hasAnyInstruction) {
             finalRemark = rewCuts
@@ -770,16 +797,17 @@ const QCEntryScreen = () => {
             bobbin_no: bobbinNo,
             bobbin_fid: bobbinFid,
             total_length: fiberLength,
-            rewinding_type: manualRewType,
+            rewinding_type: effectiveType,
             cuts: [],
             remark: finalRemark,
             reason: isWholeLength ? (rewReason.trim() || null) : null,
           }],
         };
         const rewRes = await submitRewindRequest(rewindPayload);
-        if (!rewRes?.success) { showError(rewRes?.message || 'Rewind request failed'); setLoading(false); return; }
+        if (!rewRes?.success) { showError(rewRes?.message || (isFail ? 'Fail request failed' : 'Rewind request failed')); setLoading(false); return; }
 
-        setGrade('REW');
+        const finalGrade = isFail ? 'FAIL' : 'REW';
+        setGrade(finalGrade);
         setGraded(true);
         setRewPopup(false);
         setRewCuts([{ p1: '', p2: '', c_remark: '' }]);
@@ -789,10 +817,10 @@ const QCEntryScreen = () => {
         setRewReason('');
         // Mark as final so all buttons get disabled
         setSource('final');
-        setExistingTempGrade('REW');
-        setExistingFinalGrade('REW');
+        setExistingTempGrade(finalGrade);
+        setExistingFinalGrade(finalGrade);
         formRef.current = rewRemark.trim() || null;
-        showSuccess('Bobbin marked as REW. Final QC completed.');
+        showSuccess(`Bobbin marked as ${finalGrade}. Final QC completed.`);
       } catch (e) {
         showError(e?.response?.data?.message || 'Rewind request failed');
       }
@@ -1223,6 +1251,17 @@ const QCEntryScreen = () => {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Fiber Color — read-only, sourced from fetchBobbinQC (data.fiber_color) */}
+                  <div className="col-span-2 mt-1">
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                      <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Fiber Color</span>
+                      <span className="text-[9px] font-bold text-slate-900 break-words text-right">
+                        {values.fiber_color || '—'}
+                      </span>
+                    </div>
+                  </div>
+
                   {/* MBend Remark / Reason / NC Cause — shown when grade is REW */}
                   {(existingTempGrade === 'REW' || existingFinalGrade === 'REW') && (mbendRemark || mbendReason || mbendNcCause) && (
                     <div className="col-span-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 space-y-1">
@@ -1273,19 +1312,57 @@ const QCEntryScreen = () => {
         {/* ── Rewinding Instruction Popup ── */}
         {rewPopup && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-            <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="relative bg-white rounded-xl shadow-2xl p-5 w-[450px] max-h-[80vh] overflow-y-auto">
+              {/* Cancel = X in top-right corner */}
+              <button type="button" aria-label="Close"
+                onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); setRewRemark(''); setRewReason(''); }}
+                className="absolute top-3 right-3 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                <X size={16} />
+              </button>
+              <div className="flex items-center gap-2 mb-3 pr-6">
+                {/* Back arrow — return to the Rewinding / Fail chooser (manual mode, after a choice is made) */}
+                {manualRew && manualRewType && (
+                  <button type="button" aria-label="Back"
+                    onClick={() => { setManualRewType(''); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewRemark(''); setRewReason(''); }}
+                    className="text-slate-400 hover:text-slate-700 text-xs font-bold">&larr; Back</button>
+                )}
                 <AlertTriangle size={16} className="text-amber-500" />
-                <h3 className="text-sm font-bold text-slate-800">{manualRew ? 'Rewinding / Rework' : 'Rewinding Instructions'}</h3>
+                <h3 className="text-sm font-bold text-slate-800">
+                  {!manualRew
+                    ? 'Rewinding Instructions'
+                    : manualRewType === 'FAIL'
+                      ? 'Fail Bobbin'
+                      : (manualRewType === 'REWINDING' || manualRewType === 'CUT' || manualRewType === 'REW_CHOOSE')
+                        ? 'Rewinding'
+                        : 'Rewinding / Fail'}
+                </h3>
               </div>
               <p className="text-[10px] text-slate-700 mb-3">
-                {manualRew
-                  ? 'Select rewinding type and enter instructions. This will mark the bobbin as REW.'
-                  : 'Enter cutting instructions for rewinding. These will be saved as the QC remark.'}
+                {!manualRew
+                  ? 'Enter cutting instructions for rewinding. These will be saved as the QC remark.'
+                  : !manualRewType
+                    ? 'Choose an action for this bobbin.'
+                    : manualRewType === 'FAIL'
+                      ? 'This bobbin will be marked as FAIL. Please enter a remark.'
+                      : 'Select Whole Length or Cut, then enter instructions.'}
               </p>
 
-              {/* ── Type selection (only for manual REW) ── */}
-              {manualRew && (
+              {/* ── Step 1: top-level chooser (manual mode, nothing selected) ── */}
+              {manualRew && !manualRewType && (
+                <div className="flex gap-2 mb-3">
+                  <button type="button" onClick={() => { setManualRewType('REW_CHOOSE'); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-bold rounded-lg border bg-amber-500 text-white border-amber-500 hover:bg-amber-600 transition-all">
+                    <RotateCcw size={13} /> Rewinding
+                  </button>
+                  <button type="button" onClick={() => { setManualRewType('FAIL'); setRewCuts([]); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-bold rounded-lg border bg-red-600 text-white border-red-600 hover:bg-red-700 transition-all">
+                    <XCircle size={13} /> FAIL
+                  </button>
+                </div>
+              )}
+
+              {/* ── Step 2 (Rewinding): Whole Length / Cut sub-options ── */}
+              {manualRew && (manualRewType === 'REW_CHOOSE' || manualRewType === 'REWINDING' || manualRewType === 'CUT') && (
                 <div className="flex gap-2 mb-3">
                   <button type="button" onClick={() => { setManualRewType('REWINDING'); setRewCuts([]); }}
                     className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${manualRewType === 'REWINDING' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -1355,33 +1432,62 @@ const QCEntryScreen = () => {
                 </div>
               )}
 
-              {/* ── Remark (always) + Reason (Whole Length only) ── */}
-              <div className="grid grid-cols-1 gap-2 mb-3">
-                <div className="flex flex-col gap-0.5">
-                  <label className="text-[9px] font-bold text-slate-600 uppercase">
-                    {(manualRew && manualRewType === 'CUT') ? 'Remark (optional if Cutting Instructions filled)' : 'Remark'}
-                  </label>
-                  <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
-                    placeholder="Enter remark..." />
-                </div>
-                {/* Reason only applies to Whole Length rewind */}
-                {manualRew && manualRewType === 'REWINDING' && (
+              {/* ── Remark + Reason ──
+                  Shown once an actionable mode is picked: FAIL, or a Rewinding
+                  sub-type (Whole Length / Cut). Hidden on the first chooser and
+                  the Rewinding sub-chooser (REW_CHOOSE). */}
+              {((!manualRew) || (manualRew && (manualRewType === 'FAIL' || manualRewType === 'REWINDING' || manualRewType === 'CUT'))) && (
+                <div className="grid grid-cols-1 gap-2 mb-3">
                   <div className="flex flex-col gap-0.5">
-                    <label className="text-[9px] font-bold text-slate-600 uppercase">Reason</label>
-                    <input type="text" value={rewReason} onChange={e => setRewReason(e.target.value)}
+                    <label className="text-[9px] font-bold text-slate-600 uppercase">
+                      {(manualRew && manualRewType === 'CUT') ? 'Remark (optional if Cutting Instructions filled)' : 'Remark'}
+                    </label>
+                    <input type="text" value={rewRemark} onChange={e => setRewRemark(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
-                      placeholder="Enter reason..." />
+                      placeholder="Enter remark..." />
                   </div>
-                )}
-              </div>
+                  {/* Reason only applies to Whole Length rewind */}
+                  {manualRew && manualRewType === 'REWINDING' && (
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[9px] font-bold text-slate-600 uppercase">Reason</label>
+                      <input type="text" value={rewReason} onChange={e => setRewReason(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-300"
+                        placeholder="Enter reason..." />
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { setRewPopup(false); setRewCuts([{ p1: '', p2: '', c_remark: '' }]); setRewFromFlaw(false); setManualRew(false); setManualRewType(''); setRewRemark(''); setRewReason(''); }}
-                  className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200">Cancel</button>
-                <button type="button" onClick={handleRewConfirm}
-                  className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Confirm Rewinding</button>
-              </div>
+              {/* ── Footer: confirm button changes with the selected mode ── */}
+              {/* FAIL mode → Confirm Fail */}
+              {manualRew && manualRewType === 'FAIL' && (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleFailConfirm}
+                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700">
+                    Confirm Fail
+                  </button>
+                </div>
+              )}
+
+              {/* Rewinding sub-type picked (Whole Length / Cut) → Confirm Rewinding */}
+              {manualRew && (manualRewType === 'REWINDING' || manualRewType === 'CUT') && (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleRewConfirm}
+                    className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">
+                    Confirm Rewinding
+                  </button>
+                </div>
+              )}
+
+              {/* Non-manual (flaw / grade-fail) path → single Confirm Rewinding */}
+              {!manualRew && (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleRewConfirm}
+                    className="flex-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">
+                    Confirm Rewinding
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1465,8 +1571,14 @@ const QCEntryScreen = () => {
         {/* ── PT Entry Check Popup (Bobbin not in QC but found in PT) ── */}
         {ptCheckPopup.open && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-            <div className="bg-white rounded-xl shadow-2xl p-5 w-[450px]">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="relative bg-white rounded-xl shadow-2xl p-5 w-[450px]">
+              {/* Cancel = X in top-right corner */}
+              <button type="button" aria-label="Close"
+                onClick={() => setPtCheckPopup({ open: false, messages: [], bobbin_no: '', bobbin_fid: '', optical_length: '', fiber_length: '', matcode: '', product_type: '' })}
+                className="absolute top-3 right-3 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                <X size={16} />
+              </button>
+              <div className="flex items-center gap-2 mb-3 pr-6">
                 <AlertTriangle size={18} className="text-amber-500" />
                 <h3 className="text-sm font-bold text-amber-700">Bobbin Not In QC — Action Required</h3>
               </div>
@@ -1588,7 +1700,12 @@ const FlawInstrPopup = ({ isOpen, instrText, p1, p2, msg, onOk, onCancel }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
-      <div className="bg-white rounded-2xl shadow-2xl p-0 w-[460px] overflow-hidden border border-red-100">
+      <div className="relative bg-white rounded-2xl shadow-2xl p-0 w-[460px] overflow-hidden border border-red-100">
+        {/* Cancel = X in top-right corner */}
+        <button type="button" aria-label="Close" onClick={onCancel}
+          className="absolute top-3 right-3 z-10 p-1 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all">
+          <X size={16} />
+        </button>
         {/* Header */}
         <div className="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4 flex items-center gap-3">
           <div className="bg-white/20 rounded-xl p-2.5">
@@ -1629,10 +1746,6 @@ const FlawInstrPopup = ({ isOpen, instrText, p1, p2, msg, onOk, onCancel }) => {
 
         {/* Footer */}
         <div className="border-t border-slate-100 bg-slate-50 px-6 py-3 flex gap-2">
-          <button type="button" onClick={onCancel}
-            className="flex-1 px-3 py-2 bg-slate-100 text-slate-800 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">
-            Cancel
-          </button>
           <button type="button" onClick={onOk}
             className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-xs font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-md shadow-amber-200/50">
             OK — Proceed to Rewind

@@ -2,18 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Scan, ClipboardList, FlaskConical, Trash2, ShieldAlert, ShieldOff, FileText } from 'lucide-react';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { getD2Chambers, getQCUsers, validateBobbinForD2, submitD2Issue, getDraftList, getDraftDetails, saveDraftBobbin, removeDraftBobbin, deleteDraft } from '../services/d2_issue.api';
+import { getD2Chambers, getQCUsers, validateBobbinForD2, submitD2Issue, getDraftList, getDraftDetails, createDraft, saveDraftBobbin, removeDraftBobbin, deleteDraft } from '../services/d2_issue.api';
 
 const today = new Date().toISOString().split('T')[0];
 const nowTime = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-/* ── Batch ID helper: YYYYMMDDHHmmss-chamberNo ── */
-const makeBatchId = (chamberNo) => {
-  if (!chamberNo) return '';
-  const now = new Date();
-  const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-  return `${ts}-${chamberNo}`;
-};
 
 /* ── Confirmation Dialog ── */
 const ConfirmDialog = ({ isOpen, title, message, onYes, onNo }) => {
@@ -41,7 +33,8 @@ const D2Issue = () => {
   const [d2StartDate, setD2StartDate] = useState(today);
   const [d2StartTime, setD2StartTime] = useState(nowTime());
   const [restricted, setRestricted] = useState(true);
-  const [batchId, setBatchId] = useState('');
+  const [draftId, setDraftId] = useState('');        // backend-assigned draft id: chamber-YYYYMMDD-draftNN
+  const [finalBatchId, setFinalBatchId] = useState(''); // backend-assigned final id, shown only after submit
   const [scanInput, setScanInput] = useState('');
   const [rows, setRows] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +46,8 @@ const D2Issue = () => {
   const draftRef = useRef(null);
   const scanRef = useRef(null);
   const scanLockRef = useRef({ value: '', ts: 0 }); // dedupe guard for scanner double-trigger
+  const draftIdRef = useRef('');     // mirrors draftId so async scans read the latest value synchronously
+  const creatingDraftRef = useRef(null); // in-flight createDraft promise, prevents duplicate draft creation
 
   // Close draft dropdown on outside click
   useEffect(() => {
@@ -92,7 +87,9 @@ const D2Issue = () => {
         // Restore header fields
         if (draft.chamber) setChamber(String(draft.chamber));
         if (draft.d2_type) setRestricted(draft.d2_type === 'restricted');
-        setBatchId(draftBatchId);
+        setDraftId(draftBatchId);
+        draftIdRef.current = draftBatchId;
+        setFinalBatchId('');
         setSelectedDraft(draftBatchId);
         // Reset start date/time to current so user can set/change it on load
         setD2StartDate(new Date().toISOString().split('T')[0]);
@@ -243,12 +240,42 @@ const D2Issue = () => {
     handleScan(bobbin);
   };
 
+  /* ── Ensure a draft exists (backend assigns the draft id) ──
+     Returns the draft id. Creates the draft once per session; concurrent scans
+     share the same in-flight promise so we never create two drafts. */
+  const ensureDraft = async () => {
+    if (draftIdRef.current) return draftIdRef.current;
+    if (creatingDraftRef.current) return creatingDraftRef.current;
+
+    creatingDraftRef.current = (async () => {
+      // createDraft only reserves the draft id; bobbins are added via
+      // saveDraftBobbin. The same id is reused for every scan this session.
+      const res = await createDraft({
+        chamber: Number(chamber),
+        d2_type: restricted ? 'restricted' : 'not-restricted',
+      });
+      const id = res?.d2_batch_id;
+      if (res?.success && id) {
+        draftIdRef.current = id;
+        setDraftId(id);
+        return id;
+      }
+      throw new Error(res?.message || 'Failed to create draft');
+    })();
+
+    try {
+      return await creatingDraftRef.current;
+    } finally {
+      creatingDraftRef.current = null;
+    }
+  };
+
   /* ── Auto-save bobbin to draft ── */
   const autoSaveDraft = async (row) => {
-    if (!batchId) return;
     try {
+      const id = await ensureDraft();
       await saveDraftBobbin({
-        d2_batch_id: batchId,
+        d2_batch_id: id,
         bobbin_fid: row.bobbin_fid,
         bobbin_no: row.bobbin_no,
         chamber: Number(chamber),
@@ -270,8 +297,8 @@ const D2Issue = () => {
     const row = rows.find(r => r.id === id);
     setRows(prev => prev.filter(r => r.id !== id));
     // Also remove from draft
-    if (row && batchId) {
-      try { await removeDraftBobbin(batchId, row.bobbin_no); } catch (e) { /* silent */ }
+    if (row && draftIdRef.current) {
+      try { await removeDraftBobbin(draftIdRef.current, row.bobbin_no); } catch (e) { /* silent */ }
     }
   };
 
@@ -284,7 +311,7 @@ const D2Issue = () => {
     setSubmitting(true);
     try {
       const payload = {
-        d2_batch_id: batchId,
+        d2_batch_id: draftId,   // draft id; backend assigns the final batch id
         start_operator: startOperator,
         d2_start_date: d2StartDate,
         d2_start_time: d2StartTime,
@@ -298,12 +325,16 @@ const D2Issue = () => {
 
       const res = await submitD2Issue(payload);
       if (res?.success) {
-        // Delete draft after successful submission
-        if (batchId) {
-          try { await deleteDraft(batchId); } catch (e) { /* silent */ }
-        }
-        showSuccess(`${rows.length} bobbin(s) issued to D2 Chamber ${chamber} successfully!`);
+        // Backend returns the final batch id (chamber-YYYYMMDD-NN)
+        const assignedBatchId = res.d2_batch_id || '';
+        const count = rows.length;
         handleReset();
+        setFinalBatchId(assignedBatchId);
+        showSuccess(
+          assignedBatchId
+            ? `Batch ${assignedBatchId} — ${count} bobbin(s) issued to D2 Chamber ${chamber}!`
+            : `${count} bobbin(s) issued to D2 Chamber ${chamber} successfully!`
+        );
         loadDrafts(); // Refresh draft list
       } else {
         showError(res?.message || 'Submit failed');
@@ -337,8 +368,12 @@ const D2Issue = () => {
   const handleReset = () => {
     setChamber(''); setStartOperator('');
     setD2StartDate(today); setD2StartTime(nowTime());
-    setBatchId(''); setScanInput(''); setRows([]);
+    setDraftId(''); setScanInput(''); setRows([]);
     setSelectedDraft('');
+    draftIdRef.current = '';
+    creatingDraftRef.current = null;
+    // note: finalBatchId is intentionally NOT cleared here so the last submitted
+    // id stays visible after a submit-triggered reset.
   };
 
   return (
@@ -460,7 +495,7 @@ const D2Issue = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">D2 Chamber</label>
               <select value={chamber}
-                onChange={e => { const val = e.target.value; setChamber(val); setBatchId(makeBatchId(val)); }}
+                onChange={e => { setChamber(e.target.value); setFinalBatchId(''); }}
                 disabled={rows.length > 0}
                 className="w-full bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-800 outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer transition-all disabled:opacity-50">
                 <option value="">Select</option>
@@ -468,11 +503,15 @@ const D2Issue = () => {
               </select>
             </div>
 
-            {/* Batch ID (auto) */}
+            {/* Batch ID — assigned by backend on submit, shown only after success */}
             <div className="flex flex-col gap-1">
               <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Batch ID</label>
-              <div className="bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono font-bold text-slate-600 truncate">
-                {batchId || '—'}
+              <div className={`border rounded-lg px-3 py-2 text-xs font-mono font-bold truncate ${
+                finalBatchId
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-slate-100 border-slate-200 text-slate-400'
+              }`}>
+                {finalBatchId || 'Assigned on submit'}
               </div>
             </div>
 

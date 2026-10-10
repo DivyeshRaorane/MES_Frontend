@@ -37,7 +37,11 @@ export const validateBobbinForD2 = async (bobbin_no, restricted) => {
   return response.data;
 };
 
-/* ── Submit D2 Issue (insert d2_issue + update bobbin_entries) ── */
+/* ── Submit D2 Issue (insert d2_issue + update bobbin_entries) ──
+   payload.d2_batch_id is the DRAFT id. Backend generates the FINAL batch id in
+   the pattern "<chamberNo>-<YYYYMMDD>-NN" (next finished-batch sequence for that
+   chamber+date), inserts the bobbins under it, deletes the draft rows, and
+   returns the final id as response.data.d2_batch_id. */
 export const submitD2Issue = async (payload) => {
   const response = await axios({
     method: "POST",
@@ -72,9 +76,28 @@ export const getDraftDetails = async (d2_batch_id) => {
   return response.data;
 };
 
+/* ── Create a new draft batch (backend assigns the draft id) ──
+   Called once when a chamber is selected. Backend generates a draft id in the
+   pattern "<chamberNo>-<YYYYMMDD>-draftNN" (next sequence for that chamber+date)
+   and returns it so the frontend can reuse it for every scan in the session.
+   This only reserves the id — bobbins are added later via saveDraftBobbin.
+   payload: { chamber, d2_type }
+   response: { success, d2_batch_id } */
+export const createDraft = async (payload) => {
+  console.log("payload:", payload)
+  const response = await axios({
+    method: "POST",
+    url: `${API}/d2issue/drafts/create`,
+    data: payload,
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
+
 /* ── Auto-save a scanned bobbin to draft ── */
 export const saveDraftBobbin = async (payload) => {
   // payload: { d2_batch_id, bobbin_fid, bobbin_no, chamber, d2_type }
+  // d2_batch_id is the draft id returned by createDraft.
   const response = await axios({
     method: "POST",
     url: `${API}/d2issue/drafts`,

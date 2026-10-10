@@ -32,7 +32,7 @@ const MENU = [
       { label:  'Draw/PT Break Analysis', path: '/drawmange/drawbrakanalysis'},
       { label: 'Draw Shift Plan',       path: '/drawmange/drawshiftplan'},
       { label: 'Draw Shift Report',     path: '/drawmange/drawshiftreport'},
-      { label: 'Draw Timeloss Entry',   path: '/drawmange/drawtimeloss'},
+      
       { label: 'Reports',               path: '/drawmange/reports' },
     ],
   },
