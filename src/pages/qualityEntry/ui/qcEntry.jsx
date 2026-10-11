@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Formik, Form, Field } from 'formik';
 import { ShieldCheck, Award, AlertTriangle, CheckCircle2, XCircle, Plus, Trash2, RotateCcw, Layers, X } from 'lucide-react';
 import BulkEntryModal from './BulkEntryModal';
+import ExportPreformTraceabilityButton from '../../../components/ExportPreformTraceabilityButton';
 import { FormikInput } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError, showInfo } from '../../../utils/toastService';
@@ -25,6 +26,84 @@ const Col = ({ children }) => (
     <div className="grid grid-cols-2 gap-x-1 text-slate-900 font-semibold gap-y-0.5">{children}</div>
   </div>
 );
+
+/* ── Process Status Bar ──
+   Renders the bobbin's process stages as a modern horizontal stepper.
+   Rule for the first three stages (pt / coloring / rewinding): show only ONE —
+   the first that is done (priority pt → coloring → rewinding). If none are done,
+   fall back to showing `pt` as the placeholder. The remaining stages
+   (otdr, qc, pv, d2_issue, d2, stock_transfer) follow in their given order. */
+const HEAD_PRIORITY = ['pt', 'coloring', 'rewinding'];
+
+const buildStatusSteps = (stages) => {
+  if (!Array.isArray(stages) || stages.length === 0) return [];
+  // The `status` stage is a value chip (uses `value`, not `done`) — exclude it
+  // from the done/pending stepper; it's rendered separately at the end.
+  const steps = stages.filter(s => s.key !== 'status');
+  const byKey = Object.fromEntries(steps.map(s => [s.key, s]));
+
+  // Pick the single "head" stage among pt/coloring/rewinding.
+  let head = HEAD_PRIORITY.map(k => byKey[k]).find(s => s && s.done);
+  if (!head) head = byKey.pt || steps.find(s => HEAD_PRIORITY.includes(s.key));
+
+  // The rest: everything not in the head-priority group, in original order.
+  const rest = steps.filter(s => !HEAD_PRIORITY.includes(s.key));
+  return head ? [head, ...rest] : rest;
+};
+
+const StatusBar = ({ stages }) => {
+  const steps = buildStatusSteps(stages);
+  if (steps.length === 0) return null;
+
+  // `status` value chip: null/empty/"NO" → "OK" (good); any other value is shown as-is (flagged).
+  const statusStage = Array.isArray(stages) ? stages.find(s => s.key === 'status') : null;
+  const rawStatus = statusStage?.value;
+  const normalized = String(rawStatus ?? '').trim();
+  const isOk = normalized === '' || normalized.toUpperCase() === 'NO';
+  const statusText = isOk ? 'OK' : normalized;
+
+  return (
+    <div className="col-span-2 mt-1 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-lg px-2 py-2">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Process Status</p>
+        {statusStage && (
+          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${isOk
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-amber-50 text-amber-700 border-amber-300'}`}>
+            {statusStage.label}: {statusText}
+          </span>
+        )}
+      </div>
+      <div className="flex items-start">
+        {steps.map((step, i) => {
+          const done = !!step.done;
+          const isLast = i === steps.length - 1;
+          return (
+            <div key={step.key} className="flex-1 flex flex-col items-center min-w-0">
+              <div className="flex items-center w-full">
+                {/* left connector (hidden on first) */}
+                <div className={`h-0.5 flex-1 ${i === 0 ? 'opacity-0' : done ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                {/* node */}
+                <div className={`flex items-center justify-center rounded-full transition-all flex-shrink-0 ${done
+                  ? 'bg-emerald-500 text-white w-4 h-4 shadow-sm shadow-emerald-200'
+                  : 'bg-white border-2 border-slate-300 text-slate-300 w-4 h-4'}`}>
+                  {done
+                    ? <CheckCircle2 size={10} className="stroke-[2.5]" />
+                    : <span className="w-1 h-1 rounded-full bg-slate-300" />}
+                </div>
+                {/* right connector (hidden on last) */}
+                <div className={`h-0.5 flex-1 ${isLast ? 'opacity-0' : steps[i + 1]?.done ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+              </div>
+              <span className={`text-[7px] font-bold mt-0.5 text-center leading-tight break-words ${done ? 'text-emerald-700' : 'text-slate-400'}`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 /* ── Microbend rows ── */
 const MB_ROWS = [
@@ -176,6 +255,7 @@ const QCEntryScreen = () => {
   const [mbendReason, setMbendReason] = useState('');
   const [mbendNcCause, setMbendNcCause] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false); // Bulk Temp Grade modal
+  const [stages, setStages] = useState([]); // process stages for the status bar (from res.data1.stages)
   const formRef = useRef(null);
   const reasonRef = useRef(null); // stores reason (from rewRemark) for grade-fail REW (submitted later via handleSubmit)
   const valuesRef = useRef(null); // stores current Formik values for manual REW
@@ -430,7 +510,7 @@ const QCEntryScreen = () => {
     if (!bobbin_no) { showError('Enter bobbin number'); return; }
     setLoading(true);
     setGrade(''); setGraded(false); setFailedParam(''); setProcessStatus(null);
-    setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark(''); setMbendReason(''); setMbendNcCause(''); setRewEnabled(false);
+    setExistingTempGrade(''); setExistingFinalGrade(''); setMbendRemark(''); setMbendReason(''); setMbendNcCause(''); setRewEnabled(false); setStages([]);
     try {
       const res = await fetchBobbinQC(bobbin_no);
 console.log("res:", res)
@@ -519,6 +599,9 @@ console.log("res:", res)
           showInfo(`Final QC has already been completed for ${bobbin_no}.`);
         }
       }
+
+      // Process stages for the status bar — nested under res.data1.stages
+      setStages(Array.isArray(res.data1?.stages) ? res.data1.stages : []);
 
       // Set mbend remark / reason / nc_cause from qc_entry_temp data
       setMbendRemark(data.remark || '');
@@ -1262,6 +1345,11 @@ console.log("res:", res)
                     </div>
                   </div>
 
+                  {/* Preform Traceability export — below Fiber Color */}
+                  <div className="col-span-2 mt-1">
+                    <ExportPreformTraceabilityButton bobbinNo={values.bobbin_no} className="w-full" />
+                  </div>
+
                   {/* MBend Remark / Reason / NC Cause — shown when grade is REW */}
                   {(existingTempGrade === 'REW' || existingFinalGrade === 'REW') && (mbendRemark || mbendReason || mbendNcCause) && (
                     <div className="col-span-2 mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 space-y-1">
@@ -1293,6 +1381,9 @@ console.log("res:", res)
                         }`}>{source === 'final' ? 'Final QC Done' : 'Temp QC'}</span>
                     </div>
                   )}
+
+                  {/* Process status bar — bottom-right, below source badge */}
+                  <StatusBar stages={stages} />
 
                 </Col>
 
