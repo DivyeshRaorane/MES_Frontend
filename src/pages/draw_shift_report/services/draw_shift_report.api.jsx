@@ -7,6 +7,12 @@ const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("token")}`,
 });
 
+/* ── Get draw users (operators / shift incharge) ── */
+export const getDrawUsers = async () => {
+  const res = await axios.get(`${API}/getdrawusers`);
+  return res.data;
+};
+
 /* ── Submit Draw Shift Report (4 towers, each with 1+ preforms) ── */
 export const submitDrawShiftReport = async (payload) => {
   const res = await axios.post(`${API}/drawshiftreport`, payload, {

@@ -7,6 +7,12 @@ const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("token")}`,
 });
 
+/* ── Get draw users (operators / shift incharge) ── */
+export const getDrawUsers = async () => {
+  const res = await axios.get(`${API}/getdrawusers`);
+  return res.data;
+};
+
 /* ── Submit Draw TimeLoss Entry (exactly 4 towers) ── */
 export const submitDrawTimeloss = async (payload) => {
   const res = await axios.post(`${API}/drawtimelossentry`, payload, {

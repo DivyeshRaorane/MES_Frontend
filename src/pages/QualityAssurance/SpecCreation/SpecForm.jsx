@@ -4,7 +4,7 @@ import { Formik, Form, Field } from 'formik';
 import { FormikInput, FormikSelect, FormikMultiSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { createSpec, updateSpec, getSpecById, getGradeList, getGradeById, getPreformVendors, getBobbinColors } from './SpecService';
+import { createSpec, updateSpec, getSpecById, getGradeList, getGradeById, getPreformVendors, getFiberColors } from './SpecService';
 
 /* ── Same PARAM_GROUPS as GradeManagement ── */
 const PARAM_GROUPS = [
@@ -84,7 +84,7 @@ const SpecForm = ({ specId, onBack }) => {
   const [customers, setCustomers] = useState([]);
   const [mandatoryFields, setMandatoryFields] = useState({});
   const [preformVendors, setPreformVendors] = useState([]);
-  const [bobbinColors, setBobbinColors] = useState([]);
+  const [fiberColors, setFiberColors] = useState([]);
   const isEdit = !!specId;
 
   useEffect(() => {
@@ -113,11 +113,11 @@ const SpecForm = ({ specId, onBack }) => {
       } catch (_) {}
     })();
 
-    // Load bobbin colors for dropdown
+    // Load fiber colors for dropdown
     (async () => {
       try {
-        const res = await getBobbinColors();
-        if (res?.success) setBobbinColors((res.data || []).filter(c => !c.is_disable));
+        const res = await getFiberColors();
+        if (res?.success) setFiberColors((res.data || []).filter(c => c.is_active));
       } catch (_) {}
     })();
 
@@ -216,15 +216,15 @@ const SpecForm = ({ specId, onBack }) => {
     if (!colorType || colorType === 'NATURAL') return [];
     if (colorType === 'COLORED') {
       // Show only colors that do NOT start with "RM"
-      return bobbinColors
-        .filter(c => !c.bobbin_color_name.toUpperCase().startsWith('RM'))
-        .map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_id }));
+      return fiberColors
+        .filter(c => !c.color.toUpperCase().startsWith('RM'))
+        .map(c => ({ label: c.color, value: c.fiber_color_id }));
     }
     if (colorType === 'RM') {
       // Show only colors that start with "RM"
-      return bobbinColors
-        .filter(c => c.bobbin_color_name.toUpperCase().startsWith('RM'))
-        .map(c => ({ label: c.bobbin_color_name, value: c.bobbin_color_id }));
+      return fiberColors
+        .filter(c => c.color.toUpperCase().startsWith('RM'))
+        .map(c => ({ label: c.color, value: c.fiber_color_id }));
     }
     return [];
   };

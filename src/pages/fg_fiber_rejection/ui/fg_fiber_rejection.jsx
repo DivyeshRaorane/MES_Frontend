@@ -4,9 +4,8 @@ import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
 import {
   validateBobbinForColor, submitColorRequest,
-  validateBobbinForRewind, submitRewindRequest, getQCUsers,
+  validateBobbinForRewind, submitRewindRequest, getQCUsers, getFiberColors,
 } from '../services/fg_rejection.api';
-import { getBobbinColors } from '../../Admin_Folder/proof_testing/bobbin_color/service/bobbin_color.api';
 import { getCustomers } from '../../order_register/services/order.api';
 import FiberInformationPanel from './FiberInformationPanel';
 
@@ -22,14 +21,14 @@ const nowTime = () => {
 const FGFiberRejection = () => {
   const [mode, setMode] = useState(''); // '' | 'color' | 'rewind' | 'fiberinfo'
   const [qcUsers, setQcUsers] = useState([]);
-  const [bobbinColors, setBobbinColors] = useState([]);
+  const [fiberColors, setFiberColors] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [lastScannedBobbin, setLastScannedBobbin] = useState(null);
 
   useEffect(() => {
     (async () => {
       try { const res = await getQCUsers(); setQcUsers(res?.data || []); } catch (_) {}
-      try { const res = await getBobbinColors(); setBobbinColors(res?.data || []); } catch (_) {}
+      try { const res = await getFiberColors(); setFiberColors(res?.data || []); } catch (_) {}
       try { const res = await getCustomers(); setCustomers((res?.data || []).filter(c => !c.disable)); } catch (_) {}
     })();
   }, []);
@@ -60,7 +59,7 @@ const FGFiberRejection = () => {
         {/* ── Content (all panels stay mounted to preserve state) ── */}
         <div className="flex-1 overflow-hidden relative">
           <div className={`absolute inset-0 ${mode === 'color' ? '' : 'invisible pointer-events-none'}`}>
-            <ColorPanel qcUsers={qcUsers} bobbinColors={bobbinColors} customers={customers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
+            <ColorPanel qcUsers={qcUsers} fiberColors={fiberColors} customers={customers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
           </div>
           <div className={`absolute inset-0 ${mode === 'rewind' ? '' : 'invisible pointer-events-none'}`}>
             <RewindPanel qcUsers={qcUsers} onBobbinScanned={setLastScannedBobbin} onViewFiberInfo={() => setMode('fiberinfo')} />
@@ -82,7 +81,7 @@ const FGFiberRejection = () => {
 /* ══════════════════════════════════════════════════════════
    COLOR PANEL
    ══════════════════════════════════════════════════════════ */
-const ColorPanel = ({ qcUsers, bobbinColors, customers = [], onBobbinScanned, onViewFiberInfo }) => {
+const ColorPanel = ({ qcUsers, fiberColors, customers = [], onBobbinScanned, onViewFiberInfo }) => {
   const [colJcardNo, setColJcardNo] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [requireColor, setRequireColor] = useState('');
@@ -161,7 +160,7 @@ const ColorPanel = ({ qcUsers, bobbinColors, customers = [], onBobbinScanned, on
             <select value={requireColor} onChange={e => setRequireColor(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
               <option value="">Select</option>
-              {bobbinColors.filter(c => !c.is_disable).map(c => <option key={c.bobbin_color_id || c.bobbin_color_name} value={c.bobbin_color_name}>{c.bobbin_color_name}</option>)}
+              {fiberColors.filter(c => c.is_active).map(c => <option key={c.fiber_color_id || c.color} value={c.color}>{c.color}</option>)}
             </select>
           </div>
           <div className="w-36 flex flex-col gap-0.5">

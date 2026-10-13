@@ -49,8 +49,8 @@ export const getPreformVendors = async () => {
   return res.data;
 };
 
-/* ── Get bobbin colors for fiber color dropdown ── */
-export const getBobbinColors = async () => {
-  const res = await axios.get(`${API}/bobbin-color`, { headers: authHeaders() });
+/* ── Get fiber colors for fiber color dropdown ── */
+export const getFiberColors = async () => {
+  const res = await axios.get(`${API}/getfibercolor`, { headers: authHeaders() });
   return res.data;
 };

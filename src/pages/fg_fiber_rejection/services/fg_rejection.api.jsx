@@ -36,6 +36,12 @@ export const getQCUsers = async () => {
   return res.data;
 };
 
+/* ── Get fiber colors for required color dropdown ── */
+export const getFiberColors = async () => {
+  const res = await axios.get(`${API}/getfibercolor`, { headers: authHeaders() });
+  return res.data;
+};
+
 /* ── Get Fiber Information (Bobbin + QC + Dispatch) ── */
 export const getFiberInformation = async (searchValue, searchType = 'bobbin_no') => {
   const res = await axios.get(`${API}/fg/fiber-information`, {

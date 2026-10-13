@@ -1,9 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { Clock } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { submitDrawTimeloss } from '../services/draw_timeloss_entry.api';
+import { submitDrawTimeloss, getDrawUsers } from '../services/draw_timeloss_entry.api';
 
 const FIXED_SPEED = 2700;
 
@@ -82,7 +83,23 @@ const initialValues = {
 };
 
 /* ══════════════════════════════════════════════════════════ */
-const DrawTimelossEntry = () => (
+const DrawTimelossEntry = () => {
+  const [drawUsers, setDrawUsers] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const uRes = await getDrawUsers();
+        setDrawUsers(uRes?.data || []);
+      } catch {
+        showError('Failed to load draw users');
+      }
+    })();
+  }, []);
+
+  const userOptions = drawUsers.map(u => ({ label: u.draw_user_name, value: u.draw_user_name }));
+
+  return (
   <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
     <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
@@ -191,9 +208,9 @@ const DrawTimelossEntry = () => (
                 {/* Row 2: Date, Shift, Operator, Shift Incharge */}
                 <div className="grid grid-cols-4 gap-2">
                   <FormikInput  compact label="Date"           name="date"           type="date" />
-                  <FormikSelect compact label="Shift"          name="shift"          options={['Select','A','B','C','General']} />
-                  <FormikSelect compact label="Operator"       name="operator"       options={['Select','Operator A','Operator B','Operator C']} />
-                  <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={['Select','Incharge A','Incharge B','Supervisor X']} />
+                  <FormikSelect compact label="Shift"          name="shift"          options={['A','B','C',{ label: 'G', value: 'General' }]} />
+                  <FormikSelect compact label="Operator"       name="operator"       options={userOptions} />
+                  <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={userOptions} />
                 </div>
               </div>
             </ModuleCard>
@@ -276,6 +293,7 @@ const DrawTimelossEntry = () => (
       </Formik>
     </div>
   </div>
-);
+  );
+};
 
 export default DrawTimelossEntry;

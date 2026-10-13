@@ -1,9 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { Plus, Minus, FileBarChart2 } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
 import { showSuccess, showError } from '../../../utils/toastService';
-import { submitDrawShiftReport } from '../services/draw_shift_report.api';
+import { submitDrawShiftReport, getDrawUsers } from '../services/draw_shift_report.api';
 
 const DEFAULT_SPEED = 2700;
 
@@ -62,7 +63,23 @@ const calcDrawn = (preforms) =>
 const calcEfficiency = (drawn, plan) => (plan > 0 ? (drawn / plan) * 100 : 0);
 
 /* ══════════════════════════════════════════════════════════ */
-const DrawShiftReport = () => (
+const DrawShiftReport = () => {
+  const [drawUsers, setDrawUsers] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const uRes = await getDrawUsers();
+        setDrawUsers(uRes?.data || []);
+      } catch {
+        showError('Failed to load draw users');
+      }
+    })();
+  }, []);
+
+  const userOptions = drawUsers.map(u => ({ label: u.draw_user_name, value: u.draw_user_name }));
+
+  return (
   <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
     <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
 
@@ -155,11 +172,11 @@ const DrawShiftReport = () => (
             <ModuleCard compact title="Default Parameters" icon={<FileBarChart2 size={13} className="text-blue-600" />}>
               <div className="grid grid-cols-7 gap-2">
                 <FormikInput  compact label="Date"        name="date"        type="date" />
-                <FormikSelect compact label="Shift"       name="shft"        options={['Select', 'A', 'B', 'C', 'General']} />
-                <FormikSelect compact label="Ground Oper" name="gr_f_opr"    options={['Select', 'Operator A', 'Operator B', 'Operator C']} />
-                <FormikSelect compact label="Die"         name="die"         options={['Select', 'Die A', 'Die B']} />
-                <FormikSelect compact label="Furnace"     name="furnace_opr" options={['Select', 'Furnace A', 'Furnace B']} />
-                <FormikSelect compact label="SIC"         name="sic"         options={['Select', 'Incharge A', 'Incharge B', 'Supervisor X']} />
+                <FormikSelect compact label="Shift"       name="shft"        options={['A', 'B', 'C', { label: 'G', value: 'General' }]} />
+                <FormikSelect compact label="Ground Oper" name="gr_f_opr"    options={userOptions} />
+                <FormikSelect compact label="Die"         name="die"         options={userOptions} />
+                <FormikSelect compact label="Furnace"     name="furnace_opr" options={userOptions} />
+                <FormikSelect compact label="SIC"         name="sic"         options={userOptions} />
                 <FormikSelect compact label="Maint"       name="maint"       options={['Select', 'Maint A', 'Maint B']} />
               </div>
             </ModuleCard>
@@ -269,6 +286,7 @@ const DrawShiftReport = () => (
       </Formik>
     </div>
   </div>
-);
+  );
+};
 
 export default DrawShiftReport;
