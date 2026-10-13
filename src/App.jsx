@@ -92,6 +92,10 @@ import FunctionReportViewer from './pages/FunctionReports/ui/FunctionReportViewe
 // Mail Module
 import MailDashboard from './pages/mail/ui/MailDashboard'
 
+// Label Printing feature (barcode sticker templates)
+import LabelPrintPlayground from './features/labelPrinting/ui/LabelPrintPlayground'
+import BobbinBarcodePrinting from './features/labelPrinting/ui/BobbinBarcodePrinting'
+
 
 function App() {
 
@@ -179,7 +183,9 @@ function App() {
         <Route path='qa/speccreation' element={<SpecCreation/>}/>
         <Route path='qa/splicing' element={<Splicing/>}/>
         <Route path='qa/customer' element={<CustomerComplaint/>}/>
+        <Route path='qa/barcodeprinting' element={<BobbinBarcodePrinting/>}/>
         <Route path='qa/reports' element={<QAReports/>}/>
+        <Route path='labels/print' element={<LabelPrintPlayground/>}/>
         <Route path='underdev' element={<UnderDevelopment/>}/>
         <Route path='admin/users' element={<UserHomeScreen/>}/>
         <Route path='admin/general' element={<GeneralAdmin/>}/>

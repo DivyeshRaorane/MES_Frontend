@@ -1,8 +1,11 @@
-import React from 'react';
 import { Formik, Form, Field, FieldArray } from 'formik';
 import { Plus, Minus, FileBarChart2 } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../components/common_buttons';
+import { showSuccess, showError } from '../../../utils/toastService';
+import { submitDrawShiftReport } from '../services/draw_shift_report.api';
+
+const DEFAULT_SPEED = 2700;
 
 /* ── Compact inline table cell input ── */
 const TInput = ({ name, type = 'text', placeholder = '' }) => (
@@ -10,75 +13,53 @@ const TInput = ({ name, type = 'text', placeholder = '' }) => (
     className="w-full bg-transparent px-1 py-0.5 text-[10px] outline-none focus:bg-white focus:ring-1 focus:ring-blue-300 rounded transition-all border border-transparent focus:border-blue-200" />
 );
 
-/* ── Compact inline table cell select ── */
-const TSelect = ({ name, options }) => (
-  <div className="relative">
-    <Field as="select" name={name}
-      className="w-full appearance-none bg-transparent pl-1 pr-4 py-0.5 text-[10px] outline-none focus:bg-white rounded cursor-pointer border border-transparent focus:border-blue-200 transition-all">
-      {options.map(o => <option key={o} value={o}>{o}</option>)}
-    </Field>
-    <span className="pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-slate-400 text-[8px]">▾</span>
-  </div>
-);
-
-/* ── Table column headers ── */
-const COLS = [
-  { label: '',                  w: 'w-7'   },  // checkbox
-  { label: 'DT',                w: 'w-8'   },
-  { label: 'Plan FKM',          w: 'w-16'  },
-  { label: 'Achieved FKM',      w: 'w-20'  },
-  { label: 'GAP FKM',           w: 'w-16'  },
-  { label: 'Started By',        w: 'w-28'  },
-  { label: 'Preform Seq.',      w: 'w-24'  },
-  { label: 'Line Speed',        w: 'w-20'  },
-  { label: 'Spool ID',          w: 'w-20'  },
-  { label: 'Drawn FKM',         w: 'w-20'  },
-  { label: 'DC',                w: 'w-14'  },
-  { label: 'FC',                w: 'w-14'  },
-  { label: 'Break',             w: 'w-14'  },
-  { label: 'C/O Timeloss',      w: 'w-20'  },
-  { label: 'FC Timeloss',       w: 'w-20'  },
-  { label: 'Start Up Timeloss', w: 'w-24'  },
-  { label: 'Ramp Up Timeloss',  w: 'w-24'  },
-  { label: 'COBB Timeloss',     w: 'w-20'  },
-  { label: 'Activities & Issues', w: 'w-32' },
+/* ── Per-preform (addable) columns ── */
+const PREFORM_COLS = [
+  { label: 'Preform ID',   key: 'preform_id',    type: 'text'   },
+  { label: 'Spool ID',     key: 'spool_id',      type: 'text'   },
+  { label: 'Actual Length',key: 'act_length',    type: 'number' },
+  { label: 'C/O',          key: 'c_o',           type: 'number' },
+  { label: 'F/C',          key: 'f_c',           type: 'number' },
+  { label: 'D/C',          key: 'd_c',           type: 'number' },
+  { label: 'Furnace E Seq',key: 'furnace_e_seq', type: 'text'   },
+  { label: 'Breaks',       key: 'breaks',        type: 'number' },
+  { label: 'Activities',   key: 'activities',    type: 'text'   },
 ];
 
-const makeRow = (dt) => ({
-  checked:        true,
+const makePreform = () => ({
+  preform_id:    '',
+  spool_id:      '',
+  act_length:    '',
+  c_o:           '',
+  f_c:           '',
+  d_c:           '',
+  furnace_e_seq: '',
+  breaks:        '',
+  activities:    '',
+});
+
+const makeTower = (dt) => ({
   dt,
-  plan_fkm:       '',
-  achieved_fkm:   '',
-  gap_fkm:        '',
-  started_by:     '',
-  preform_seq:    '',
-  line_speed:     '',
-  spool_id:       '',
-  drawn_fkm:      '',
-  dc:             'No',
-  fc:             'No',
-  break_val:      '0',
-  co_timeloss:    '0',
-  fc_timeloss:    '0',
-  startup_tl:     '0',
-  rampup_tl:      '0',
-  cobb_tl:        '0',
-  activities:     '',
+  speed:    DEFAULT_SPEED,
+  preforms: [makePreform()],
 });
 
 const initialValues = {
-  entry_date:     new Date().toISOString().split('T')[0],
-  shift:          '',
-  ground_team:    '',
-  furnace_team:   '',
-  die_team:       '',
-  shift_incharge: '',
-  total_plan:     '',
-  total_draw:     '',
-  gap:            '',
-  total_breaks:   '',
-  rows: Array.from({ length: 4 }, (_, i) => makeRow(i + 1)),
+  date:         new Date().toISOString().split('T')[0],
+  shft:         '',
+  gr_f_opr:     '',
+  die:          '',
+  furnace_opr:  '',
+  sic:          '',
+  maint:        '',
+  towers: [1, 2, 3, 4].map(makeTower),
 };
+
+/* ── Per-DT derived values ── */
+const calcPlan = (speed) => (((parseFloat(speed) || 0) * 480) / 1000);
+const calcDrawn = (preforms) =>
+  preforms.reduce((s, p) => s + (parseFloat(p.act_length) || 0), 0);
+const calcEfficiency = (drawn, plan) => (plan > 0 ? (drawn / plan) * 100 : 0);
 
 /* ══════════════════════════════════════════════════════════ */
 const DrawShiftReport = () => (
@@ -87,128 +68,202 @@ const DrawShiftReport = () => (
 
       <Formik
         initialValues={initialValues}
-        onSubmit={() => { alert('Saved!'); }}
+        onSubmit={async (values, { setSubmitting }) => {
+          // ── Validation ──
+          if (!values.date) {
+            showError('Date is required');
+            setSubmitting(false);
+            return;
+          }
+          if (!values.shft || values.shft === 'Select') {
+            showError('Shift is required');
+            setSubmitting(false);
+            return;
+          }
+          if (values.towers.length !== 4) {
+            showError('Exactly 4 draw towers are required');
+            setSubmitting(false);
+            return;
+          }
+
+          // ── Build payload (numbers coerced, derived values recomputed) ──
+          const payload = {
+            date: values.date,
+            shft: values.shft,
+            gr_f_opr: values.gr_f_opr,
+            die: values.die,
+            furnace_opr: values.furnace_opr,
+            sic: values.sic,
+            maint: values.maint,
+            towers: values.towers.map((t) => {
+              const plan = calcPlan(t.speed);
+              const drawn = calcDrawn(t.preforms);
+              const efficiency = calcEfficiency(drawn, plan);
+              return {
+                dt: Number(t.dt),
+                speed: Number.parseFloat(t.speed) || 0,
+                plan: Number(plan.toFixed(3)),
+                drawn_length: Number(drawn.toFixed(3)),
+                efficiency: Number(efficiency.toFixed(2)),
+                preforms: t.preforms.map((p) => ({
+                  preform_id: p.preform_id || '',
+                  spool_id: p.spool_id || '',
+                  act_length: Number.parseFloat(p.act_length) || 0,
+                  c_o: Number.parseFloat(p.c_o) || 0,
+                  f_c: Number.parseFloat(p.f_c) || 0,
+                  d_c: Number.parseFloat(p.d_c) || 0,
+                  furnace_e_seq: p.furnace_e_seq || '',
+                  breaks: Number.parseFloat(p.breaks) || 0,
+                  activities: p.activities || '',
+                })),
+              };
+            }),
+          };
+
+          try {
+            const res = await submitDrawShiftReport(payload);
+            if (res?.success) {
+              showSuccess(res.message || 'Draw shift report saved for 4 towers.');
+            } else {
+              showError(res?.message || 'Failed to save report');
+            }
+          } catch (e) {
+            const status = e?.response?.status;
+            const serverMsg = e?.response?.data?.message;
+            if (status === 401) showError('Session expired or unauthorized. Please log in again.');
+            else if (status === 400) showError(serverMsg || 'Validation failed. Check the entry.');
+            else showError(serverMsg || 'Server error. Please try again.');
+          } finally {
+            setSubmitting(false);
+          }
+        }}
       >
-        {({ values, resetForm }) => (
+        {({ values, resetForm, isSubmitting }) => (
           <Form className="flex flex-col flex-1 overflow-hidden px-3 py-2 gap-2">
-<div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Shift Report</span>
-                <div className="flex gap-1.5">
-                  <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
-                  <SubmitButton compact type="submit">Submit</SubmitButton>                  
-                  <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
-                </div>
+
+            {/* ── Top bar ── */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-slate-50/60 flex-shrink-0">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Draw Shift Report</span>
+              <div className="flex gap-1.5">
+                <ResetButton compact type="button" onClick={() => resetForm()}>Reset</ResetButton>
+                <SubmitButton compact type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Submit'}</SubmitButton>
+                <button type="button" className="px-3 py-1 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">Home</button>
               </div>
-            {/* ── Header form fields ── */}
-            <ModuleCard compact title="Primary Entry" icon={<FileBarChart2 size={13} className="text-blue-600" />}>
-              <div className="grid grid-cols-5 gap-2">
-                {/* Row 1 */}
-                <FormikInput  compact label="Entry Date"     name="entry_date"     type="date" />
-                <FormikSelect compact label="Shift"          name="shift"          options={['Please Select--','A','B','C','General']} />
-                <FormikSelect compact label="Ground Team"    name="ground_team"    options={['Please Select','Team 1','Team 2','Team 3']} />
-                <FormikSelect compact label="Furnace Team"   name="furnace_team"   options={['Please Select','Furnace A','Furnace B']} />
-                <FormikInput  compact label="Total Plan"     name="total_plan"     readOnly />
-                {/* Row 2 */}
-                <FormikSelect compact label="Die Team"       name="die_team"       options={['Please Select','Die A','Die B']} />
-                <FormikSelect compact label="Shift Incharge" name="shift_incharge" options={['Please Select--','Incharge A','Incharge B','Supervisor X']} />
-                <FormikInput  compact label="Total Draw"     name="total_draw"     readOnly />
-                <FormikInput  compact label="GAP"            name="gap"            readOnly />
-                <FormikInput  compact label="Total Breaks"   name="total_breaks"   readOnly />
+            </div>
+
+            {/* ── Default Parameters ── */}
+            <ModuleCard compact title="Default Parameters" icon={<FileBarChart2 size={13} className="text-blue-600" />}>
+              <div className="grid grid-cols-7 gap-2">
+                <FormikInput  compact label="Date"        name="date"        type="date" />
+                <FormikSelect compact label="Shift"       name="shft"        options={['Select', 'A', 'B', 'C', 'General']} />
+                <FormikSelect compact label="Ground Oper" name="gr_f_opr"    options={['Select', 'Operator A', 'Operator B', 'Operator C']} />
+                <FormikSelect compact label="Die"         name="die"         options={['Select', 'Die A', 'Die B']} />
+                <FormikSelect compact label="Furnace"     name="furnace_opr" options={['Select', 'Furnace A', 'Furnace B']} />
+                <FormikSelect compact label="SIC"         name="sic"         options={['Select', 'Incharge A', 'Incharge B', 'Supervisor X']} />
+                <FormikSelect compact label="Maint"       name="maint"       options={['Select', 'Maint A', 'Maint B']} />
               </div>
             </ModuleCard>
 
-            {/* ── FieldArray table ── */}
-            <FieldArray name="rows">
-              {({ push, remove, form }) => (
-                <div className="flex flex-col flex-1 min-h-0 gap-1.5">
+            {/* ── Grouped DT / Preform table ── */}
+            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="overflow-auto flex-1">
+                <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
+                  <thead className="sticky top-0 bg-slate-700 z-10">
+                    <tr>
+                      <th className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 text-center w-10">DT</th>
+                      <th className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 text-center w-16">Speed</th>
+                      <th className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 text-center w-16">Plan</th>
+                      {PREFORM_COLS.map(c => (
+                        <th key={c.key} className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 text-center">
+                          {c.label}
+                        </th>
+                      ))}
+                      <th className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 text-center w-20">Drawn Length</th>
+                      <th className="px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap text-center w-16">Efficiency</th>
+                    </tr>
+                  </thead>
 
-                  {/* Add / Remove buttons above table */}
-                  {/*<div className="flex gap-2 flex-shrink-0">
-                    <button type="button"
-                      onClick={() => push(makeRow(form.values.rows.length + 1))}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">
-                      <Plus size={11} /> Add
-                    </button>
-                    <button type="button"
-                      onClick={() => form.values.rows.length > 1 && remove(form.values.rows.length - 1)}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all">
-                      <Minus size={11} /> Remove
-                    </button>
-                  </div>*/}
+                  <FieldArray name="towers">
+                    {() => (
+                      <tbody>
+                        {values.towers.map((tower, tIdx) => {
+                          const plan = calcPlan(tower.speed);
+                          const drawn = calcDrawn(tower.preforms);
+                          const eff = calcEfficiency(drawn, plan);
+                          const span = tower.preforms.length;
 
-                  {/* Scrollable table */}
-                  <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="overflow-auto flex-1">
-                      <table className="text-left border-collapse" style={{ minWidth: '100%' }}>
-                        <thead className="sticky top-0 bg-slate-700 z-10">
-                          <tr>
-                            {/* Select-all checkbox */}
-                            <th className="px-2 py-2 border-r border-slate-600 w-7">
-                              <input type="checkbox"
-                                className="w-3.5 h-3.5 rounded border-slate-400 accent-blue-400" />
-                            </th>
-                            {COLS.slice(1).map(({ label, w }) => (
-                              <th key={label}
-                                className={`px-2 py-2 text-[8px] font-bold text-slate-200 uppercase whitespace-nowrap border-r border-slate-600 last:border-0 ${w}`}>
-                                {label}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {form.values.rows.map((row, idx) => (
-                            <tr key={idx} className={`transition-colors ${row.checked ? 'hover:bg-blue-50/30' : 'bg-slate-50/50 opacity-60'}`}>
-                              {/* Checkbox */}
-                              <td className="px-2 py-1 text-center border-r border-slate-100">
-                                <Field type="checkbox" name={`rows.${idx}.checked`}
-                                  className="w-3.5 h-3.5 rounded border-slate-300 accent-blue-600" />
-                              </td>
-                              {/* DT number */}
-                              <td className="px-2 py-1 text-[10px] font-bold text-slate-500 text-center border-r border-slate-100">
-                                {idx + 1}
-                              </td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.plan_fkm`} /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.achieved_fkm`} /></td>
-                              <td className="px-1 py-1 border-r border-slate-100 bg-slate-50/60">
-                                {/* GAP auto-calculated display */}
-                                <span className="text-[10px] font-mono text-slate-500 px-1">
-                                  {(
-                                    (parseFloat(row.plan_fkm) || 0) -
-                                    (parseFloat(row.achieved_fkm) || 0)
-                                  ).toFixed(2)}
-                                </span>
-                              </td>
-                              <td className="px-1 py-1 border-r border-slate-100">
-                                <TSelect name={`rows.${idx}.started_by`}
-                                  options={['Please select','Operator A','Operator B','Operator C']} />
-                              </td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.preform_seq`} /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.line_speed`} type="number" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.spool_id`} /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.drawn_fkm`} type="number" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100">
-                                <TSelect name={`rows.${idx}.dc`} options={['No','Yes']} />
-                              </td>
-                              <td className="px-1 py-1 border-r border-slate-100">
-                                <TSelect name={`rows.${idx}.fc`} options={['No','Yes']} />
-                              </td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.break_val`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.co_timeloss`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.fc_timeloss`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.startup_tl`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.rampup_tl`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1 border-r border-slate-100"><TInput name={`rows.${idx}.cobb_tl`} type="number" placeholder="0" /></td>
-                              <td className="px-1 py-1"><TInput name={`rows.${idx}.activities`} placeholder="Enter..." /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                          return (
+                            <FieldArray key={tower.dt} name={`towers.${tIdx}.preforms`}>
+                              {({ push, remove }) => (
+                                <>
+                                  {tower.preforms.map((pf, pIdx) => (
+                                    <tr key={pIdx} className={`border-t ${pIdx === 0 ? 'border-slate-300' : 'border-slate-100'} hover:bg-blue-50/20 transition-colors`}>
+                                      {/* ── Per-DT cells: only on first preform row, rowSpan over the group ── */}
+                                      {pIdx === 0 && (
+                                        <>
+                                          <td rowSpan={span} className="px-2 py-1 text-center border-r border-slate-200 bg-slate-50/60 align-middle">
+                                            <span className="text-xs font-bold text-blue-700">{tower.dt}</span>
+                                          </td>
+                                          <td rowSpan={span} className="px-1 py-1 border-r border-slate-200 bg-amber-50/40 align-middle">
+                                            <TInput name={`towers.${tIdx}.speed`} type="number" />
+                                          </td>
+                                          <td rowSpan={span} className="px-1 py-1 border-r border-slate-200 bg-slate-50/60 align-middle text-center">
+                                            <span className="text-[10px] font-mono font-semibold text-slate-600">{plan.toFixed(2)}</span>
+                                          </td>
+                                        </>
+                                      )}
 
-                </div>
-              )}
-            </FieldArray>
+                                      {/* ── Per-preform editable cells ── */}
+                                      {PREFORM_COLS.map(c => (
+                                        <td key={c.key} className="px-1 py-1 border-r border-slate-100">
+                                          <TInput name={`towers.${tIdx}.preforms.${pIdx}.${c.key}`} type={c.type} />
+                                        </td>
+                                      ))}
+
+                                      {/* ── Per-DT derived cells: only on first preform row ── */}
+                                      {pIdx === 0 && (
+                                        <>
+                                          <td rowSpan={span} className="px-1 py-1 border-r border-slate-200 bg-slate-50/60 align-middle text-center">
+                                            <span className="text-[10px] font-mono font-semibold text-slate-700">{drawn.toFixed(2)}</span>
+                                          </td>
+                                          <td rowSpan={span} className="px-1 py-1 align-middle text-center bg-emerald-50/40">
+                                            <span className="text-[10px] font-mono font-bold text-emerald-700">{eff.toFixed(2)}%</span>
+                                          </td>
+                                        </>
+                                      )}
+                                    </tr>
+                                  ))}
+
+                                  {/* ── Add / Remove preform row controls for this DT ── */}
+                                  <tr className="bg-slate-50/40">
+                                    <td colSpan={3 + PREFORM_COLS.length + 2} className="px-2 py-1 border-t border-slate-200">
+                                      <div className="flex gap-2">
+                                        <button type="button"
+                                          onClick={() => push(makePreform())}
+                                          className="flex items-center gap-1 px-2 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded hover:bg-blue-700 transition-all">
+                                          <Plus size={10} /> Add Preform (DT {tower.dt})
+                                        </button>
+                                        <button type="button"
+                                          onClick={() => tower.preforms.length > 1 && remove(tower.preforms.length - 1)}
+                                          disabled={tower.preforms.length <= 1}
+                                          className="flex items-center gap-1 px-2 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded hover:bg-rose-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                                          <Minus size={10} /> Remove
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </>
+                              )}
+                            </FieldArray>
+                          );
+                        })}
+                      </tbody>
+                    )}
+                  </FieldArray>
+                </table>
+              </div>
+            </div>
+
           </Form>
         )}
       </Formik>

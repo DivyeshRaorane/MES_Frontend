@@ -32,6 +32,7 @@ const MENU = [
       { label: 'Draw Spool Entry',       path: '/drawmange/drawspoolentry' },
       { label:  'Draw/PT Break Analysis', path: '/drawmange/drawbrakanalysis'},
       { label: 'Draw Shift Plan',       path: '/drawmange/drawshiftplan'},
+      { label: 'Draw Timeloss Entry',   path: '/drawmange/drawtimeloss'},
       { label: 'Draw Shift Report',     path: '/drawmange/drawshiftreport'},
       
       { label: 'Reports',               path: '/drawmange/reports' },
@@ -83,6 +84,7 @@ const MENU = [
       { label: 'Splicing', path: '/qa/splicing'},
       { label: 'Short Term Entry', path: '/qa/shorttermentry'},
       { label: 'Spec Creation', path: '/qa/speccreation'},
+      { label: 'Barcode Printing', path: '/qa/barcodeprinting'},
       { label: 'Customer Complaint',  path: '/qa/customer' },
       { label: 'Reports', path: '/qa/reports' },
     ],

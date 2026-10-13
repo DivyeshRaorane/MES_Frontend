@@ -19,31 +19,31 @@ const TInput = ({ value, onChange, disabled = false, type = 'text' }) => (
 
 const TABLE_COLS = [
   { label: 'DT', key: 'tower_no' },
-  { label: 'Theo Speed', key: 'theo_speed' },
-  { label: 'Actual Speed', key: 'actu_speed' },
-  { label: 'C/O Num', key: 'ch_ov_num' },
-  { label: 'C/O Time', key: 'ch_ov_time' },
-  { label: 'C/O TL', key: 'ch_ov_tl' },
-  { label: 'Fur CL Time', key: 'fur_cl_time' },
+  { label: 'Line Speed', key: 'line_speed' },
+  { label: 'Total Time', key: 'total_time' },
   { label: 'PM TL', key: 'pm_tl' },
+  { label: 'Fur CL Time', key: 'fur_cl_time' },
+  { label: 'C/O TL', key: 'ch_ov_tl' },
+  { label: 'S/UP', key: 's_up' },
+  { label: 'R/UP', key: 'r_up' },
   { label: 'Downtime', key: 'downtime' },
-  { label: 'Draw Plan', key: 'draw_plan' },
-  { label: 'Shift Time', key: 'shift_time' },
+  { label: 'Plan Time', key: 'plan_time' },
+  { label: 'Plan', key: 'plan' },
 ];
 
 const makeRows = () =>
   [1, 2, 3, 4].map(dt => ({
     tower_no: dt,
-    theo_speed: '',
-    actu_speed: '',
-    ch_ov_num: '',
-    ch_ov_time: '',
-    ch_ov_tl: '',
-    fur_cl_time: '',
+    line_speed: '',
+    total_time: '',
     pm_tl: '',
+    fur_cl_time: '',
+    ch_ov_tl: '',
+    s_up: '',
+    r_up: '',
     downtime: '',
-    draw_plan: '',
-    shift_time: '',
+    plan_time: '',
+    plan: '',
   }));
 
 const validationSchema = Yup.object({
@@ -77,7 +77,9 @@ const DrawShiftPlan = () => {
         const [sRes, uRes] = await Promise.all([getShifts(), getDrawUsers()]);
         setShifts(sRes?.data || []);
         setDrawUsers(uRes?.data || []);
-      } catch (_) {}
+      } catch {
+        showError('Failed to load shifts or draw users');
+      }
     })();
   }, []);
 
@@ -88,19 +90,24 @@ const DrawShiftPlan = () => {
     setRows(prev => prev.map((r, i) => {
       if (i !== idx) return r;
       const updated = { ...r, [field]: value };
-      // Auto-calculate ch_ov_tl = ch_ov_num * ch_ov_time
-      if (field === 'ch_ov_num' || field === 'ch_ov_time') {
-        const num = parseFloat(updated.ch_ov_num) || 0;
-        const time = parseFloat(updated.ch_ov_time) || 0;
-        updated.ch_ov_tl = (num * time).toFixed(3);
-      }
-      // Auto-calculate draw_plan = shift_time - ch_ov_tl - fur_cl_time - pm_tl - downtime
-      const st = parseFloat(updated.shift_time) || 0;
-      const coTl = parseFloat(updated.ch_ov_tl) || 0;
-      const fc = parseFloat(updated.fur_cl_time) || 0;
+
+      // Auto-calculate downtime = (pm_tl*100)+(fur_cl_time*250)+(ch_ov_tl*105)+(s_up*20)+(r_up*30)
       const pm = parseFloat(updated.pm_tl) || 0;
-      const dt = parseFloat(updated.downtime) || 0;
-      updated.draw_plan = (st - coTl - fc - pm - dt).toFixed(3);
+      const fc = parseFloat(updated.fur_cl_time) || 0;
+      const coTl = parseFloat(updated.ch_ov_tl) || 0;
+      const sUp = parseFloat(updated.s_up) || 0;
+      const rUp = parseFloat(updated.r_up) || 0;
+      const downtime = (pm * 100) + (fc * 250) + (coTl * 105) + (sUp * 20) + (rUp * 30);
+      updated.downtime = downtime.toFixed(3);
+
+      // Auto-calculate plan_time = 480 - downtime
+      const planTime = 480 - downtime;
+      updated.plan_time = planTime.toFixed(3);
+
+      // Auto-calculate plan = (plan_time * line_speed) / 1000
+      const lineSpeed = parseFloat(updated.line_speed) || 0;
+      updated.plan = ((planTime * lineSpeed) / 1000).toFixed(3);
+
       return updated;
     }));
   };
@@ -114,7 +121,7 @@ const DrawShiftPlan = () => {
 
   const handleSubmit = async (values) => {
     // Validate rows have data
-    const hasEmpty = rows.some(r => !r.theo_speed && !r.actu_speed && !r.shift_time);
+    const hasEmpty = rows.some(r => !r.line_speed && !r.total_time);
     if (hasEmpty) { showError('Fill tower data for all DTs'); return; }
 
     setSubmitting(true);
@@ -123,16 +130,16 @@ const DrawShiftPlan = () => {
         ...values,
         towers: rows.map(r => ({
           tower_no: r.tower_no,
-          theo_speed: parseFloat(r.theo_speed) || 0,
-          actu_speed: parseFloat(r.actu_speed) || 0,
-          ch_ov_num: parseInt(r.ch_ov_num) || 0,
-          ch_ov_time: parseFloat(r.ch_ov_time) || 0,
-          ch_ov_tl: parseFloat(r.ch_ov_tl) || 0,
-          fur_cl_time: parseFloat(r.fur_cl_time) || 0,
+          line_speed: parseFloat(r.line_speed) || 0,
+          total_time: parseFloat(r.total_time) || 0,
           pm_tl: parseFloat(r.pm_tl) || 0,
+          fur_cl_time: parseFloat(r.fur_cl_time) || 0,
+          ch_ov_tl: parseFloat(r.ch_ov_tl) || 0,
+          s_up: parseFloat(r.s_up) || 0,
+          r_up: parseFloat(r.r_up) || 0,
           downtime: parseFloat(r.downtime) || 0,
-          draw_plan: parseFloat(r.draw_plan) || 0,
-          shift_time: parseFloat(r.shift_time) || 0,
+          plan_time: parseFloat(r.plan_time) || 0,
+          plan: parseFloat(r.plan) || 0,
         })),
       };
       const res = await submitShiftPlan(payload);
@@ -193,45 +200,45 @@ const DrawShiftPlan = () => {
                           <td className="px-2 py-1.5 text-center border-r border-slate-100">
                             <span className="text-xs font-bold text-blue-700">DT {row.tower_no}</span>
                           </td>
-                          {/* Theo Speed */}
+                          {/* Line Speed */}
                           <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.theo_speed} onChange={e => updateRow(idx, 'theo_speed', e.target.value)} />
+                            <TInput type="number" value={row.line_speed} onChange={e => updateRow(idx, 'line_speed', e.target.value)} />
                           </td>
-                          {/* Actual Speed */}
+                          {/* Total Time */}
                           <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.actu_speed} onChange={e => updateRow(idx, 'actu_speed', e.target.value)} />
-                          </td>
-                          {/* C/O Num */}
-                          <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.ch_ov_num} onChange={e => updateRow(idx, 'ch_ov_num', e.target.value)} />
-                          </td>
-                          {/* C/O Time */}
-                          <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.ch_ov_time} onChange={e => updateRow(idx, 'ch_ov_time', e.target.value)} />
-                          </td>
-                          {/* C/O TL (auto-calc) */}
-                          <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput value={row.ch_ov_tl} disabled />
-                          </td>
-                          {/* Fur CL Time */}
-                          <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.fur_cl_time} onChange={e => updateRow(idx, 'fur_cl_time', e.target.value)} />
+                            <TInput type="number" value={row.total_time} onChange={e => updateRow(idx, 'total_time', e.target.value)} />
                           </td>
                           {/* PM TL */}
                           <td className="px-1 py-1 border-r border-slate-100">
                             <TInput type="number" value={row.pm_tl} onChange={e => updateRow(idx, 'pm_tl', e.target.value)} />
                           </td>
-                          {/* Downtime */}
+                          {/* Fur CL Time */}
                           <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput type="number" value={row.downtime} onChange={e => updateRow(idx, 'downtime', e.target.value)} />
+                            <TInput type="number" value={row.fur_cl_time} onChange={e => updateRow(idx, 'fur_cl_time', e.target.value)} />
                           </td>
-                          {/* Draw Plan (auto-calc) */}
+                          {/* C/O TL */}
                           <td className="px-1 py-1 border-r border-slate-100">
-                            <TInput value={row.draw_plan} disabled />
+                            <TInput type="number" value={row.ch_ov_tl} onChange={e => updateRow(idx, 'ch_ov_tl', e.target.value)} />
                           </td>
-                          {/* Shift Time */}
+                          {/* S/UP */}
+                          <td className="px-1 py-1 border-r border-slate-100">
+                            <TInput type="number" value={row.s_up} onChange={e => updateRow(idx, 's_up', e.target.value)} />
+                          </td>
+                          {/* R/UP */}
+                          <td className="px-1 py-1 border-r border-slate-100">
+                            <TInput type="number" value={row.r_up} onChange={e => updateRow(idx, 'r_up', e.target.value)} />
+                          </td>
+                          {/* Downtime (auto-calc) */}
+                          <td className="px-1 py-1 border-r border-slate-100">
+                            <TInput value={row.downtime} disabled />
+                          </td>
+                          {/* Plan Time (auto-calc) */}
+                          <td className="px-1 py-1 border-r border-slate-100">
+                            <TInput value={row.plan_time} disabled />
+                          </td>
+                          {/* Plan (auto-calc) */}
                           <td className="px-1 py-1">
-                            <TInput type="number" value={row.shift_time} onChange={e => updateRow(idx, 'shift_time', e.target.value)} />
+                            <TInput value={row.plan} disabled />
                           </td>
                         </tr>
                       ))}
