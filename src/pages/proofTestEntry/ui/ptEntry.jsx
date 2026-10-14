@@ -181,8 +181,9 @@ const PTEntry = () => {
     setFieldValue("pt_break", false);
     ptBreakRef.current = false;
     setFieldValue("pt_scrap", false);
+    const formattedPtMachineNo = String(pt_machine_no).padStart(2,'0')
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/ptmachinelog/${bobbin_no}/${pt_machine_no}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/ptmachinelog/${bobbin_no}/${formattedPtMachineNo}`);
       const data = res.data;
       if (data?.success && data.data) {
         const log = data.data;
