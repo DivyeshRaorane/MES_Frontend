@@ -42,6 +42,9 @@ const LoginPage = () => {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
+  // Ignore re-submits while a login request is already in flight.
+  if (loading) return;
+
   // Client bootstrap validation. On failure this behaves exactly like a normal
   // failed login (no distinct UI signal); only a disguised console diagnostic
   // is emitted from within the sync helper.
@@ -117,7 +120,7 @@ const handleSubmit = async (e) => {
       <div className="flex-1 bg-white p-8 lg:p-24 flex items-center justify-center">
         <div className="w-full max-w-md space-y-10">
           <div className="space-y-2">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">System Login Work Branch </h2>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">System Login</h2>
             <p className="text-slate-500 font-medium">Enter your credentials to access the production floor.</p>
           </div>
 
@@ -132,7 +135,7 @@ const handleSubmit = async (e) => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. OP-4012"
+                  placeholder="e.g. 1111"
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-slate-800 placeholder:text-slate-300"
                   value={formData.emp_id}
                   onChange={(e) => setFormData({ ...formData, emp_id: e.target.value })}

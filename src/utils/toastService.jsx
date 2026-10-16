@@ -1,57 +1,62 @@
 import { toast } from "react-toastify";
 
+// Stable toast ids. Reusing an id makes react-toastify update the existing
+// toast instead of stacking a new one, so repeated failed submits never pile
+// up multiple identical toasts.
+const SUCCESS_ID = "app-success";
+const ERROR_ID = "app-error";
+const WARNING_ID = "app-warning";
+const INFO_ID = "app-info";
+
+const KNOWN_TOAST_IDS = [SUCCESS_ID, ERROR_ID, WARNING_ID, INFO_ID];
+
 export const showSuccess = (message) => {
-  toast.success(message);
+  toast.success(message, { toastId: SUCCESS_ID });
 };
 
 export const showError = (message) => {
-  toast.error(message);
+  toast.error(message, { toastId: ERROR_ID });
 };
 
 export const showWarning = (message) => {
-  toast.warning(message);
+  toast.warning(message, { toastId: WARNING_ID });
 };
 
 export const showInfo = (message) => {
-  toast.info(message);
+  toast.info(message, { toastId: INFO_ID });
 };
 
 /**
  * Registers a global "Enter to dismiss" behavior for toasts.
  *
- * Tracks how many toasts are currently visible via toast.onChange, and when
- * the user presses Enter while at least one toast is showing, all visible
- * toasts are dismissed. When no toast is visible, Enter behaves normally.
+ * When the user presses Enter while any toast is visible, all visible toasts
+ * are dismissed and the keypress is swallowed so it cannot also trigger a form
+ * submit or button click underneath. When no toast is visible, Enter behaves
+ * normally.
  *
- * Returns a cleanup function that removes both listeners.
+ * Returns a cleanup function that removes the listener.
  */
 export const initToastKeyDismiss = () => {
-  let activeCount = 0;
-
-  const unsubscribe = toast.onChange((payload) => {
-    switch (payload.status) {
-      case "added":
-        activeCount += 1;
-        break;
-      case "removed":
-        activeCount = Math.max(0, activeCount - 1);
-        break;
-      default:
-        break;
-    }
-  });
-
   const handleKeyDown = (event) => {
     if (event.key !== "Enter") return;
-    if (activeCount > 0) {
-      toast.dismiss();
-    }
+
+    // toast.isActive(id) is synchronous and reflects the current DOM state,
+    // which avoids the timing races of tracking counts via toast.onChange.
+    // All toasts we create use one of the known ids above.
+    const anyActive = KNOWN_TOAST_IDS.some((id) => toast.isActive(id));
+    if (!anyActive) return;
+
+    // Swallow this Enter so it does not also re-submit the focused form or
+    // re-click the focused button, which would spawn another toast in a loop.
+    event.preventDefault();
+    event.stopPropagation();
+    toast.dismiss();
   };
 
-  window.addEventListener("keydown", handleKeyDown);
+  // Capture phase so we intercept Enter before it reaches form/button handlers.
+  window.addEventListener("keydown", handleKeyDown, true);
 
   return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-    unsubscribe();
+    window.removeEventListener("keydown", handleKeyDown, true);
   };
 };

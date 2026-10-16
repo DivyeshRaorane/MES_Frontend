@@ -209,6 +209,7 @@ function App() {
         position="top-right"
         autoClose={3000}
         theme="colored"
+        limit={1}
       /> 
     </>
   )

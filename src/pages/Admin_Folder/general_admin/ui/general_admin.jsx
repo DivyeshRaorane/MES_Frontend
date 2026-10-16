@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette,
+  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette, Database,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -18,6 +18,7 @@ import MailDashboard from '../../../mail/ui/MailDashboard';
 import StockSearchPanel from './StockSearchPanel';
 import ColMaterialMasterPanel from '../col_material_code/ui/ColMaterialMasterPanel';
 import FiberColorMasterPanel from '../fiber_color/ui/FiberColorMasterPanel';
+import SapTransactionLogs from '../../../sap_transaction_logs/ui/SapTransactionLogs';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -138,6 +139,14 @@ const ADMIN_CARDS = [
     color: 'text-sky-600 bg-sky-100',
     component: 'fiber_color',
   },
+  {
+    key: 'sap_log',
+    title: 'SAP Log',
+    desc: 'View SAP transaction logs & payloads',
+    icon: Database,
+    color: 'text-slate-600 bg-slate-100',
+    component: 'sap_log',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -206,6 +215,10 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'fiber_color') {
     return <FiberColorMasterPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'sap_log') {
+    return <SapTransactionLogs onBack={() => setActiveCard(null)} />;
   }
 
   if (activeCard === 'mail_config') {
