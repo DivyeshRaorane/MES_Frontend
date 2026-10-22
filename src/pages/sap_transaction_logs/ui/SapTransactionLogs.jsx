@@ -237,6 +237,7 @@ const SapTransactionLogs = ({ onBack }) => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [errorBanner, setErrorBanner] = useState('');
 
   // Post-fetch free-text filter across message / request_payload / response_payload.
   const [textFilter, setTextFilter] = useState('');
@@ -279,16 +280,21 @@ const SapTransactionLogs = ({ onBack }) => {
         setRows(Array.isArray(res.data) ? res.data : []);
         setCount(typeof res.count === 'number' ? res.count : (res.data?.length || 0));
         setAccessDenied(false);
+        setErrorBanner('');
       } else {
         setRows([]);
         setCount(0);
-        showError(res?.message || 'Failed to load SAP transaction logs');
+        const msg = res?.message || 'Failed to load SAP transaction logs';
+        setErrorBanner(msg);
+        showError(msg);
       }
     } catch (error) {
       if (!handleAuthError(error)) {
         setRows([]);
         setCount(0);
-        showError(error?.response?.data?.message || error.message || 'Failed to load SAP transaction logs');
+        const msg = describeFetchError(error);
+        setErrorBanner(msg);
+        showError(msg);
       }
     } finally {
       setLoading(false);
@@ -487,6 +493,18 @@ const SapTransactionLogs = ({ onBack }) => {
           <span className="text-[9px] text-slate-400">Searches within already-loaded results (message, request_payload, response_payload)</span>
         </div>
 
+        {/* Error banner */}
+        {errorBanner && !loading && (
+          <div className="mx-4 mt-2 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 flex-shrink-0">
+            <ShieldAlert size={13} className="text-rose-500 mt-0.5 flex-shrink-0" />
+            <p className="text-[10px] font-medium text-rose-700 leading-relaxed">{errorBanner}</p>
+            <button type="button" onClick={() => setErrorBanner('')}
+              className="ml-auto text-rose-400 hover:text-rose-600 flex-shrink-0">
+              <X size={13} />
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="flex-1 overflow-auto">
           {loading ? (
@@ -587,6 +605,24 @@ const Field = ({ label, children }) => (
     {children}
   </div>
 );
+
+/* Produce a user-facing message for a failed fetch. Detects the oversized
+   result-set signature (server 500 + "invalid string length", which V8 throws
+   when a response is serialized into a string beyond its max length) and
+   returns an actionable hint instead of a raw error. */
+function describeFetchError(error) {
+  const status = error?.response?.status;
+  const serverMsg = error?.response?.data?.message || error?.response?.data?.error || '';
+  const raw = `${serverMsg} ${error?.message || ''}`.toLowerCase();
+
+  if (raw.includes('invalid string length') || (status === 500 && raw.includes('string length'))) {
+    return 'The result set is too large to load at once. Narrow the date range or add a filter (prod order, batch, or status), then search again.';
+  }
+  if (status === 500) {
+    return serverMsg || 'Server error while loading SAP transaction logs. Try a narrower date range.';
+  }
+  return serverMsg || error?.message || 'Failed to load SAP transaction logs';
+}
 
 /* Convert a datetime-local value (local time) to an ISO timestamp.
    Empty/invalid values pass through untouched so they stay omitted. */
