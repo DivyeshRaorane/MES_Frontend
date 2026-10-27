@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Barcode, Search, Printer } from 'lucide-react';
-import LabelRenderer from '../components/LabelRenderer';
 import { printLabel } from '../core/printEngine';
 import { getTemplate } from '../core/templateRegistry';
 import {
@@ -12,12 +11,15 @@ import { fetchBobbinLabels, mapBobbinToLabel } from '../services/bobbin.api';
 import { showError, showSuccess, showWarning } from '../../../utils/toastService';
 import BoxLabelPage from './BoxLabelPage';
 import { useBoxLabels } from './useBoxLabels';
+import StackLabelPage from './StackLabelPage';
+import { useStackLabels } from './useStackLabels';
 import '../templates'; // ensure templates are registered
 
 /* Sticker types — add more here later. */
 const STICKER_TYPES = [
   { value: 'bobbin', label: 'Bobbin Sticker (40×40mm)' },
   { value: 'box', label: 'Box Sticker (100×150mm)' },
+  { value: 'stack', label: 'Stack Sticker (150×150mm)' },
 ];
 
 const PATTERN_OPTIONS = getBobbinPatternOptions();
@@ -39,7 +41,9 @@ const BobbinBarcodePrinting = () => {
 
   const [stickerType, setStickerType] = useState('bobbin');
   const isBox = stickerType === 'box';
+  const isStack = stickerType === 'stack';
   const box = useBoxLabels(); // Box sticker state (no pattern, one fixed layout)
+  const stack = useStackLabels(); // Stack sticker state (consignee address, no barcodes)
   const [pattern, setPattern] = useState(1);
 
   // Single input: comma/newline/space separated bobbin numbers (scanner-friendly).
@@ -48,6 +52,8 @@ const BobbinBarcodePrinting = () => {
   // Fetched rows ready to print. Each: { ...labelData, _selected, _copies }
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState([]);   // entered bobbins the backend didn't return
+  const [fetchError, setFetchError] = useState(''); // inline error (like the Box page)
 
   const patternDef = getBobbinPattern(pattern);
   const needsPartNo = useMemo(
@@ -74,45 +80,54 @@ const BobbinBarcodePrinting = () => {
     }
 
     setLoading(true);
+    setFetchError('');
+    setNotFound([]);
+    setRows([]);
     try {
       const res = await fetchBobbinLabels(bobbinNos, pattern);
       const records = Array.isArray(res?.data) ? res.data : (res?.data ? [res.data] : []);
 
-      const built = bobbinNos.map((no) => {
-        const rec = records.find((r) => (r.bobbin_no ?? r.bobbinNo) === no);
-        const mapped = rec ? mapBobbinToLabel(rec) : { bobbin_no: no };
-        return {
+      // Keep ONLY bobbins the backend returned; the rest are reported as not found.
+      const found = [];
+      const missing = [];
+      bobbinNos.forEach((no) => {
+        const rec = records.find((r) => String(r.bobbin_no ?? r.bobbinNo ?? '').trim() === no);
+        if (!rec) {
+          missing.push(no);
+          return;
+        }
+        found.push({
           ...template.defaults,
-          ...mapped,
+          ...mapBobbinToLabel(rec),
           bobbin_no: no,
           pattern,
           part_no: '',          // user fills this in the table (Pattern 3 only)
           _selected: true,
           _copies: 1,
-          _found: Boolean(rec),
-        };
+        });
       });
 
-      setRows(built);
-      const foundCount = built.filter((b) => b._found).length;
-      showSuccess(`Loaded ${foundCount}/${built.length} bobbin(s)`);
+      setRows(found);
+      setNotFound(missing);
+
+      if (found.length === 0) {
+        setFetchError(
+          bobbinNos.length === 1
+            ? `Bobbin not found: ${bobbinNos[0]}`
+            : 'None of the entered bobbins were found'
+        );
+        return;
+      }
+      showSuccess(`Loaded ${found.length}/${bobbinNos.length} bobbin(s)`);
       if (needsPartNo) showWarning('Pattern 3: enter a Part No for each bobbin in the table');
     } catch (e) {
+      // Show the real reason (server message / network) instead of a generic one.
       const status = e?.response?.status;
-      if (status === 404) showError('No records found for the given bobbins');
-      else showError('Fetch failed. Showing manual rows so you can still print.');
-
-      setRows(
-        bobbinNos.map((no) => ({
-          ...template.defaults,
-          bobbin_no: no,
-          pattern,
-          part_no: '',
-          _selected: true,
-          _copies: 1,
-          _found: false,
-        }))
-      );
+      const serverMsg = e?.response?.data?.message;
+      setRows([]);
+      if (status === 404) setFetchError('Bobbin not found');
+      else if (status === 401) setFetchError('Session expired. Please log in again.');
+      else setFetchError(serverMsg || e?.message || 'Fetch failed. Could not reach the server.');
     } finally {
       setLoading(false);
     }
@@ -128,6 +143,19 @@ const BobbinBarcodePrinting = () => {
 
   /* ── print ── */
   const handlePrint = async () => {
+    if (isStack) {
+      if (stack.labels.length === 0) {
+        showError('Fetch at least one stack label to print');
+        return;
+      }
+      try {
+        // One 150x150 page per label; the print engine breaks pages per label.
+        await printLabel('stack', stack.labels);
+      } catch (err) {
+        showError(err.message || 'Print failed');
+      }
+      return;
+    }
     if (isBox) {
       if (box.labels.length === 0) {
         showError('Generate at least one box label to print');
@@ -161,10 +189,7 @@ const BobbinBarcodePrinting = () => {
     0
   );
 
-  /* preview the first selected row (or first row) */
-  const previewRow = selectedRows[0] || rows[0];
-
-  const printCount = isBox ? box.labels.length : totalLabels;
+  const printCount = isStack ? stack.labels.length : isBox ? box.labels.length : totalLabels;
 
   /* Shared by both sticker bodies */
   const stickerSelect = (
@@ -195,7 +220,7 @@ const BobbinBarcodePrinting = () => {
           <button
             type="button"
             onClick={handlePrint}
-            disabled={isBox ? box.labels.length === 0 : selectedRows.length === 0}
+            disabled={printCount === 0 || (!isBox && !isStack && selectedRows.length === 0)}
             className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-700 disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95"
           >
             <Printer size={13} /> Print {printCount > 0 ? `(${printCount})` : ''}
@@ -203,12 +228,14 @@ const BobbinBarcodePrinting = () => {
         </div>
 
         <div className="flex flex-1 min-h-0">
-          {isBox ? (
+          {isStack ? (
+            <StackLabelPage stack={stack} stickerSelect={stickerSelect} />
+          ) : isBox ? (
             <BoxLabelPage box={box} stickerSelect={stickerSelect} />
           ) : (
           <>
           {/* Left: controls */}
-          <div className="w-[460px] border-r border-slate-200 p-4 overflow-auto flex flex-col gap-3">
+          <div className="w-full max-w-3xl p-4 overflow-auto flex flex-col gap-3">
 
             {/* Sticker type + pattern */}
             <div className="grid grid-cols-2 gap-2">
@@ -219,7 +246,7 @@ const BobbinBarcodePrinting = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Pattern</label>
                   <select
                     value={pattern}
-                    onChange={(e) => { setPattern(Number(e.target.value)); setRows([]); }}
+                    onChange={(e) => { setPattern(Number(e.target.value)); setRows([]); setNotFound([]); setFetchError(''); }}
                     className="px-2 py-1.5 text-xs rounded border border-slate-300"
                     title={patternDef.label}
                   >
@@ -262,6 +289,18 @@ const BobbinBarcodePrinting = () => {
                   </button>
                 </div>
 
+                {fetchError && (
+                  <div role="alert" className="px-3 py-2 text-xs rounded border border-red-300 bg-red-50 text-red-700">
+                    {fetchError}
+                  </div>
+                )}
+
+                {notFound.length > 0 && rows.length > 0 && (
+                  <div role="status" className="px-3 py-2 text-xs rounded border border-amber-300 bg-amber-50 text-amber-800">
+                    Bobbin not found: {notFound.join(', ')}
+                  </div>
+                )}
+
                 {/* Fetched rows: select + copies */}
                 {rows.length > 0 && (
                   <div className="flex flex-col gap-1 mt-2">
@@ -284,7 +323,6 @@ const BobbinBarcodePrinting = () => {
                           <tr>
                             <th className="px-2 py-1 text-left font-bold">✓</th>
                             <th className="px-2 py-1 text-left font-bold">Bobbin</th>
-                            <th className="px-2 py-1 text-left font-bold">Status</th>
                             {needsPartNo && <th className="px-2 py-1 text-left font-bold">Part No</th>}
                             <th className="px-2 py-1 text-center font-bold">Copies</th>
                           </tr>
@@ -301,11 +339,6 @@ const BobbinBarcodePrinting = () => {
                                 />
                               </td>
                               <td className="px-2 py-1 font-mono">{r.bobbin_no}</td>
-                              <td className="px-2 py-1">
-                                {r._found
-                                  ? <span className="text-emerald-600 font-semibold">loaded</span>
-                                  : <span className="text-amber-600 font-semibold">manual</span>}
-                              </td>
                               {needsPartNo && (
                                 <td className="px-2 py-1">
                                   <input
@@ -336,15 +369,6 @@ const BobbinBarcodePrinting = () => {
             )}
           </div>
 
-          {/* Right: live preview */}
-          <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-100 flex flex-col items-center justify-start gap-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Preview · 40 × 40 mm {previewRow ? `· ${previewRow.bobbin_no}` : ''}
-            </span>
-            {previewRow
-              ? <LabelRenderer templateKey="bobbin" data={previewRow} zoom={6} />
-              : <div className="text-xs text-slate-400 mt-10">Fetch bobbins to preview the sticker.</div>}
-          </div>
           </>
           )}
         </div>

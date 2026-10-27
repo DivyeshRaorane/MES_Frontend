@@ -10,3 +10,4 @@ import './spoolLabelTemplate';
 import './cartonLabelTemplate';
 import './bobbinLabelTemplate';
 import './boxLabelTemplate';
+import './stackLabelTemplate';

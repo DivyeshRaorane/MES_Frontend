@@ -18,6 +18,9 @@ import { renderBarcodeDataUrl } from '../services/barcode.service';
  * Everything is inline-styled in mm/pt because the print iframe has no app CSS.
  */
 
+/** Printed in the header of every box label, regardless of the backend's customer_name. */
+const COMPANY_NAME = 'WEST COAST OPTILINKS PVT LTD';
+
 /** Rows beyond this cannot fit on 100x150 even at the smallest font. */
 export const BOX_LABEL_MAX_ROWS = 30;
 
@@ -131,7 +134,7 @@ export const BoxLabelCard = (d) => {
           borderBottom: '0.5mm solid #111',
         }}
       >
-        {dash(d.customer_name)}
+        {COMPANY_NAME}
       </div>
 
       {/* Product */}
