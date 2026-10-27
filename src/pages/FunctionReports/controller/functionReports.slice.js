@@ -11,6 +11,7 @@ import {
   fetchFunctionParameters,
   fetchFunctionReportSections,
 } from '../services/functionReports.api';
+import { isMultiType, normalizeColumns } from '../utils/reportType';
 
 // ─── Async Thunks ───────────────────────────────────────────────────────────
 
@@ -106,6 +107,8 @@ const initialState = {
   activeReport: null,
   reportResult: null,
   resultColumns: [],
+  resultType: null,   // 'single' | 'multi_table' | 'multi_sheet' (type of the last result)
+  reportItems: [],    // multi types: [{ sequence, function_name, title, sheet_name, success, error, columns, data, totalRows, executionTime }]
   totalRows: 0,
   executionTime: 0,
 
@@ -129,12 +132,16 @@ const functionReportsSlice = createSlice({
       state.activeReport = action.payload;
       state.reportResult = null;
       state.resultColumns = [];
+      state.resultType = null;
+      state.reportItems = [];
       state.totalRows = 0;
       state.executionTime = 0;
     },
     clearReportResult: (state) => {
       state.reportResult = null;
       state.resultColumns = [];
+      state.resultType = null;
+      state.reportItems = [];
       state.totalRows = 0;
       state.executionTime = 0;
     },
@@ -261,6 +268,26 @@ const functionReportsSlice = createSlice({
         state.loading.execution = false;
         const payload = action.payload;
 
+        // Multi-function reports: one entry per function, each with its own columns
+        if (isMultiType(payload?.report_type) && Array.isArray(payload.items)) {
+          const items = payload.items.map((it) => {
+            const itemRows = Array.isArray(it?.data) ? it.data : [];
+            return {
+              ...it,
+              data: itemRows,
+              columns: normalizeColumns(it?.columns, itemRows),
+              totalRows: it?.totalRows ?? itemRows.length,
+            };
+          });
+          state.resultType = payload.report_type;
+          state.reportItems = items;
+          state.reportResult = null;
+          state.resultColumns = [];
+          state.totalRows = payload.totalRows ?? items.reduce((sum, it) => sum + (it.totalRows || 0), 0);
+          state.executionTime = payload.executionTime || 0;
+          return;
+        }
+
         let rows = [];
         if (Array.isArray(payload)) {
           rows = payload;
@@ -270,20 +297,12 @@ const functionReportsSlice = createSlice({
             : [];
         }
 
+        state.resultType = 'single';
+        state.reportItems = [];
         state.reportResult = rows;
         state.totalRows = payload?.totalRows || payload?.total || rows.length;
         state.executionTime = payload?.executionTime || 0;
-
-        // Extract column definitions if provided
-        if (payload?.columns && Array.isArray(payload.columns)) {
-          state.resultColumns = payload.columns;
-        } else if (rows.length > 0) {
-          // Auto-detect columns from first row
-          state.resultColumns = Object.keys(rows[0]).map(key => ({
-            field: key,
-            header: key.replace(/_/g, ' '),
-          }));
-        }
+        state.resultColumns = normalizeColumns(payload?.columns, rows);
       })
       .addCase(runFunctionReport.rejected, (state, action) => {
         state.loading.execution = false;

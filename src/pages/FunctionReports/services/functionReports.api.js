@@ -34,6 +34,18 @@ export const fetchFunctionParameters = async (schemaName, functionName) => {
   return res.data;
 };
 
+/**
+ * Fetch functions compatible (same parameters, same schema) with the given first function.
+ * Response: { success, data: [{ schema_name, function_name, arguments }] }
+ */
+export const fetchCompatibleFunctions = async (schemaName, functionName) => {
+  const res = await axios.get(`${API_URL}/function-reports/compatible-functions`, {
+    headers: getAuthHeaders(),
+    params: { schema_name: schemaName, function_name: functionName },
+  });
+  return res.data;
+};
+
 // ─── Function Report Registration CRUD ──────────────────────────────────────
 
 /** Get all registered function reports (admin) */

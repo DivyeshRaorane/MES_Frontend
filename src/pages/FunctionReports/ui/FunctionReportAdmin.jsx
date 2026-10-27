@@ -11,9 +11,9 @@
  * - Enable/disable registered reports
  * - Delete report registrations (not the function itself)
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ArrowLeft, Search, Plus, Edit2, Power, Trash2, Loader2,
+  ArrowLeft, ArrowUp, ArrowDown, ChevronDown, Search, Plus, Edit2, Power, Trash2, Loader2,
   Database, FileText, Settings, X, RefreshCw, Info, PlusCircle, MinusCircle,
 } from 'lucide-react';
 import { Formik, Form, Field } from 'formik';
@@ -28,7 +28,21 @@ import {
   toggleFunctionReportStatus,
   deleteFunctionReport,
   fetchFunctionReportSections,
+  fetchCompatibleFunctions,
 } from '../services/functionReports.api';
+import {
+  REPORT_TYPES, REPORT_TYPE_OPTIONS, REPORT_TYPE_LABELS,
+  getReportType, isMultiType, getFunctionNames, splitFullName,
+} from '../utils/reportType';
+
+/** Small badge showing the report type (Single / Multi Table / Multi Sheet). */
+const ReportTypeBadge = ({ type }) => (
+  <span className={`inline-block text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
+    type === REPORT_TYPES.SINGLE ? 'bg-slate-100 text-slate-600' : 'bg-violet-100 text-violet-700'
+  }`}>
+    {REPORT_TYPE_LABELS[type]}
+  </span>
+);
 
 const PARAM_TYPE_OPTIONS = [
   { value: 'text', label: 'Text' },
@@ -85,6 +99,8 @@ const FunctionReportAdmin = () => {
         return {
           ...r,
           param_config: config,
+          report_type: getReportType(r),
+          function_names: getFunctionNames(r),
           section_ids: r.section_ids || (r.section ? [r.section] : []),
         };
       });
@@ -253,7 +269,23 @@ const FunctionReportAdmin = () => {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-600 font-mono border-r border-slate-100">
-                      {report.schema_name}.{report.function_name}
+                      <div className="flex items-center gap-1.5 mb-0.5 font-sans">
+                        <ReportTypeBadge type={report.report_type} />
+                        {isMultiType(report.report_type) && (
+                          <span className="text-[9px] text-slate-400">{report.function_names.length} functions</span>
+                        )}
+                      </div>
+                      {isMultiType(report.report_type) ? (
+                        <ol className="space-y-0.5">
+                          {report.function_names.map((name, i) => (
+                            <li key={`${name}-${i}`}>
+                              <span className="text-slate-400">{i + 1}.</span> {report.schema_name}.{name}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <span>{report.schema_name}.{report.function_names[0] || report.function_name}</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-600 border-r border-slate-100">
                       <div className="flex flex-wrap gap-1">
@@ -317,7 +349,7 @@ const FunctionReportAdmin = () => {
             </p>
             <p className="text-xs font-bold text-slate-700 mb-3">"{confirmDelete.report_name}"</p>
             <p className="text-[9px] text-amber-600 bg-amber-50 p-2 rounded mb-4">
-              Note: The PostgreSQL function ({confirmDelete.schema_name}.{confirmDelete.function_name}) will NOT be affected.
+              Note: The PostgreSQL {confirmDelete.function_names.length > 1 ? 'functions' : 'function'} ({confirmDelete.function_names.map(n => `${confirmDelete.schema_name}.${n}`).join(', ')}) will NOT be affected.
               Only the report registration is removed.
             </p>
             <div className="flex items-center gap-2 justify-end">
@@ -353,7 +385,6 @@ const FunctionReportAdmin = () => {
    ══════════════════════════════════════════════════════════ */
 const validationSchema = Yup.object().shape({
   report_name: Yup.string().required('Report name is required'),
-  function_full_name: Yup.string().required('Please select a function'),
 });
 
 const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, onSaved }) => {
@@ -384,16 +415,53 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
   });
   const isEdit = !!item;
 
-  // Load params when editing or when function changes
-  const loadParams = async (schemaName, functionName) => {
+  // ── Report type + ordered function selection ("schema.fn" strings) ──
+  const [reportType, setReportType] = useState(() => getReportType(item));
+  const [selectedFunctions, setSelectedFunctions] = useState(() =>
+    item ? getFunctionNames(item).map(n => `${item.schema_name}.${n}`) : []
+  );
+  const [compatible, setCompatible] = useState([]);
+  const [loadingCompat, setLoadingCompat] = useState(false);
+  const [compatError, setCompatError] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [pendingType, setPendingType] = useState(null); // type awaiting confirmation (multi -> single)
+  const [serverError, setServerError] = useState('');
+  const paramsReqId = useRef(0);
+
+  const isMulti = isMultiType(reportType);
+  const firstFn = selectedFunctions[0] || '';
+  const { schema: firstSchema, fn: firstName } = splitFullName(firstFn);
+
+  const typeRulesMet = isMulti ? selectedFunctions.length >= 2 : selectedFunctions.length === 1;
+  const typeRuleMessage = (() => {
+    if (typeRulesMet) return '';
+    if (isMulti) {
+      return selectedFunctions.length === 0
+        ? 'Select the first function, then add at least one more (minimum 2 functions)'
+        : 'Add at least one more function (minimum 2 functions)';
+    }
+    return selectedFunctions.length === 0
+      ? 'Select a function'
+      : 'A single report must have exactly one function';
+  })();
+
+  const availableToAdd = compatible.filter(c => {
+    const schema = c.schema_name || firstSchema;
+    return schema === firstSchema && !selectedFunctions.includes(`${schema}.${c.function_name}`);
+  });
+
+  // Load params for a function. replaceConfig=true always rebuilds param_config
+  // (used when the user picks a different first function).
+  const loadParams = async (schemaName, functionName, { replaceConfig = false } = {}) => {
     if (!schemaName || !functionName) return;
+    const reqId = ++paramsReqId.current;
     setLoadingParams(true);
     try {
       const res = await fetchFunctionParameters(schemaName, functionName);
+      if (reqId !== paramsReqId.current) return; // a newer request superseded this one
       const params = Array.isArray(res) ? res : res?.data || [];
       setFunctionParams(params);
-      // Auto-populate param config if not already set
-      if (paramConfig.length === 0 && params.length > 0) {
+      if (replaceConfig || paramConfig.length === 0) {
         setParamConfig(params.map(p => ({
           param_name: p.parameter_name,
           display_label: p.parameter_name.replace(/^p_/, '').replace(/_/g, ' '),
@@ -405,15 +473,101 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
       }
     } catch (e) {
       console.error('Failed to load function params:', e);
+    } finally {
+      if (reqId === paramsReqId.current) setLoadingParams(false);
     }
-    setLoadingParams(false);
   };
 
   useEffect(() => {
-    if (item?.schema_name && item?.function_name) {
-      loadParams(item.schema_name, item.function_name);
+    if (item?.schema_name) {
+      const first = getFunctionNames(item)[0];
+      if (first) loadParams(item.schema_name, first);
     }
   }, []);
+
+  // Compatible functions for multi types — reload whenever the first function changes
+  useEffect(() => {
+    if (!isMulti || !firstSchema || !firstName) {
+      setCompatible([]);
+      setCompatError('');
+      setLoadingCompat(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoadingCompat(true);
+    setCompatError('');
+    fetchCompatibleFunctions(firstSchema, firstName)
+      .then(res => {
+        if (cancelled) return;
+        setCompatible(Array.isArray(res) ? res : res?.data || []);
+      })
+      .catch(e => {
+        if (cancelled) return;
+        setCompatible([]);
+        setCompatError(e?.response?.data?.message || 'Failed to load compatible functions');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCompat(false);
+      });
+    return () => { cancelled = true; };
+  }, [isMulti, firstFn]);
+
+  // User picked a (different) first function: other selections are cleared, params reloaded
+  const handleFirstFunctionChange = (fullName) => {
+    setServerError('');
+    setAddOpen(false);
+    setSelectedFunctions(fullName ? [fullName] : []);
+    setParamConfig([]);
+    if (fullName) {
+      const { schema, fn } = splitFullName(fullName);
+      loadParams(schema, fn, { replaceConfig: true });
+    } else {
+      paramsReqId.current += 1; // drop any in-flight request
+      setLoadingParams(false);
+      setFunctionParams([]);
+    }
+  };
+
+  const handleAddFunction = (c) => {
+    const schema = c.schema_name || firstSchema;
+    setSelectedFunctions(prev => [...prev, `${schema}.${c.function_name}`]);
+    setServerError('');
+    setAddOpen(false);
+  };
+
+  const moveFunction = (index, direction) => {
+    setSelectedFunctions(prev => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+    setServerError('');
+  };
+
+  const removeFunction = (index) => {
+    setSelectedFunctions(prev => prev.filter((_, i) => i !== index));
+    setServerError('');
+  };
+
+  const applyReportType = (type) => {
+    setReportType(type);
+    setPendingType(null);
+    setServerError('');
+    setAddOpen(false);
+    // multi -> single keeps only the first function; single -> multi keeps the current one
+    if (!isMultiType(type)) setSelectedFunctions(prev => prev.slice(0, 1));
+  };
+
+  const handleReportTypeChange = (type) => {
+    if (type === reportType) return;
+    if (!isMultiType(type) && selectedFunctions.length > 1) {
+      setPendingType(type); // ask before dropping functions
+      return;
+    }
+    applyReportType(type);
+  };
 
   const guessInputType = (pgType) => {
     if (!pgType) return 'text';
@@ -443,21 +597,29 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
 
   const initialValues = {
     report_name: item?.report_name || '',
-    function_full_name: item ? `${item.schema_name}.${item.function_name}` : '',
     description: item?.description || '',
     is_active: item?.is_active ?? true,
   };
 
   const handleSubmit = async (values, { setSubmitting }) => {
+    setServerError('');
+    if (!typeRulesMet) {
+      setServerError(typeRuleMessage);
+      setSubmitting(false);
+      return;
+    }
     if (selectedSections.length === 0) {
       showError('Please select at least one section');
       setSubmitting(false);
       return;
     }
     try {
-      const [schema_name, function_name] = values.function_full_name.split('.');
+      // All functions share the first function's schema; names are sent in order, comma-separated
+      const schema_name = firstSchema;
+      const function_name = selectedFunctions.map(f => splitFullName(f).fn).join(',');
       const payload = {
         report_name: values.report_name,
+        report_type: reportType,
         schema_name,
         function_name,
         section_ids: selectedSections,
@@ -479,25 +641,13 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
         showSuccess(isEdit ? 'Report updated' : 'Report registered successfully');
         onSaved(payload);
       } else {
-        showError(res?.message || 'Operation failed');
+        setServerError(res?.message || 'Operation failed');
       }
     } catch (e) {
-      showError(e?.response?.data?.message || 'Operation failed');
+      // Backend rule violations return 400 { success:false, message } — show it as-is
+      setServerError(e?.response?.data?.message || e?.message || 'Operation failed');
     }
     setSubmitting(false);
-  };
-
-  const handleFunctionChange = (e, setFieldValue) => {
-    const fullName = e.target.value;
-    setFieldValue('function_full_name', fullName);
-    if (fullName) {
-      const [schema, fn] = fullName.split('.');
-      setParamConfig([]);
-      loadParams(schema, fn);
-    } else {
-      setFunctionParams([]);
-      setParamConfig([]);
-    }
   };
 
   const updateParamConfig = (index, field, value) => {
@@ -562,7 +712,7 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
         </div>
 
         <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
-          {({ isSubmitting, setFieldValue, errors, touched }) => (
+          {({ isSubmitting, errors, touched }) => (
             <Form className="p-5 space-y-4">
               {/* Report Name */}
               <div className="flex flex-col gap-1">
@@ -574,25 +724,156 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
                 )}
               </div>
 
+              {/* Report Type */}
+              <fieldset className="flex flex-col gap-1">
+                <legend className="text-[10px] font-bold text-slate-700 uppercase mb-1">Report Type *</legend>
+                <div className="grid grid-cols-3 gap-2">
+                  {REPORT_TYPE_OPTIONS.map(opt => {
+                    const checked = reportType === opt.value;
+                    return (
+                      <label key={opt.value}
+                        className={`flex flex-col gap-0.5 p-2.5 rounded-lg border-2 cursor-pointer transition-all focus-within:ring-2 focus-within:ring-violet-500/30
+                          ${checked
+                            ? 'bg-violet-50 border-violet-400'
+                            : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
+                        <span className="flex items-center gap-2">
+                          <input type="radio" name="report_type" value={opt.value} checked={checked}
+                            onChange={() => handleReportTypeChange(opt.value)}
+                            className="w-3.5 h-3.5 text-violet-600 focus:ring-violet-500 cursor-pointer" />
+                          <span className="text-[11px] font-bold text-slate-700">{opt.label}</span>
+                        </span>
+                        <span className="text-[9px] text-slate-500 pl-5">{opt.description}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {pendingType && (
+                  <div role="alertdialog" aria-label="Confirm report type change"
+                    className="mt-1 p-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-3">
+                    <p className="text-[10px] text-amber-800">
+                      Switching to Single keeps only <strong className="font-mono">{firstFn}</strong> and
+                      removes the other {selectedFunctions.length - 1} function(s).
+                    </p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => setPendingType(null)}
+                        className="px-2.5 py-1 text-[9px] font-bold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-50">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={() => applyReportType(pendingType)}
+                        className="px-2.5 py-1 text-[9px] font-bold text-white bg-amber-600 rounded hover:bg-amber-700">
+                        Keep first only
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </fieldset>
+
               {/* Function Selection (READ-ONLY from DB) */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-700 uppercase">
-                  PostgreSQL Function * <span className="text-slate-400 normal-case">(existing functions from database)</span>
+                <label htmlFor="first_function" className="text-[10px] font-bold text-slate-700 uppercase">
+                  {isMulti ? 'First Function *' : 'PostgreSQL Function *'}{' '}
+                  <span className="text-slate-400 normal-case">(existing functions from database)</span>
                 </label>
-                <Field as="select" name="function_full_name"
-                  onChange={(e) => handleFunctionChange(e, setFieldValue)}
+                <select id="first_function" value={firstFn}
+                  onChange={(e) => handleFirstFunctionChange(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 appearance-none cursor-pointer">
                   <option value="">— Select existing function —</option>
+                  {firstFn && !availableFunctions.some(fn => `${fn.schema_name}.${fn.function_name}` === firstFn) && (
+                    <option value={firstFn}>{firstFn}</option>
+                  )}
                   {availableFunctions.map((fn, i) => (
                     <option key={i} value={`${fn.schema_name}.${fn.function_name}`}>
                       {fn.schema_name}.{fn.function_name}
                     </option>
                   ))}
-                </Field>
-                {errors.function_full_name && touched.function_full_name && (
-                  <p className="text-red-500 text-[9px]">{errors.function_full_name}</p>
+                </select>
+                {isMulti && (
+                  <p className="text-[9px] text-slate-500">
+                    Its parameters form the single shared parameter form for the whole report.
+                    Picking a different first function clears the other selected functions.
+                  </p>
                 )}
               </div>
+
+              {/* Multi: ordered function list */}
+              {isMulti && firstFn && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-700 uppercase">
+                      Functions in report ({selectedFunctions.length}){' '}
+                      <span className="text-slate-400 normal-case">(list order = order in report and Excel)</span>
+                    </span>
+                    <div className="relative" onKeyDown={(e) => { if (e.key === 'Escape') setAddOpen(false); }}>
+                      <button type="button" onClick={() => setAddOpen(o => !o)}
+                        aria-haspopup="listbox" aria-expanded={addOpen}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-bold text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-all">
+                        <Plus size={10} /> Add function <ChevronDown size={10} />
+                      </button>
+                      {addOpen && (
+                        <div role="listbox" aria-label="Compatible functions"
+                          className="absolute right-0 z-20 mt-1 w-96 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+                          {loadingCompat ? (
+                            <div className="flex items-center gap-2 px-3 py-3 text-[10px] text-slate-400">
+                              <Loader2 size={12} className="animate-spin text-violet-500" /> Loading compatible functions...
+                            </div>
+                          ) : compatError ? (
+                            <p role="alert" className="px-3 py-3 text-[10px] text-red-600">{compatError}</p>
+                          ) : availableToAdd.length === 0 ? (
+                            <p className="px-3 py-3 text-[10px] text-slate-400">No more compatible functions available</p>
+                          ) : (
+                            availableToAdd.map(c => (
+                              <button key={`${c.schema_name}.${c.function_name}`} type="button"
+                                role="option" aria-selected="false"
+                                onClick={() => handleAddFunction(c)}
+                                className="w-full text-left px-3 py-2 border-b border-slate-100 last:border-b-0 hover:bg-violet-50 focus:bg-violet-50 outline-none">
+                                <span className="block text-xs font-mono font-bold text-slate-700">
+                                  {(c.schema_name || firstSchema)}.{c.function_name}
+                                </span>
+                                {c.arguments && (
+                                  <span className="block text-[9px] font-mono text-slate-400 break-all">{c.arguments}</span>
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <ol className="space-y-1.5">
+                    {selectedFunctions.map((full, i) => {
+                      const { fn } = splitFullName(full);
+                      return (
+                        <li key={full} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                          <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full bg-violet-100 text-violet-700 text-[9px] font-bold">
+                            {i + 1}
+                          </span>
+                          <span className="flex-1 min-w-0 text-xs font-mono text-slate-700 truncate" title={full}>{full}</span>
+                          <button type="button" onClick={() => moveFunction(i, -1)} disabled={i === 0}
+                            aria-label={`Move ${fn} up`}
+                            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent">
+                            <ArrowUp size={12} />
+                          </button>
+                          <button type="button" onClick={() => moveFunction(i, 1)} disabled={i === selectedFunctions.length - 1}
+                            aria-label={`Move ${fn} down`}
+                            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent">
+                            <ArrowDown size={12} />
+                          </button>
+                          <button type="button" onClick={() => removeFunction(i)}
+                            aria-label={`Remove ${fn}`}
+                            className="w-6 h-6 flex items-center justify-center rounded text-red-500 hover:bg-red-50">
+                            <X size={12} />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              )}
+
+              {!typeRulesMet && (
+                <p className="text-[9px] text-amber-600 font-semibold -mt-2">{typeRuleMessage}</p>
+              )}
 
               {/* Section - Multi-Select */}
               <div className="flex flex-col gap-1">
@@ -780,13 +1061,20 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
                 </div>
               </div>
 
+              {/* Server-side validation message (shown exactly as returned) */}
+              {serverError && (
+                <div role="alert" className="px-3 py-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                  {serverError}
+                </div>
+              )}
+
               {/* Form Actions */}
               <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
                 <button type="button" onClick={onClose}
                   className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSubmitting}
+                <button type="submit" disabled={isSubmitting || !typeRulesMet}
                   className="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-violet-600 rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-all">
                   {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                   {isEdit ? 'Update Registration' : 'Register Report'}
