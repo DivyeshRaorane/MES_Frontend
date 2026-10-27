@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette, Database,
+  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette, Database, ClipboardList,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -19,6 +19,7 @@ import StockSearchPanel from './StockSearchPanel';
 import ColMaterialMasterPanel from '../col_material_code/ui/ColMaterialMasterPanel';
 import FiberColorMasterPanel from '../fiber_color/ui/FiberColorMasterPanel';
 import SapTransactionLogs from '../../../sap_transaction_logs/ui/SapTransactionLogs';
+import EntryServicesPanel from '../entry_services/ui/EntryServicesPanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -147,6 +148,14 @@ const ADMIN_CARDS = [
     color: 'text-slate-600 bg-slate-100',
     component: 'sap_log',
   },
+  {
+    key: 'entry_services',
+    title: 'Entry Services',
+    desc: 'Stock increase & other entry corrections',
+    icon: ClipboardList,
+    color: 'text-indigo-600 bg-indigo-100',
+    component: 'entry_services',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -219,6 +228,10 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'sap_log') {
     return <SapTransactionLogs onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'entry_services') {
+    return <EntryServicesPanel onBack={() => setActiveCard(null)} />;
   }
 
   if (activeCard === 'mail_config') {

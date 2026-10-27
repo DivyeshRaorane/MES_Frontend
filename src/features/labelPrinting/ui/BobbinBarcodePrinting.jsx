@@ -10,10 +10,15 @@ import {
 } from '../templates/bobbinPatterns';
 import { fetchBobbinLabels, mapBobbinToLabel } from '../services/bobbin.api';
 import { showError, showSuccess, showWarning } from '../../../utils/toastService';
+import BoxLabelPage from './BoxLabelPage';
+import { useBoxLabels } from './useBoxLabels';
 import '../templates'; // ensure templates are registered
 
-/* Sticker types — currently only Bobbin; add more here later. */
-const STICKER_TYPES = [{ value: 'bobbin', label: 'Bobbin Sticker (40×40mm)' }];
+/* Sticker types — add more here later. */
+const STICKER_TYPES = [
+  { value: 'bobbin', label: 'Bobbin Sticker (40×40mm)' },
+  { value: 'box', label: 'Box Sticker (100×150mm)' },
+];
 
 const PATTERN_OPTIONS = getBobbinPatternOptions();
 
@@ -33,6 +38,8 @@ const BobbinBarcodePrinting = () => {
   const template = getTemplate('bobbin');
 
   const [stickerType, setStickerType] = useState('bobbin');
+  const isBox = stickerType === 'box';
+  const box = useBoxLabels(); // Box sticker state (no pattern, one fixed layout)
   const [pattern, setPattern] = useState(1);
 
   // Single input: comma/newline/space separated bobbin numbers (scanner-friendly).
@@ -121,6 +128,19 @@ const BobbinBarcodePrinting = () => {
 
   /* ── print ── */
   const handlePrint = async () => {
+    if (isBox) {
+      if (box.labels.length === 0) {
+        showError('Generate at least one box label to print');
+        return;
+      }
+      try {
+        // One 100x150 page per box; the print engine breaks pages per label.
+        await printLabel('box', box.labels);
+      } catch (err) {
+        showError(err.message || 'Print failed');
+      }
+      return;
+    }
     if (selectedRows.length === 0) {
       showError('Select at least one bobbin to print');
       return;
@@ -144,6 +164,25 @@ const BobbinBarcodePrinting = () => {
   /* preview the first selected row (or first row) */
   const previewRow = selectedRows[0] || rows[0];
 
+  const printCount = isBox ? box.labels.length : totalLabels;
+
+  /* Shared by both sticker bodies */
+  const stickerSelect = (
+    <div className="flex flex-col gap-1">
+      <label htmlFor="sticker-type" className="text-[10px] font-bold text-slate-500 uppercase">Sticker Type</label>
+      <select
+        id="sticker-type"
+        value={stickerType}
+        onChange={(e) => setStickerType(e.target.value)}
+        className="px-2 py-1.5 text-xs rounded border border-slate-300"
+      >
+        {STICKER_TYPES.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-800 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
@@ -156,31 +195,24 @@ const BobbinBarcodePrinting = () => {
           <button
             type="button"
             onClick={handlePrint}
-            disabled={selectedRows.length === 0}
+            disabled={isBox ? box.labels.length === 0 : selectedRows.length === 0}
             className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-700 disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95"
           >
-            <Printer size={13} /> Print {totalLabels > 0 ? `(${totalLabels})` : ''}
+            <Printer size={13} /> Print {printCount > 0 ? `(${printCount})` : ''}
           </button>
         </div>
 
         <div className="flex flex-1 min-h-0">
+          {isBox ? (
+            <BoxLabelPage box={box} stickerSelect={stickerSelect} />
+          ) : (
+          <>
           {/* Left: controls */}
           <div className="w-[460px] border-r border-slate-200 p-4 overflow-auto flex flex-col gap-3">
 
             {/* Sticker type + pattern */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Sticker Type</label>
-                <select
-                  value={stickerType}
-                  onChange={(e) => setStickerType(e.target.value)}
-                  className="px-2 py-1.5 text-xs rounded border border-slate-300"
-                >
-                  {STICKER_TYPES.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
+              {stickerSelect}
 
               {stickerType === 'bobbin' && (
                 <div className="flex flex-col gap-1">
@@ -313,6 +345,8 @@ const BobbinBarcodePrinting = () => {
               ? <LabelRenderer templateKey="bobbin" data={previewRow} zoom={6} />
               : <div className="text-xs text-slate-400 mt-10">Fetch bobbins to preview the sticker.</div>}
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
