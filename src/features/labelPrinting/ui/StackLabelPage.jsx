@@ -1,4 +1,5 @@
 import { Loader2, Search } from 'lucide-react';
+import LabelRenderer from '../components/LabelRenderer';
 
 /**
  * Stack sticker body (150×150 mm consignee address label, no barcodes).
@@ -14,7 +15,9 @@ const StackLabelPage = ({ stack, stickerSelect }) => {
   const canGenerate = bobbinText.trim() !== '' && !loading;
 
   return (
-    <div className="w-full max-w-3xl p-4 overflow-auto flex flex-col gap-3">
+    <>
+    {/* Left: input + actions */}
+    <div className="w-[460px] shrink-0 border-r border-slate-200 p-4 overflow-auto flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">{stickerSelect}</div>
 
       <div className="flex flex-col gap-1.5">
@@ -94,6 +97,26 @@ const StackLabelPage = ({ stack, stickerSelect }) => {
         </div>
       )}
     </div>
+
+    {/* Right: one 150 x 150 mm preview per fetched label */}
+    <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-100 flex flex-col items-center gap-4">
+      {labels.length === 0 ? (
+        <div className="text-xs text-slate-400 mt-10">
+          {loading ? 'Loading stack label data…' : 'Fetch bobbins to preview the stack sticker.'}
+        </div>
+      ) : (
+        labels.map((l) => (
+          <div key={l.bobbin_no} className="shrink-0 flex flex-col items-center gap-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Preview · 150 × 150 mm · {l.bobbin_no}
+            </span>
+            {/* zoom 3.78 px/mm = true on-screen size (1 mm = 3.78 CSS px at 96 dpi) */}
+            <LabelRenderer templateKey="stack" data={l} zoom={3.78} />
+          </div>
+        ))
+      )}
+    </div>
+    </>
   );
 };
 

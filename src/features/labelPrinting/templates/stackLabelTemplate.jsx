@@ -7,9 +7,10 @@ import { registerTemplate } from '../core/templateRegistry';
  *   bobbin_no, packing_order, customer_name, cust_address
  *
  * Layout (top → bottom):
- *   consignee address (cust_address, line breaks preserved)
- *   3 blank lines
- *   MANUFACTURING UNIT + fixed company address
+ *   CONSIGNEE heading, customer_name, then cust_address (line breaks preserved)
+ *     — when there is no address, only the customer name is shown
+ *   ... free space ...
+ *   MANUFACTURING UNIT + fixed company address (pinned to the bottom)
  *
  * Everything is inline-styled in mm/pt because the print iframe has no app CSS.
  */
@@ -25,6 +26,7 @@ const MANUFACTURING_UNIT = {
 const sans = { fontFamily: 'Arial, Helvetica, sans-serif', color: '#111' };
 
 const StackLabelCard = (d) => {
+  const name = String(d.customer_name ?? '').trim();
   const address = String(d.cust_address ?? '').trim();
 
   return (
@@ -41,24 +43,30 @@ const StackLabelCard = (d) => {
         overflow: 'hidden',
       }}
     >
-      {/* Consignee address (top) */}
-      <div
-        style={{
-          fontSize: '16pt',
-          fontWeight: 700,
-          lineHeight: 1.3,
-          whiteSpace: 'pre-line', // keep the line breaks stored in cust_address
-          overflowWrap: 'anywhere',
-        }}
-      >
-        {address || '-'}
+      {/* Consignee (top): name, then address when one exists */}
+      <div style={{ overflowWrap: 'anywhere' }}>
+        <div style={{ fontSize: '10pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2mm' }}>
+          Consignee
+        </div>
+        <div style={{ fontSize: '16pt', fontWeight: 700, lineHeight: 1.3 }}>
+          {name || '-'}
+        </div>
+        {address && (
+          <div
+            style={{
+              fontSize: '16pt',
+              fontWeight: 700,
+              lineHeight: 1.3,
+              whiteSpace: 'pre-line', // keep the line breaks stored in cust_address
+            }}
+          >
+            {address}
+          </div>
+        )}
       </div>
 
-      {/* 3 blank lines */}
-      <div style={{ fontSize: '16pt', lineHeight: 1.3, height: '3.9em', flexShrink: 0 }} aria-hidden="true" />
-
-      {/* Manufacturing unit (fixed) */}
-      <div style={{ fontSize: '10pt', lineHeight: 1.35 }}>
+      {/* Manufacturing unit (fixed) — pinned to the bottom of the label */}
+      <div style={{ fontSize: '10pt', lineHeight: 1.35, marginTop: 'auto', paddingTop: '4mm' }}>
         <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2mm' }}>
           Manufacturing Unit
         </div>

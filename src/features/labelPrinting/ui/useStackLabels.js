@@ -42,7 +42,7 @@ export const useStackLabels = () => {
       // Partial success: "Stack label data fetched. Not found: X, Y"
       if (/not found/i.test(res.message)) notes.push(res.message.replace(/^.*?(Not found)/i, 'Bobbin not found'));
       const noAddress = res.data.filter((l) => !l.cust_address.trim()).map((l) => l.bobbin_no);
-      if (noAddress.length > 0) notes.push(`No customer address on record for: ${noAddress.join(', ')}`);
+      if (noAddress.length > 0) notes.push(`No customer address on record for: ${noAddress.join(', ')} (label will show the customer name only)`);
       if (notes.length > 0) setWarning(notes.join(' · '));
     } catch (e) {
       setError(e?.message || 'Network error. Could not reach the server.');

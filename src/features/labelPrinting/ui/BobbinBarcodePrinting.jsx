@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Barcode, Search, Printer } from 'lucide-react';
+import LabelRenderer from '../components/LabelRenderer';
 import { printLabel } from '../core/printEngine';
 import { getTemplate } from '../core/templateRegistry';
 import {
@@ -189,6 +190,9 @@ const BobbinBarcodePrinting = () => {
     0
   );
 
+  /* preview the first selected row (or first row) */
+  const previewRow = selectedRows[0] || rows[0];
+
   const printCount = isStack ? stack.labels.length : isBox ? box.labels.length : totalLabels;
 
   /* Shared by both sticker bodies */
@@ -235,7 +239,7 @@ const BobbinBarcodePrinting = () => {
           ) : (
           <>
           {/* Left: controls */}
-          <div className="w-full max-w-3xl p-4 overflow-auto flex flex-col gap-3">
+          <div className="w-[460px] shrink-0 border-r border-slate-200 p-4 overflow-auto flex flex-col gap-3">
 
             {/* Sticker type + pattern */}
             <div className="grid grid-cols-2 gap-2">
@@ -369,6 +373,16 @@ const BobbinBarcodePrinting = () => {
             )}
           </div>
 
+
+          {/* Right: live preview */}
+          <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-100 flex flex-col items-center justify-start gap-3">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Preview · 40 × 40 mm {previewRow ? `· ${previewRow.bobbin_no}` : ''}
+            </span>
+            {previewRow
+              ? <LabelRenderer templateKey="bobbin" data={previewRow} zoom={6} />
+              : <div className="text-xs text-slate-400 mt-10">Fetch bobbins to preview the sticker.</div>}
+          </div>
           </>
           )}
         </div>
