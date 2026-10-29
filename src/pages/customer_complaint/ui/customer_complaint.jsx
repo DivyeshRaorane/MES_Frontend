@@ -146,8 +146,8 @@ const RaiseComplaint = ({ onBack, onCreated }) => {
       try {
         const axios = (await import('axios')).default;
         const [uRes, cRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/getuser`),
-          axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`),
+          axios.get(`${import.meta.env.VITE_API_URL}/getuser`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }),
+          axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }),
         ]);
         setUsers(uRes.data?.data || uRes.data || []);
         setCustomers((cRes.data?.data || []).filter(c => !c.disable));

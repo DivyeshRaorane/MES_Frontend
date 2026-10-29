@@ -10,6 +10,7 @@ export const preformEntrySap = createAsyncThunk(
                         url: `${import.meta.env.VITE_API_URL}/createpreform`,
                         data:payload,
                         headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
                             'Content-Type': 'application/json',
                         }
         

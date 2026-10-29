@@ -104,6 +104,9 @@ export const BoxLabelCard = (d) => {
   // Two barcodes: the box number, and the total number of bobbins in the box.
   const boxBarcode = renderBarcodeDataUrl(d.box_no, { bcid: 'code128', height: 10, scale: 3 });
   const countBarcode = renderBarcodeDataUrl(totalCount, { bcid: 'code128', height: 8, scale: 3 });
+  // Total length barcode: plain number (no thousands commas), rounded to kill float noise.
+  const lengthValue = String(Number(totalLength.toFixed(2)));
+  const lengthBarcode = renderBarcodeDataUrl(lengthValue, { bcid: 'code128', height: 8, scale: 3 });
 
   const small = { fontSize: '6.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2mm' };
 
@@ -190,9 +193,16 @@ export const BoxLabelCard = (d) => {
             />
           )}
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <div style={small}>Total Length (m)</div>
           <div style={{ fontSize: '16pt', fontWeight: 700, lineHeight: 1.05 }}>{fmtNum(totalLength)}</div>
+          {lengthBarcode && (
+            <img
+              src={lengthBarcode}
+              alt={`Total length ${lengthValue} barcode`}
+              style={{ width: '36mm', height: '9mm', objectFit: 'fill', marginTop: '0.5mm' }}
+            />
+          )}
         </div>
       </div>
     </div>

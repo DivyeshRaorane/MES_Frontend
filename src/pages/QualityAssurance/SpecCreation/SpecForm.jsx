@@ -100,7 +100,7 @@ const SpecForm = ({ specId, onBack }) => {
     (async () => {
       try {
         const axios = (await import('axios')).default;
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
         setCustomers((res.data?.data || []).filter(c => !c.disable));
       } catch (_) {}
     })();

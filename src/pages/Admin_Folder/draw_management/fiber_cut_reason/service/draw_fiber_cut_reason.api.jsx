@@ -12,6 +12,7 @@ export const getAllDrawFiberCutReason = async () => {
       method: import.meta.env.VITE_METHOD_GET,
       url: `${API}/getalldrawfibercutreasons`,
       headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
         "Content-Type": "application/json",
       }
     });

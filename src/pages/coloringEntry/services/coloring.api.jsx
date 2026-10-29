@@ -8,7 +8,7 @@ const authHeaders = () => ({
 
 /* ── Scan bobbin — get fg_color + parent details + history ── */
 export const scanBobbinForColoring = async (bobbin_no) => {
-  const res = await axios.get(`${API}/colouring/scan/${bobbin_no}`);
+  const res = await axios.get(`${API}/colouring/scan/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -20,13 +20,13 @@ export const saveColourEntry = async (payload) => {
 
 /* ── Get PT Users (for operator dropdown) ── */
 export const getPTUsers = async () => {
-  const res = await axios.get(`${API}/getptusers`);
+  const res = await axios.get(`${API}/getptusers`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get Color Machines (active) ── */
 export const getColorMachines = async () => {
-  const res = await axios.get(`${API}/admin/colormachines`);
+  const res = await axios.get(`${API}/admin/colormachines`, { headers: authHeaders() });
   return res.data;
 };
 

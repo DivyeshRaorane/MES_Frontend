@@ -9,7 +9,7 @@ const authHeaders = () => ({
 
 /* ── Get draw users (operators / shift incharge) ── */
 export const getDrawUsers = async () => {
-  const res = await axios.get(`${API}/getdrawusers`);
+  const res = await axios.get(`${API}/getdrawusers`, { headers: authHeaders() });
   return res.data;
 };
 

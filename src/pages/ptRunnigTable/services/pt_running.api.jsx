@@ -9,6 +9,7 @@ export const getPTAllocatedSpool = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/getptallocatedspool?is_pt_complete=${is_pt_complete}`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 

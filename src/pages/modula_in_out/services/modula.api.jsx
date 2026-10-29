@@ -8,13 +8,13 @@ const authHeaders = () => ({
 
 /* ── Get all active trays ── */
 export const getTrays = async () => {
-  const res = await axios.get(`${API}/modula/trays`);
+  const res = await axios.get(`${API}/modula/trays`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get positions for a tray ── */
 export const getTrayPositions = async (tray_id) => {
-  const res = await axios.get(`${API}/modula/trays/${tray_id}/positions`);
+  const res = await axios.get(`${API}/modula/trays/${tray_id}/positions`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -32,6 +32,6 @@ export const removeBobbin = async (tray_id, position_no) => {
 
 /* ── Search bobbin across all trays ── */
 export const searchBobbin = async (bobbin_no) => {
-  const res = await axios.get(`${API}/modula/search/${bobbin_no}`);
+  const res = await axios.get(`${API}/modula/search/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };

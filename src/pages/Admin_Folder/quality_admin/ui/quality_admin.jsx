@@ -26,7 +26,7 @@ const ADMIN_CARDS = [
     icon: Users,
     color: 'text-blue-600 bg-blue-100',
     api: {
-      getAll: () => axios.get(`${API}/getqcusers`).then(r => r.data),
+      getAll: () => axios.get(`${API}/getqcusers`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/qcusers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/qcusers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
     },
@@ -43,7 +43,7 @@ const ADMIN_CARDS = [
     icon: FlaskConical,
     color: 'text-indigo-600 bg-indigo-100',
     api: {
-      getAll: () => axios.get(`${API}/getd2chambers`).then(r => r.data),
+      getAll: () => axios.get(`${API}/getd2chambers`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/d2chambers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/d2chambers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
     },
@@ -61,7 +61,7 @@ const ADMIN_CARDS = [
     icon: Layers,
     color: 'text-emerald-600 bg-emerald-100',
     api: {
-      getAll: () => axios.get(`${API}/geth2chambers?is_active=true`).then(r => r.data),
+      getAll: () => axios.get(`${API}/geth2chambers?is_active=true`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/createh2chamber`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/h2chambers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
     },
@@ -79,7 +79,7 @@ const ADMIN_CARDS = [
     icon: Award,
     color: 'text-amber-600 bg-amber-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/grades`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/grades`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/grades`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/grades/${id}`, data, { headers: authHeaders() }).then(r => r.data),
     },

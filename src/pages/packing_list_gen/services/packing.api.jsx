@@ -8,13 +8,13 @@ const authHeaders = () => ({
 
 /* ── Get order details by order_no ── */
 export const getOrderByNo = async (order_no) => {
-  const res = await axios.get(`${API}/packing/order/${order_no}`);
+  const res = await axios.get(`${API}/packing/order/${order_no}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Validate bobbin for packing ── */
 export const validateBobbinForPacking = async (bobbin_no, order_no) => {
-  const res = await axios.get(`${API}/packing/validate/${bobbin_no}?order_no=${order_no}`);
+  const res = await axios.get(`${API}/packing/validate/${bobbin_no}?order_no=${order_no}`, { headers: authHeaders() });
   return res.data;
 };
 

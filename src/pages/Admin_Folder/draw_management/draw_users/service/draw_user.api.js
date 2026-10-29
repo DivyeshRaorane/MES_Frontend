@@ -6,6 +6,7 @@ export const getAllDrawUsers = async()=>{
             method : import.meta.env.VITE_METHOD_GET,
             url: `${import.meta.env.VITE_API_URL}/getdrawusers`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })

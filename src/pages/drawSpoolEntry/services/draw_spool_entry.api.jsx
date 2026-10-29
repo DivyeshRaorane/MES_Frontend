@@ -36,6 +36,7 @@ export const getTowerEvent = createAsyncThunk(
                             url: `${import.meta.env.VITE_API_URL}/towerdata`,
                             data:payload,
                             headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
                                 'Content-Type': 'application/json',
                             }
             
@@ -59,6 +60,7 @@ export const getPreformByTower = createAsyncThunk(
                             method: import.meta.env.VITE_METHOD_GET,
                             url: `${import.meta.env.VITE_API_URL}/preformbytower/${tower_id}`,
                             headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
                                 'Content-Type': 'application/json',
                             }
             

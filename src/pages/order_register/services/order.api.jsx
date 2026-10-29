@@ -8,7 +8,7 @@ const authHeaders = () => ({
 
 /* ── Get all orders ── */
 export const getAllOrders = async () => {
-  const res = await axios.get(`${API}/orders`);
+  const res = await axios.get(`${API}/orders`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -26,6 +26,6 @@ export const updateOrder = async (packing_order_id, payload) => {
 
 /* ── Get customers (for dropdown) ── */
 export const getCustomers = async () => {
-  const res = await axios.get(`${API}/admin/customers`);
+  const res = await axios.get(`${API}/admin/customers`, { headers: authHeaders() });
   return res.data;
 };

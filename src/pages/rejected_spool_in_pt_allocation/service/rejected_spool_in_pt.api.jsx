@@ -6,6 +6,7 @@ export const rejectedSpools = async(is_reject)=>{
             method : import.meta.env.VITE_METHOD_GET,
             url: `${import.meta.env.VITE_API_URL}/getptrejectedspool?is_reject=${is_reject}`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })
