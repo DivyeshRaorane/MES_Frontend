@@ -297,7 +297,7 @@ const ShiftPanel = ({ onBack }) => {
   const fetchShifts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/getshifts`);
+      const res = await axios.get(`${API}/getshifts`, { headers: authHeaders() });
       setShifts(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -471,7 +471,7 @@ const DepartmentPanel = ({ onBack }) => {
   const fetchDepts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/admin/departments`);
+      const res = await axios.get(`${API}/admin/departments`, { headers: authHeaders() });
       setDepartments(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -634,7 +634,7 @@ const CustomerPanel = ({ onBack }) => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/admin/customers`);
+      const res = await axios.get(`${API}/admin/customers`, { headers: authHeaders() });
       setCustomers(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -819,7 +819,7 @@ const BobbinColorPanel = ({ onBack }) => {
   const fetchColors = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/getbobbincolor`);
+      const res = await axios.get(`${API}/getbobbincolor`, { headers: authHeaders() });
       setColors(res.data?.data || []);
     } catch (e) { console.error(e); }
     setLoading(false);

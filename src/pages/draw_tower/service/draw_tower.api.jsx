@@ -17,6 +17,7 @@ export const getTowerForAllocation = createAsyncThunk(
                             method: import.meta.env.VITE_METHOD_GET,
                             url,
                             headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
                                 'Content-Type': 'application/json',
                             }
             

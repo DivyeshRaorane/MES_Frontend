@@ -25,7 +25,7 @@ const ADMIN_CARDS = [
     icon: Users,
     color: 'text-blue-600 bg-blue-100',
     api: {
-      getAll: () => axios.get(`${API}/getdrawusers`).then(r => r.data),
+      getAll: () => axios.get(`${API}/getdrawusers`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/drawusers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/drawusers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/drawusers/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -45,7 +45,7 @@ const ADMIN_CARDS = [
     icon: Layers,
     color: 'text-indigo-600 bg-indigo-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/drawtowers`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/drawtowers`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/drawtowers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/drawtowers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/drawtowers/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -86,7 +86,7 @@ const ADMIN_CARDS = [
     icon: AlertTriangle,
     color: 'text-rose-600 bg-rose-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/fibercutreasons`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/fibercutreasons`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/fibercutreasons`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/fibercutreasons/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/fibercutreasons/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -107,7 +107,7 @@ const ADMIN_CARDS = [
     icon: Eye,
     color: 'text-amber-600 bg-amber-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/windingobservations`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/windingobservations`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/windingobservations`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/windingobservations/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/windingobservations/${id}`, { headers: authHeaders() }).then(r => r.data),

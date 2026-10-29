@@ -8,6 +8,7 @@ export const getSpoolDetailsForPT = async(bobbin_id)=>{
             method : import.meta.env.VITE_METHOD_GET,
             url: `${import.meta.env.VITE_API_URL}/getspooldetailsforpt/${bobbin_id}`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })
@@ -49,6 +50,7 @@ export const getPTFlaws = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/getptflaws?spool_id=${Spool_id}`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 
@@ -71,6 +73,7 @@ export const getPTLogs = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/getptlogs?spool_id=${Spool_id}`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 
@@ -90,7 +93,7 @@ export const getFidBySpool = async (spool_id) => {
   const response = await axios({
     method: "GET",
     url: `${import.meta.env.VITE_API_URL}/getfidbyspool/${spool_id}`,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, 'Content-Type': 'application/json' }
   });
   return response.data;
 };

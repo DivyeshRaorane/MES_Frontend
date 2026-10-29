@@ -4,7 +4,7 @@ const API = import.meta.env.VITE_API_URL;
 
 /* ── Validate bobbin for QC Out ── */
 export const validateBobbinForQCOut = async (bobbin_no) => {
-  const res = await axios.get(`${API}/qcout/validate/${bobbin_no}`);
+  const res = await axios.get(`${API}/qcout/validate/${bobbin_no}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
   return res.data;
 };
 
@@ -22,7 +22,7 @@ export const submitQCOut = async (payload) => {
 
 /* ── Bulk validate bobbins for QC Out (dry-run, no auth required) ── */
 export const bulkValidateQCOut = async (bobbins) => {
-  const res = await axios.post(`${API}/qcout/bulk-validate`, { bobbins });
+  const res = await axios.post(`${API}/qcout/bulk-validate`, { bobbins }, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
   return res.data;
 };
 
@@ -43,6 +43,6 @@ export const getPendingQCOut = async (fromDate, toDate) => {
   const params = {};
   if (fromDate) params.from_date = fromDate;
   if (toDate) params.to_date = toDate;
-  const res = await axios.get(`${API}/qcout/pending`, { params });
+  const res = await axios.get(`${API}/qcout/pending`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, params });
   return res.data;
 };

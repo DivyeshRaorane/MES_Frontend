@@ -9,6 +9,7 @@ export const getPreformForAllocation = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/getpreformforallocation`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 
@@ -54,6 +55,7 @@ export const getRecentAllocatedPreforms = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/recentallocatedpreform`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 
@@ -73,6 +75,7 @@ export const preformDiallocation = async(allocation_id)=>{
             method : import.meta.env.VITE_METHOD_PUT,
             url: `${import.meta.env.VITE_API_URL}/preformdeallocation/${allocation_id}`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })

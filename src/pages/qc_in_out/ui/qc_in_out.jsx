@@ -11,7 +11,7 @@ import { validateBobbinForQCOut, submitQCOut, bulkValidateQCOut, bulkSubmitQCOut
 import PendingQCOut from './PendingQCOut';
 
 const API = import.meta.env.VITE_API_URL;
-const getQCUsers = async () => (await axios.get(`${API}/getqcusers`)).data;
+const getQCUsers = async () => (await axios.get(`${API}/getqcusers`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } })).data;
 
 const today = new Date().toISOString().split('T')[0];
 const nowTime = () => {

@@ -21,7 +21,7 @@ export const getBatchesForH2Issue = async () => {
 /* ── Validate bobbin for H2 Issue (d2_batch_id is optional filter) ── */
 export const validateBobbinForH2 = async (bobbin_no, d2_batch_id) => {
   const params = d2_batch_id ? `?d2_batch_id=${d2_batch_id}` : '';
-  const res = await axios.get(`${API}/h2ageing/validate-bobbin/${bobbin_no}${params}`);
+  const res = await axios.get(`${API}/h2ageing/validate-bobbin/${bobbin_no}${params}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -33,31 +33,31 @@ export const submitH2Issue = async (payload) => {
 
 /* ── Get QC Users ── */
 export const getQCUsers = async () => {
-  const res = await axios.get(`${API}/getqcusers`);
+  const res = await axios.get(`${API}/getqcusers`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Pending batches for Before Entry ── */
 export const getPendingBeforeBatches = async () => {
-  const res = await axios.get(`${API}/h2ageing/pending-before`);
+  const res = await axios.get(`${API}/h2ageing/pending-before`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Pending batches for After Entry ── */
 export const getPendingAfterBatches = async () => {
-  const res = await axios.get(`${API}/h2ageing/pending-after`);
+  const res = await axios.get(`${API}/h2ageing/pending-after`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Pending batches for 14 Days Entry ── */
 export const getPending14DayBatches = async () => {
-  const res = await axios.get(`${API}/h2ageing/pending-14day`);
+  const res = await axios.get(`${API}/h2ageing/pending-14day`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get bobbins for a specific H2 batch ── */
 export const getBobbinsForBatch = async (h2_batch_id) => {
-  const res = await axios.get(`${API}/h2ageing/bobbins/${h2_batch_id}`);
+  const res = await axios.get(`${API}/h2ageing/bobbins/${h2_batch_id}`, { headers: authHeaders() });
   return res.data;
 };
 

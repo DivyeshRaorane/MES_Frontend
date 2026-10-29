@@ -7,7 +7,7 @@ export const getD2ChambersInUse = async () => {
   const response = await axios({
     method: "GET",
     url: `${API}/d2gas/chambers-in-use`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
@@ -17,7 +17,7 @@ export const getRunningBatch = async (chamber_no) => {
   const response = await axios({
     method: "GET",
     url: `${API}/d2gas/running-batch/${chamber_no}`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
@@ -27,7 +27,7 @@ export const getQCUsers = async () => {
   const response = await axios({
     method: "GET",
     url: `${API}/getqcusers`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
@@ -37,7 +37,7 @@ export const getAllShifts = async () => {
   const response = await axios({
     method: "GET",
     url: `${API}/getshifts`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };

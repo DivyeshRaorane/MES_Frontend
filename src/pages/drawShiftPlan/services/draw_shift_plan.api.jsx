@@ -8,13 +8,13 @@ const authHeaders = () => ({
 
 /* ── Get shifts ── */
 export const getShifts = async () => {
-  const res = await axios.get(`${API}/getshifts`);
+  const res = await axios.get(`${API}/getshifts`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get draw users ── */
 export const getDrawUsers = async () => {
-  const res = await axios.get(`${API}/getdrawusers`);
+  const res = await axios.get(`${API}/getdrawusers`, { headers: authHeaders() });
   return res.data;
 };
 

@@ -25,7 +25,7 @@ const ADMIN_CARDS = [
     icon: Users,
     color: 'text-amber-600 bg-amber-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/ptusers`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/ptusers`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/ptusers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/ptusers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/ptusers/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -45,7 +45,7 @@ const ADMIN_CARDS = [
     icon: Cpu,
     color: 'text-blue-600 bg-blue-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/ptmachines`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/ptmachines`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/ptmachines`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/ptmachines/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/ptmachines/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -66,7 +66,7 @@ const ADMIN_CARDS = [
     icon: RotateCw,
     color: 'text-emerald-600 bg-emerald-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/rewmachines`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/rewmachines`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/rewmachines`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/rewmachines/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/rewmachines/${id}`, { headers: authHeaders() }).then(r => r.data),
@@ -87,7 +87,7 @@ const ADMIN_CARDS = [
     icon: Palette,
     color: 'text-purple-600 bg-purple-100',
     api: {
-      getAll: () => axios.get(`${API}/admin/colormachines`).then(r => r.data),
+      getAll: () => axios.get(`${API}/admin/colormachines`, { headers: authHeaders() }).then(r => r.data),
       create: (data) => axios.post(`${API}/admin/colormachines`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/colormachines/${id}`, data, { headers: authHeaders() }).then(r => r.data),
       delete: (id) => axios.delete(`${API}/admin/colormachines/${id}`, { headers: authHeaders() }).then(r => r.data),

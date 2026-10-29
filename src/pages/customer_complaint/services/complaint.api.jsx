@@ -9,13 +9,13 @@ const authHeaders = () => ({
 /* ── Get all complaints (with optional status filter) ── */
 export const getComplaints = async (status) => {
   const params = status ? `?status=${status}` : '';
-  const res = await axios.get(`${API}/complaints${params}`);
+  const res = await axios.get(`${API}/complaints${params}`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get single complaint by ID ── */
 export const getComplaintById = async (complaint_id) => {
-  const res = await axios.get(`${API}/complaints/${complaint_id}`);
+  const res = await axios.get(`${API}/complaints/${complaint_id}`, { headers: authHeaders() });
   return res.data;
 };
 

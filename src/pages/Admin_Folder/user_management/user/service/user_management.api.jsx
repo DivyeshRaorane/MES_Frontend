@@ -14,7 +14,7 @@ export const getAllUsers = async () => {
 
 /* ── Get all departments ── */
 export const getDepartments = async () => {
-  const res = await axios.get(`${API}/admin/departments`);
+  const res = await axios.get(`${API}/admin/departments`, { headers: authHeaders() });
   return res.data;
 };
 

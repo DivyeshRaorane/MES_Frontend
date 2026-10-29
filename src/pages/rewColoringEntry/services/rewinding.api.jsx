@@ -8,7 +8,7 @@ const authHeaders = () => ({
 
 /* ── Scan bobbin for rewinding ── */
 export const scanBobbinForRewinding = async (bobbin_no) => {
-  const res = await axios.get(`${API}/rewinding/scan/${bobbin_no}`);
+  const res = await axios.get(`${API}/rewinding/scan/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -20,12 +20,12 @@ export const saveRewindingEntry = async (payload) => {
 
 /* ── Get PT Users ── */
 export const getPTUsers = async () => {
-  const res = await axios.get(`${API}/getptusers`);
+  const res = await axios.get(`${API}/getptusers`, { headers: authHeaders() });
   return res.data;
 };
 
 /* ── Get Rewinding Machines (active) ── */
 export const getRewMachines = async () => {
-  const res = await axios.get(`${API}/admin/rewmachines`);
+  const res = await axios.get(`${API}/admin/rewmachines`, { headers: authHeaders() });
   return res.data;
 };

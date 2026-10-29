@@ -9,6 +9,7 @@ export const getPreformForHandleJoin = createAsyncThunk(
                 method: import.meta.env.VITE_METHOD_GET,
                 url: `${import.meta.env.VITE_API_URL}/getpreformformhandlejoin`,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
 
@@ -31,6 +32,7 @@ export const handleJoin = createAsyncThunk(
                 url: `${import.meta.env.VITE_API_URL}/handlejoin`,
                 data: payload,
                 headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
                     'Content-Type': 'application/json',
                 }
         })

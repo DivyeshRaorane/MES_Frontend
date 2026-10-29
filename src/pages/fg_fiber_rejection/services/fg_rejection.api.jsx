@@ -8,7 +8,7 @@ const authHeaders = () => ({
 
 /* ── Validate bobbin for Color request ── */
 export const validateBobbinForColor = async (bobbin_no, require_color) => {
-  const res = await axios.get(`${API}/fg/color/validate/${bobbin_no}?require_color=${require_color}`);
+  const res = await axios.get(`${API}/fg/color/validate/${bobbin_no}?require_color=${require_color}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -20,7 +20,7 @@ export const submitColorRequest = async (payload) => {
 
 /* ── Validate bobbin for Rewinding ── */
 export const validateBobbinForRewind = async (bobbin_no) => {
-  const res = await axios.get(`${API}/fg/rewind/validate/${bobbin_no}`);
+  const res = await axios.get(`${API}/fg/rewind/validate/${bobbin_no}`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -32,7 +32,7 @@ export const submitRewindRequest = async (payload) => {
 
 /* ── Get QC Users ── */
 export const getQCUsers = async () => {
-  const res = await axios.get(`${API}/getqcusers`);
+  const res = await axios.get(`${API}/getqcusers`, { headers: authHeaders() });
   return res.data;
 };
 

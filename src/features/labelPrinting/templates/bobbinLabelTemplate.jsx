@@ -48,12 +48,12 @@ const BobbinLabel = (d) => {
       }}
     >
       {/* Heading: fiber_info */}
-      <div style={{ fontSize: '6px', lineHeight: 1.1, textAlign: 'center', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '8px', lineHeight: 1.1, textAlign: 'center', textTransform: 'uppercase' }}>
         {d.fiber_info}
       </div>
 
       {/* Colour: fiber_color */}
-      <div style={{ fontSize: '5.5px', lineHeight: 1.1, textAlign: 'center' }}>
+      <div style={{ fontSize: '7.5px', lineHeight: 1.1, textAlign: 'center' }}>
         {d.fiber_color}
       </div>
 
@@ -61,26 +61,25 @@ const BobbinLabel = (d) => {
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5mm' }}>
         {barcode && <img src={barcode} alt="bobbin barcode" style={{ height: '7mm', width: '90%', objectFit: 'fill' }} />}
       </div>
-      <div style={{ fontSize: '6.5px', textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1 }}>
+      <div style={{ fontSize: '9px', textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1 }}>
         {d.bobbin_no}
       </div>
 
       {/* Billed length */}
-      <div style={{ fontSize: '5.5px', textAlign: 'center', lineHeight: 1.1 }}>
+      <div style={{ fontSize: '8px', textAlign: 'center', lineHeight: 1.1 }}>
         BILLED LENGTH: {d.length} {d.lengthUnit}
       </div>
 
-      {/* Dynamic parameter block */}
+      {/* Dynamic parameter block — sits directly below billed length */}
       <div
         style={{
-          marginTop: 'auto',
           borderTop: '0.3mm solid #111',
           paddingTop: '0.6mm',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.2mm',
-          fontSize: '5px',
-          lineHeight: 1.15,
+          fontSize: '7.5px',
+          lineHeight: 1.2,
         }}
       >
         {pattern.rows.map((row) => (

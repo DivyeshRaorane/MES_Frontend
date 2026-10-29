@@ -7,7 +7,7 @@ const authHeaders = () => ({
 });
 
 export const getAllTrays = async () => {
-  const res = await axios.get(`${API}/admin/trays`);
+  const res = await axios.get(`${API}/admin/trays`, { headers: authHeaders() });
   return res.data;
 };
 
@@ -22,7 +22,7 @@ export const deactivateTray = async (tray_id) => {
 };
 
 export const getTrayPositions = async (tray_id) => {
-  const res = await axios.get(`${API}/admin/trays/${tray_id}/positions`);
+  const res = await axios.get(`${API}/admin/trays/${tray_id}/positions`, { headers: authHeaders() });
   return res.data;
 };
 

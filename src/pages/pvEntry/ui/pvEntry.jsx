@@ -11,17 +11,17 @@ import axios from 'axios';
 
 /* ── APIs ── */
 const getQCUsers = async () => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getqcusers`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getqcusers`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
   return res.data;
 };
 
 const searchBobbinOnline = async (bobbin_no) => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforpv/${bobbin_no}`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforpv/${bobbin_no}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
   return res.data;
 };
 
 const searchBobbinRePV = async (bobbin_no) => {
-  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforrepv/${bobbin_no}`);
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/getbobbinforrepv/${bobbin_no}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
   return res.data;
 };
 

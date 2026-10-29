@@ -32,6 +32,7 @@ try{
             method : import.meta.env.VITE_METHOD_GET,
             url: `${import.meta.env.VITE_API_URL}/getdrawentryforpta?spool_id=${spool_id}`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })
@@ -50,6 +51,7 @@ export const ptWip = async(is_pt_allocate)=>{
             method : import.meta.env.VITE_METHOD_GET,
             url: `${import.meta.env.VITE_API_URL}/getptwip?is_pt_allocate=${is_pt_allocate}`,
             headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
                 "Content-Type": "application/json",
             }
         })

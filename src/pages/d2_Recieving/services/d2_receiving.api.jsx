@@ -7,7 +7,7 @@ export const getD2ChambersInUse = async () => {
   const response = await axios({
     method: "GET",
     url: `${API}/d2receiving/chambers-in-use`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
@@ -17,7 +17,7 @@ export const getRunningBatchForReceiving = async (chamber_no) => {
   const response = await axios({
     method: "GET",
     url: `${API}/d2receiving/running-batch/${chamber_no}`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
@@ -27,7 +27,7 @@ export const getQCUsers = async () => {
   const response = await axios({
     method: "GET",
     url: `${API}/getqcusers`,
-    headers: { "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}`, "Content-Type": "application/json" },
   });
   return response.data;
 };
