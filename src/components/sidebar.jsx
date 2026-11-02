@@ -118,6 +118,7 @@ const MENU = [
       { label: 'Proof Testing',    path: '/admin/prooftesting' },
       { label: 'Quality Admin',    path: '/admin/quality' },
       { label: 'FG / Tray Mgmt',  path: '/admin/traymanagement' },
+      { label: 'Fiber Lock / Unlock', path: '/admin/fiberlock' },
       { label: 'Report Builder',   path: '/admin/reportbuilder' },
       { label: 'Function Reports', path: '/admin/functionreports' },
     ],

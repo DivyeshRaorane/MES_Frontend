@@ -105,6 +105,36 @@ const StatusBar = ({ stages }) => {
   );
 };
 
+/* ── Test Info Panel ──
+   Read-only CD/PMD, Spectral and OTDR dates plus OTDR operator,
+   sourced from fetchBobbinQC (data.cd_date, data.spectral_date,
+   data.otdr_test_date, data.otdr_operator). */
+const formatTestDate = (val) => {
+  if (val === null || val === undefined || val === '') return '—';
+  const d = new Date(val);
+  if (Number.isNaN(d.getTime())) return String(val); // not a parseable date — show as-is
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+};
+
+const TestInfoPanel = ({ values }) => {
+  const rows = [
+    ['CD / PMD Date', formatTestDate(values.cd_date)],
+    ['Spectral Date', formatTestDate(values.spectral_date)],
+    ['OTDR Date', formatTestDate(values.otdr_test_date)],
+    ['OTDR Operator', values.otdr_operator || '—'],
+  ];
+  return (
+    <div className="col-span-2 mt-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 space-y-0.5">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex items-center justify-between gap-2">
+          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{label}</span>
+          <span className="text-[9px] font-bold text-slate-900 font-mono text-right break-words">{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /* ── Microbend rows ── */
 const MB_ROWS = [
   { label: '100T 50mm', s1550: 'm_100t_50mm_1550', s1310: 'm_100t_50mm_1310', s1625: 'm_100t_50mm_1625' },
@@ -157,7 +187,11 @@ const MEASUREMENT_FIELDS = [
 ];
 
 const buildInitialValues = () => {
-  const vals = { bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '', fiber_color: '' };
+  const vals = {
+    bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '', fiber_color: '',
+    // Display-only test info (not part of MEASUREMENT_FIELDS, so never submitted)
+    cd_date: '', spectral_date: '', otdr_test_date: '', otdr_operator: '',
+  };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
 };
@@ -1384,6 +1418,9 @@ console.log("res:", res)
 
                   {/* Process status bar — bottom-right, below source badge */}
                   <StatusBar stages={stages} />
+
+                  {/* Test dates / OTDR operator — below process status */}
+                  {values.bobbin_no && <TestInfoPanel values={values} />}
 
                 </Col>
 
