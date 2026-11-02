@@ -3,7 +3,7 @@ import { renderBarcodeDataUrl } from '../services/barcode.service';
 import { getBobbinPattern } from './bobbinPatterns';
 
 /*
- * Bobbin sticker — 40 x 40 mm.
+ * Bobbin sticker — 85 x 40 mm.
  *
  * Fixed top (from DB by bobbin_no):
  *   heading   → fiber_info
@@ -92,8 +92,8 @@ const BobbinLabel = (d) => {
 
 registerTemplate({
   key: 'bobbin',
-  name: 'Bobbin Sticker (40×40mm)',
-  size: { width: 40, height: 40, unit: 'mm' },
+  name: 'Bobbin Sticker (85×40mm)',
+  size: { width: 85, height: 40, unit: 'mm' },
   defaults: {
     pattern: 1,
     fiber_info: 'Single Mode Optical Fiber',

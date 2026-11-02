@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Clock, Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Settings,
-  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette, Database, ClipboardList,
+  Package, Layers, FileText, Truck, Mail, PackageSearch, Palette, Database, ClipboardList, Lock,
 } from 'lucide-react';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
@@ -20,6 +20,7 @@ import ColMaterialMasterPanel from '../col_material_code/ui/ColMaterialMasterPan
 import FiberColorMasterPanel from '../fiber_color/ui/FiberColorMasterPanel';
 import SapTransactionLogs from '../../../sap_transaction_logs/ui/SapTransactionLogs';
 import EntryServicesPanel from '../entry_services/ui/EntryServicesPanel';
+import FiberLockPanel from '../fiber_lock/ui/FiberLockPanel';
 
 const API = import.meta.env.VITE_API_URL;
 const authHeaders = () => ({
@@ -156,6 +157,14 @@ const ADMIN_CARDS = [
     color: 'text-indigo-600 bg-indigo-100',
     component: 'entry_services',
   },
+  {
+    key: 'fiber_lock',
+    title: 'Fiber Lock / Unlock',
+    desc: 'Lock or unlock fiber by preform, spool or bobbin',
+    icon: Lock,
+    color: 'text-red-600 bg-red-100',
+    component: 'fiber_lock',
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════ */
@@ -232,6 +241,10 @@ const GeneralAdmin = () => {
 
   if (activeCard === 'entry_services') {
     return <EntryServicesPanel onBack={() => setActiveCard(null)} />;
+  }
+
+  if (activeCard === 'fiber_lock') {
+    return <FiberLockPanel onBack={() => setActiveCard(null)} />;
   }
 
   if (activeCard === 'mail_config') {

@@ -66,6 +66,7 @@ import PTAdmin from './pages/Admin_Folder/proof_testing/ui/pt_admin'
 import GeneralAdmin from './pages/Admin_Folder/general_admin/ui/general_admin'
 import QualityAdmin from './pages/Admin_Folder/quality_admin/ui/quality_admin'
 import TrayManagement from './pages/Admin_Folder/FG/tray_management/ui/tray_management'
+import FiberLockPanel from './pages/Admin_Folder/general_admin/fiber_lock/ui/FiberLockPanel'
 import OrderRegister from './pages/order_register/ui/order_register'
 import HighTempHumidityAgeing from './pages/htha_entry/ui/HTHAList'
 import WaterImmersion from './pages/water_immersion/ui/WIList'
@@ -194,6 +195,7 @@ function App() {
         <Route path='admin/prooftesting' element={<PTAdmin/>}/>
         <Route path='admin/quality' element={<QualityAdmin/>}/>
         <Route path='admin/traymanagement' element={<TrayManagement/>}/>
+        <Route path='admin/fiberlock' element={<FiberLockPanel/>}/>
         <Route path='admin/reportbuilder' element={<ReportBuilderList/>}/>
         <Route path='admin/reportbuilder/wizard' element={<ReportBuilderWizard/>}/>
         <Route path='admin/functionreports' element={<FunctionReportAdmin/>}/>
