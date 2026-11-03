@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Plus, Edit2, ArrowLeft, Loader2, Search, FileText, Trash2, Eye,
-  RefreshCw, CheckCircle2, XCircle, MinusCircle, CloudDownload, ListChecks,
+  Plus, ArrowLeft, Loader2, Search, FileText, Trash2, Eye,
+  RefreshCw, CheckCircle2, XCircle, MinusCircle, CloudDownload, ListChecks, Factory, CircleCheckBig, Scale,
 } from 'lucide-react';
+import CreateProcessOrder from './CreateProcessOrder';
+import OrderActionModal from './OrderActionModal';
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import { showSuccess, showError, showWarning } from '../../../../../utils/toastService';
@@ -19,21 +21,17 @@ import {
    ORDER PANEL - Main Component (router: list | form | view)
    ══════════════════════════════════════════════════════════ */
 const OrderPanel = ({ onBack }) => {
-  const [tab, setTab] = useState('orders'); // 'orders' | 'sync'
+  const [tab, setTab] = useState('orders'); // 'orders' | 'create' | 'sync'
   const [view, setView] = useState('list'); // 'list' | 'form' | 'view'
   const [activeOrderNo, setActiveOrderNo] = useState(null);
 
-  const handleCreate = () => { setActiveOrderNo(null); setView('form'); };
-  const handleEdit = (orderNo) => { setActiveOrderNo(orderNo); setView('form'); };
   const handleView = (orderNo) => { setActiveOrderNo(orderNo); setView('view'); };
   const handleBackToList = () => { setActiveOrderNo(null); setView('list'); };
 
-  // Form & view are full-screen sub-flows (no tab strip) under the Orders tab
-  if (tab === 'orders' && view === 'form') {
-    return <OrderForm orderNo={activeOrderNo} onBack={handleBackToList} onSaved={handleBackToList} />;
-  }
+  // View is a full-screen sub-flow (no tab strip) under the Orders tab.
+  // Orders are no longer edited at DB level; changes go through SAP (TECO / Change Qty).
   if (tab === 'orders' && view === 'view') {
-    return <OrderView orderNo={activeOrderNo} onBack={handleBackToList} onEdit={() => handleEdit(activeOrderNo)} />;
+    return <OrderView orderNo={activeOrderNo} onBack={handleBackToList} />;
   }
 
   return (
@@ -54,6 +52,14 @@ const OrderPanel = ({ onBack }) => {
               }`}>
               <ListChecks size={13} /> Process Orders
             </button>
+            <button type="button" onClick={() => setTab('create')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-t-lg border-b-2 transition-all ${
+                tab === 'create'
+                  ? 'text-blue-700 border-blue-600 bg-white'
+                  : 'text-slate-500 border-transparent hover:text-slate-700'
+              }`}>
+              <Factory size={13} /> Create Process Order
+            </button>
             <button type="button" onClick={() => setTab('sync')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-t-lg border-b-2 transition-all ${
                 tab === 'sync'
@@ -67,9 +73,9 @@ const OrderPanel = ({ onBack }) => {
 
         {/* Tab body */}
         <div className="flex-1 overflow-hidden">
-          {tab === 'orders'
-            ? <OrderList onCreate={handleCreate} onEdit={handleEdit} onView={handleView} />
-            : <OrderSync />}
+          {tab === 'orders' && <OrderList onView={handleView} />}
+          {tab === 'create' && <CreateProcessOrder />}
+          {tab === 'sync' && <OrderSync />}
         </div>
       </div>
     </div>
@@ -80,8 +86,9 @@ const OrderPanel = ({ onBack }) => {
 /* ══════════════════════════════════════════════════════════
    ORDER LIST (one row per order_no)
    ══════════════════════════════════════════════════════════ */
-const OrderList = ({ onCreate, onEdit, onView }) => {
+const OrderList = ({ onView }) => {
   const [orders, setOrders] = useState([]);
+  const [action, setAction] = useState(null); // { type: 'teco' | 'qty', order }
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('REL'); // default: show REL orders on load
@@ -159,10 +166,6 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
                 className="pl-7 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500/20 w-40" />
             </div>
-            <button type="button" onClick={onCreate}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-bold rounded-lg hover:bg-blue-700 transition-all">
-              <Plus size={11} /> Create Order
-            </button>
           </div>
         </div>
 
@@ -209,10 +212,18 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
                           className="flex items-center gap-1 px-2 py-1 bg-slate-50 text-slate-700 border border-slate-200 text-[8px] font-bold rounded hover:bg-slate-100 transition-all">
                           <Eye size={9} /> View
                         </button>
-                        <button type="button" onClick={() => onEdit(o.order_no)}
-                          className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold rounded hover:bg-amber-100 transition-all">
-                          <Edit2 size={9} /> Edit
-                        </button>
+                        {(o.order_status || '').toUpperCase() !== 'TECO' && (
+                          <>
+                            <button type="button" onClick={() => setAction({ type: 'qty', order: o })}
+                              className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-[8px] font-bold rounded hover:bg-blue-100 transition-all">
+                              <Scale size={9} /> Change Qty
+                            </button>
+                            <button type="button" onClick={() => setAction({ type: 'teco', order: o })}
+                              className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold rounded hover:bg-amber-100 transition-all">
+                              <CircleCheckBig size={9} /> TECO
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -222,6 +233,15 @@ const OrderList = ({ onCreate, onEdit, onView }) => {
           )}
         </div>
       </div>
+
+      {action && (
+        <OrderActionModal
+          action={action.type}
+          order={action.order}
+          onClose={() => setAction(null)}
+          onDone={fetchOrders}
+        />
+      )}
     </div>
   );
 };
@@ -959,7 +979,7 @@ const Td = ({ children, mono }) => (
 /* ══════════════════════════════════════════════════════════
    ORDER VIEW (read-only) - header + components + operations + confirmations
    ══════════════════════════════════════════════════════════ */
-const OrderView = ({ orderNo, onBack, onEdit }) => {
+const OrderView = ({ orderNo, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ header: {}, components: [], operations: [], confirmations: [] });
 
@@ -1009,10 +1029,6 @@ const OrderView = ({ orderNo, onBack, onEdit }) => {
             </div>
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Order {header.order_no || orderNo}</span>
           </div>
-          <button type="button" onClick={onEdit}
-            className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold rounded-lg hover:bg-amber-100 transition-all">
-            <Edit2 size={11} /> Edit
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">

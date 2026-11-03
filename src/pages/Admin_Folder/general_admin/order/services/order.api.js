@@ -88,3 +88,39 @@ export const getMaterials = async (category) => {
   const res = await axios.get(url, { headers: authHeaders() });
   return res.data;
 };
+
+/**
+ * Create a process order in SAP.
+ * payload: { ManufacturingOrderType, Material, ProductionPlant, TotalQuantity, ProductionUnit, BasicSchedulingType }
+ * Response: { success, message, data: { order_no, message, request_payload, sap_response } }
+ */
+export const createProcessOrder = async (payload) => {
+  const res = await axios.post(`${API}/admin/process-order/create`, payload, { headers: authHeaders() });
+  return res.data;
+};
+
+/**
+ * Technically complete (TECO) a process order in SAP.
+ * Response: { success, message, data: { order_no, message, teco: { type, text }, order_details, in_mes_table, db_error } }
+ */
+export const tecoProcessOrder = async (orderNo) => {
+  const res = await axios.post(
+    `${API}/admin/process-order/teco/${encodeURIComponent(orderNo)}`,
+    {},
+    { headers: authHeaders() }
+  );
+  return res.data;
+};
+
+/**
+ * Change a process order's total quantity in SAP.
+ * Response: { success, message, data: { order_no, message, previous_qty, new_qty, in_mes_table, db_error } }
+ */
+export const changeProcessOrderQty = async (orderNo, totalQuantity) => {
+  const res = await axios.post(
+    `${API}/admin/process-order/qty-change/${encodeURIComponent(orderNo)}`,
+    { TotalQuantity: String(totalQuantity) },
+    { headers: authHeaders() }
+  );
+  return res.data;
+};
