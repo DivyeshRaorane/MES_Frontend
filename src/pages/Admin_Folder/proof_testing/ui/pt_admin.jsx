@@ -6,6 +6,7 @@ import {
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -328,7 +329,7 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
 
   const schema = Yup.object(
     config.fields.reduce((acc, f) => {
-      if (f.required) acc[f.name] = Yup.string().required(`${f.label} is required`);
+      if (f.required) acc[f.name] = Yup.string().trim().required(`${f.label} is required`);
       else acc[f.name] = Yup.string();
       return acc;
     }, {})
@@ -342,11 +343,12 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
+      const payload = trimValues(values);
       let res;
       if (isEdit) {
-        res = await config.api.update(item[config.idField], values);
+        res = await config.api.update(item[config.idField], payload);
       } else {
-        res = await config.api.create(values);
+        res = await config.api.create(payload);
       }
       if (res?.success) {
         showSuccess(isEdit ? 'Updated successfully' : 'Created successfully');

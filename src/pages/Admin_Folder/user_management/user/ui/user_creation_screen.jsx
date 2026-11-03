@@ -4,18 +4,19 @@ import * as Yup from 'yup';
 import { User, X } from 'lucide-react';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../../components/common_buttons';
+import { trimValues } from '../../../../../utils/trimValues';
 
 const DEPARTMENTS = ['Select','Draw','Proof Testing','Quality','Dispatch','QA','Admin','HR','IT'];
 const ROLES       = ['Select','Operator','Senior Operator','Supervisor','Manager','Admin','QA Engineer','QC Inspector'];
 const SHIFTS      = ['Select','A','B','C','General'];
 
 const validationSchema = Yup.object({
-  employee_id: Yup.string().required('Required'),
-  name:        Yup.string().required('Required'),
-  email:       Yup.string().email('Invalid email').required('Required'),
+  employee_id: Yup.string().trim().required('Required'),
+  name:        Yup.string().trim().required('Required'),
+  email:       Yup.string().trim().email('Invalid email').required('Required'),
   department:  Yup.string().notOneOf(['Select'],'Required').required('Required'),
   role:        Yup.string().notOneOf(['Select'],'Required').required('Required'),
-  username:    Yup.string().required('Required'),
+  username:    Yup.string().trim().required('Required'),
   password:    Yup.string().min(6,'Min 6 chars').required('Required'),
 });
 
@@ -44,7 +45,7 @@ const UserCreationForm = ({
   title = 'Create New User',
 }) => {
   const handleSubmit = (values, { resetForm }) => {
-    onSubmit?.(values);
+    onSubmit?.(trimValues(values, { skipKeys: ['password'] }));
     if (!isPopup) resetForm();
   };
 

@@ -36,7 +36,7 @@ export const getFiberColorById = async (id) => {
  * Response: { success, message?, data }
  */
 export const createFiberColor = async (payload) => {
-  const res = await axios.post(`${API}/createfibercolor`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/admin/fibercolors`, payload, { headers: authHeaders() });
   return res.data;
 };
 

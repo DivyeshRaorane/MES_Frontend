@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Send, Loader2, Mail, Plus, Trash2, Bookmark, CalendarClock, AlertCircle } from 'lucide-react';
 import { sendMail, sendTemplateMail, saveDraftMail, getMailTemplates } from '../services/mailService';
 import { showSuccess, showError } from '../../../utils/toastService';
+import { trimValues } from '../../../utils/trimValues';
 import ScheduleModal from './ScheduleModal';
 
 const ComposeMail = ({ draftData, onDraftSaved }) => {
@@ -102,7 +103,7 @@ const ComposeMail = ({ draftData, onDraftSaved }) => {
       payload.html = htmlContent;
     } else if (bodyType === 'template') {
       payload.templateName = templateName;
-      payload.templateVars = templateVars;
+      payload.templateVars = trimValues(templateVars);
     }
     return payload;
   };

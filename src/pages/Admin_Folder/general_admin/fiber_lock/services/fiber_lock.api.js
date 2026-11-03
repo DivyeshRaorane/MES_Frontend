@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// VITE_API_URL already ends with /api, so `${API}/fiber/lock` hits POST /api/fiber/lock.
+// VITE_API_URL already ends with /api, so `${API}/admin/fiber/lock` hits POST /api/admin/fiber/lock.
 const API = import.meta.env.VITE_API_URL;
 
 const authHeaders = () => ({
@@ -10,7 +10,7 @@ const authHeaders = () => ({
 
 /**
  * Lock a preform / spool / bobbin (and its children).
- * POST /api/fiber/lock
+ * POST /api/admin/fiber/lock
  * payload: { lock_type: "preform" | "spool" | "bobbin", id: string, lock_reason: string }
  *
  * Success (200): { status, message, data: { lock_type, lock_reason, counts, preforms, spools, bobbins } }
@@ -19,7 +19,7 @@ const authHeaders = () => ({
  */
 export const lockFiber = async ({ lock_type, id, lock_reason = "" }) => {
   const res = await axios.post(
-    `${API}/fiber/lock`,
+    `${API}/admin/fiber/lock`,
     { lock_type, id, lock_reason },
     { headers: authHeaders() }
   );
@@ -28,13 +28,13 @@ export const lockFiber = async ({ lock_type, id, lock_reason = "" }) => {
 
 /**
  * Unlock a preform / spool / bobbin (and its children).
- * POST /api/fiber/unlock
+ * POST /api/admin/fiber/unlock
  * payload: { lock_type, id, unlock_reason } — send only the user's text; the backend
  * adds the "Unlock_reason- " prefix itself.
  */
 export const unlockFiber = async ({ lock_type, id, unlock_reason = "" }) => {
   const res = await axios.post(
-    `${API}/fiber/unlock`,
+    `${API}/admin/fiber/unlock`,
     { lock_type, id, unlock_reason },
     { headers: authHeaders() }
   );

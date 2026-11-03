@@ -24,7 +24,7 @@ export const getFiberCutIndicationById = async (id) => {
 
 /* ── Create fiber cut indication ── */
 export const createFiberCutIndication = async (data) => {
-  const response = await axios.post(`${API}/fiber-cut-indication`, data, {
+  const response = await axios.post(`${API}/admin/fibercutindications`, data, {
     headers: authHeaders(),
   });
   return response.data;
@@ -32,7 +32,7 @@ export const createFiberCutIndication = async (data) => {
 
 /* ── Update fiber cut indication ── */
 export const updateFiberCutIndication = async (id, data) => {
-  const response = await axios.put(`${API}/fiber-cut-indication/${id}`, data, {
+  const response = await axios.put(`${API}/admin/fibercutindications/${id}`, data, {
     headers: authHeaders(),
   });
   return response.data;
@@ -40,7 +40,7 @@ export const updateFiberCutIndication = async (id, data) => {
 
 /* ── Disable/Enable fiber cut indication ── */
 export const toggleFiberCutIndication = async (id, data) => {
-  const response = await axios.put(`${API}/fiber-cut-indication/${id}`, data, {
+  const response = await axios.put(`${API}/admin/fibercutindications/${id}`, data, {
     headers: authHeaders(),
   });
   return response.data;

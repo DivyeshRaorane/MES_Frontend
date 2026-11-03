@@ -36,7 +36,7 @@ export const getColMaterialCodeById = async (id) => {
  * Response: { success, message?, data }
  */
 export const createColMaterialCode = async (payload) => {
-  const res = await axios.post(`${API}/createcolmaterialcode`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/admin/colmaterialcode`, payload, { headers: authHeaders() });
   return res.data;
 };
 

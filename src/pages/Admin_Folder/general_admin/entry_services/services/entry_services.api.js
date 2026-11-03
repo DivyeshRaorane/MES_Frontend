@@ -9,7 +9,7 @@ const authHeaders = () => ({
 
 /**
  * Add stock (KG) to an existing preform.
- * POST /preform-stock-add
+ * POST /admin/preform-stock-add
  * payload: { preform_id: string, adding_weight: number (> 0) }
  *
  * Success (200): { success: true, message, preform_id, adding_weight, is_active,
@@ -25,7 +25,7 @@ const authHeaders = () => ({
  * automatically and must prevent double submit.
  */
 export const addPreformStock = async (payload) => {
-  const res = await axios.post(`${API}/preform-stock-add`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/admin/preform-stock-add`, payload, { headers: authHeaders() });
   return res.data;
 };
 

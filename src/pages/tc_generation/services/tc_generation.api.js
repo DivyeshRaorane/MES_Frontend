@@ -30,6 +30,12 @@ export const getAllTCs = async () => {
   return res.data;
 };
 
+/** Get active FG users (for Inspection By / Approved By dropdowns) */
+export const getActiveFGUsers = async () => {
+  const res = await axios.get(`${API}/getfgusers`, { headers: authHeaders(), params: { is_active: true } });
+  return res.data;
+};
+
 /** Get TC by ID (header + bobbins) */
 export const getTCById = async (tcId) => {
   const res = await axios.get(`${API}/tc/${tcId}`, { headers: authHeaders() });

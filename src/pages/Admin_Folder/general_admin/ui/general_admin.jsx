@@ -6,6 +6,7 @@ import {
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -419,9 +420,9 @@ const ShiftFormModal = ({ item, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const schema = Yup.object({
-    shift_name: Yup.string().required('Shift name is required'),
-    shift_start_time: Yup.string().required('Start time is required'),
-    shift_end_time: Yup.string().required('End time is required'),
+    shift_name: Yup.string().trim().required('Shift name is required'),
+    shift_start_time: Yup.string().trim().required('Start time is required'),
+    shift_end_time: Yup.string().trim().required('End time is required'),
   });
   const initVals = {
     shift_name: item?.shift_name || '',
@@ -429,7 +430,8 @@ const ShiftFormModal = ({ item, onClose, onSaved }) => {
     shift_end_time: item?.shift_end_time || '',
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
@@ -591,10 +593,11 @@ const DeptFormModal = ({ item, onClose, onSaved }) => {
   const isEdit = !!item;
   const [submitting, setSubmitting] = useState(false);
 
-  const schema = Yup.object({ d_name: Yup.string().required('Department name is required') });
+  const schema = Yup.object({ d_name: Yup.string().trim().required('Department name is required') });
   const initVals = { d_name: item?.d_name || '' };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
@@ -759,7 +762,7 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const schema = Yup.object({
-    customer_name: Yup.string().required('Customer name is required'),
+    customer_name: Yup.string().trim().required('Customer name is required'),
     cust_address: Yup.string(),
   });
   const initVals = {
@@ -768,7 +771,8 @@ const CustomerFormModal = ({ item, onClose, onSaved }) => {
     customer_since: item?.customer_since ? item.customer_since.substring(0, 10) : '',
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
@@ -937,17 +941,18 @@ const BobbinColorPanel = ({ onBack }) => {
 const BobbinColorFormModal = ({ item, onClose, onSaved }) => {
   const isEdit = !!item;
   const [submitting, setSubmitting] = useState(false);
-  const schema = Yup.object({ bobbin_color_name: Yup.string().required('Color name is required') });
+  const schema = Yup.object({ bobbin_color_name: Yup.string().trim().required('Color name is required') });
   const initVals = { bobbin_color_name: item?.bobbin_color_name || '' };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
       if (isEdit) {
         res = await axios.put(`${API}/admin/bobbincolors/${item.bobbin_color_id}`, { bobbin_color_name: values.bobbin_color_name, is_disable: item.is_disable ?? false }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/createbobbincolor`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
+        res = await axios.post(`${API}/admin/bobbincolors`, { bobbin_color_name: values.bobbin_color_name }, { headers: authHeaders() });
       }
       if (res.data?.success) { showSuccess(isEdit ? 'Color updated' : 'Color created'); onSaved(); }
       else showError(res.data?.message || 'Failed');
@@ -1104,8 +1109,8 @@ const PreformVendorFormModal = ({ item, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
   const schema = Yup.object({
     vendor_code: Yup.string().nullable(),
-    vendor_name: Yup.string().required('Vendor name is required'),
-    vendor_initial: Yup.string().required('Vendor initial is required').max(10, 'Max 10 characters'),
+    vendor_name: Yup.string().trim().required('Vendor name is required'),
+    vendor_initial: Yup.string().trim().required('Vendor initial is required').max(10, 'Max 10 characters'),
   });
   const initVals = {
     vendor_code: item?.vendor_code || '',
@@ -1113,7 +1118,8 @@ const PreformVendorFormModal = ({ item, onClose, onSaved }) => {
     vendor_initial: item?.vendor_initial || '',
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
@@ -1125,7 +1131,7 @@ const PreformVendorFormModal = ({ item, onClose, onSaved }) => {
           is_disable: item.is_disable ?? false,
         }, { headers: authHeaders() });
       } else {
-        res = await axios.post(`${API}/createpreformvendor`, {
+        res = await axios.post(`${API}/admin/preformvendor`, {
           vendor_code: values.vendor_code,
           vendor_name: values.vendor_name,
           vendor_initial: values.vendor_initial,

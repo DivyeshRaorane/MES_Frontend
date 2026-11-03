@@ -3,6 +3,7 @@ import { Plus, Edit2, X, ArrowLeft, Loader2, Search, Power, Package, Trash2 } fr
 import { FormikInput, FormikSelect } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -153,9 +154,9 @@ const MaterialFormModal = ({ item, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const schema = Yup.object({
-    material_code: Yup.string().required('Material code is required'),
-    material_category: Yup.string().required('Category is required'),
-    material_description: Yup.string().required('Description is required'),
+    material_code: Yup.string().trim().required('Material code is required'),
+    material_category: Yup.string().trim().required('Category is required'),
+    material_description: Yup.string().trim().required('Description is required'),
   });
 
   const initVals = {
@@ -169,7 +170,8 @@ const MaterialFormModal = ({ item, onClose, onSaved }) => {
     is_active: item?.is_active ?? true,
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;

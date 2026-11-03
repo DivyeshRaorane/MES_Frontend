@@ -4,6 +4,7 @@
  * Supports both single-table and multi-sheet modes
  */
 import React, { useEffect, useMemo } from 'react';
+import { trimValues } from '../../../../utils/trimValues';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
@@ -163,10 +164,11 @@ const ReportBuilderWizard = () => {
       };
 
       try {
+        const cleanData = trimValues(reportData);
         if (reportIdToSave) {
-          await updateMultiSheetReport(reportIdToSave, reportData);
+          await updateMultiSheetReport(reportIdToSave, cleanData);
         } else {
-          await createMultiSheetReport(reportData);
+          await createMultiSheetReport(cleanData);
         }
         toast.success(reportIdToSave ? 'Report updated successfully!' : 'Report created successfully!');
         dispatch(resetWizard());
@@ -198,7 +200,7 @@ const ReportBuilderWizard = () => {
       };
 
       const result = await dispatch(
-        saveReport({ reportId: reportIdToSave, reportData })
+        saveReport({ reportId: reportIdToSave, reportData: trimValues(reportData) })
       );
 
       if (result.meta.requestStatus === 'fulfilled') {
@@ -241,13 +243,13 @@ const ReportBuilderWizard = () => {
   const canGoNext = () => {
     if (wizard.isMultiSheet) {
       switch (currentStep) {
-        case 0: return wizard.reportName && wizard.module && (wizard.selectedSections || []).length > 0;
+        case 0: return wizard.reportName?.trim() && wizard.module && (wizard.selectedSections || []).length > 0;
         case 1: return wizard.sheets.length > 0 && wizard.sheets.every(s => s.tables.length > 0);
         default: return true;
       }
     } else {
       switch (currentStep) {
-        case 0: return wizard.reportName && wizard.module && (wizard.selectedSections || []).length > 0;
+        case 0: return wizard.reportName?.trim() && wizard.module && (wizard.selectedSections || []).length > 0;
         case 1: return wizard.mainTable;
         case 2: return wizard.selectedColumns.length > 0;
         default: return true;
