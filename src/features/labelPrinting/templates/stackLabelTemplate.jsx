@@ -1,7 +1,7 @@
 import { registerTemplate } from '../core/templateRegistry';
 
 /*
- * Stack sticker — 150 x 150 mm. No barcodes, one fixed layout.
+ * Stack sticker — 100 x 150 mm. No barcodes, one fixed layout.
  *
  * Data (one object per bobbin, straight from POST /stack/labels):
  *   bobbin_no, packing_order, customer_name, cust_address
@@ -75,7 +75,7 @@ const StackLabelCard = (d) => {
 
 registerTemplate({
   key: 'stack',
-  name: 'Stack Sticker (150×150mm)',
+  name: 'Stack Sticker (100×150mm)',
   size: { width: 150, height: 150, unit: 'mm' },
   // Sample data (used by the playground only; real prints pass full objects).
   defaults: {
