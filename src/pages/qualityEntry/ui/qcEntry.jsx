@@ -12,18 +12,18 @@ import { submitRewindRequest } from '../../fg_fiber_rejection/services/fg_reject
 /* ── Compact table-cell input ── */
 const TCell = ({ name, disabled, highlight }) => (
   <Field name={name} disabled={disabled}
-    className={`w-full h-full px-1 py-0 text-[9px] outline-none text-center transition-all
+    className={`w-full h-full px-1 py-0 text-[13px] font-extrabold text-black outline-none text-center transition-all
       ${highlight ? 'bg-red-100 border-red-400 ring-1 ring-red-300' : ''}
-      ${disabled ? 'bg-slate-100 text-slate-600 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
+      ${disabled ? 'bg-slate-100 !text-slate-700 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
 );
 const GridDivider = ({ label }) => (
   <div className="col-span-2 pt-0.5 border-t border-slate-200">
     <p className="text-[7px] font-bold text-slate-700 uppercase tracking-wider">{label}</p>
   </div>
 );
-const Col = ({ children }) => (
+const Col = ({ children, cols = 2 }) => (
   <div className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-white border border-slate-200 rounded-lg px-1.5 py-1">
-    <div className="grid grid-cols-2 gap-x-1 text-slate-900 font-semibold gap-y-0.5">{children}</div>
+    <div className={`grid ${cols === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-x-1 text-slate-900 font-semibold gap-y-0.5`}>{children}</div>
   </div>
 );
 
@@ -63,18 +63,18 @@ const StatusBar = ({ stages }) => {
   const statusText = isOk ? 'OK' : normalized;
 
   return (
-    <div className="col-span-2 mt-1 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-lg px-2 py-2">
-      <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Process Status</p>
+    <div className="col-span-2 mt-1 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-lg px-2 py-3.5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Process Status</p>
         {statusStage && (
-          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${isOk
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-amber-50 text-amber-700 border-amber-300'}`}>
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${isOk
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-amber-50 text-amber-800 border-amber-300'}`}>
             {statusStage.label}: {statusText}
           </span>
         )}
       </div>
-      <div className="flex items-start">
+      <div className="flex items-start py-1">
         {steps.map((step, i) => {
           const done = !!step.done;
           const isLast = i === steps.length - 1;
@@ -94,7 +94,7 @@ const StatusBar = ({ stages }) => {
                 {/* right connector (hidden on last) */}
                 <div className={`h-0.5 flex-1 ${isLast ? 'opacity-0' : steps[i + 1]?.done ? 'bg-emerald-400' : 'bg-slate-300'}`} />
               </div>
-              <span className={`text-[7px] font-bold mt-0.5 text-center leading-tight break-words ${done ? 'text-emerald-700' : 'text-slate-400'}`}>
+              <span className={`text-[8px] font-bold mt-1 text-center leading-tight break-words ${done ? 'text-emerald-800' : 'text-slate-600'}`}>
                 {step.label}
               </span>
             </div>
@@ -124,11 +124,11 @@ const TestInfoPanel = ({ values }) => {
     ['OTDR Operator', values.otdr_operator || '—'],
   ];
   return (
-    <div className="col-span-2 mt-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 space-y-0.5">
+    <div className="col-span-2 mt-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-3 space-y-2">
       {rows.map(([label, value]) => (
         <div key={label} className="flex items-center justify-between gap-2">
-          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">{label}</span>
-          <span className="text-[9px] font-bold text-slate-900 font-mono text-right break-words">{value}</span>
+          <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">{label}</span>
+          <span className="text-[10px] font-bold text-black font-mono text-right break-words">{value}</span>
         </div>
       ))}
     </div>
@@ -1083,10 +1083,13 @@ console.log("res:", res)
     : grade === 'REW' ? 'bg-amber-100 text-amber-700 border-amber-300'
       : grade ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : '';
 
-  /* ── Field helper ── */
+  /* ── Field helper ──
+     horizontal: label sits in front of the value (fixed-width label, input fills the rest)
+     so every row reads "PARAM NAME  [ value ]". */
   const fi = (label, name) => (
-    <FormikInput compact label={label} name={name} disabled={locked}
-      className={failedParam === name ? 'bg-red-50 border-red-400 ring-1 ring-red-300' : ''} />
+    <FormikInput compact horizontal label={label} name={name} disabled={locked}
+      labelClassName="basis-1/2 flex-shrink-0 text-left !ml-0 pl-0 pr-2 whitespace-nowrap truncate !text-[11px] !text-slate-900"
+      className={`basis-1/2 !w-auto min-w-0 ml-auto py-0.5 px-1 text-center !text-[13px] !font-extrabold !text-black ${failedParam === name ? 'bg-red-50 border-red-400 ring-1 ring-red-300' : ''}`} />
   );
 
   return (
@@ -1104,7 +1107,7 @@ console.log("res:", res)
 
                 {/* Scan */}
                 <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                  <span className="bg-blue-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BOBBIN</span>
+                  <span className="bg-blue-100 text-[9px] font-bold text-slate-900 px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">BOBBIN</span>
                   <input ref={scanRef} value={scanInput}
                     onChange={e => {
                       const val = e.target.value.toUpperCase();
@@ -1117,58 +1120,58 @@ console.log("res:", res)
                       }
                     }}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); triggerScan(scanInput, setValues); } }}
-                    className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-700" placeholder="Scan..." />
+                    className="w-32 px-2 py-1 text-xs outline-none font-bold text-blue-900" placeholder="Scan..." />
                 </div>
 
                 {/* Last scanned bobbin display */}
                 {lastScanned && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-green-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">SCANNED</span>
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-green-700">{lastScanned}</span>
+                    <span className="bg-green-100 text-[9px] font-bold text-slate-900 px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">SCANNED</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-green-900">{lastScanned}</span>
                   </div>
                 )}
 
                 {/* FID display */}
                 {values.bobbin_fid && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-orange-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID</span>
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.bobbin_fid}</span>
+                    <span className="bg-orange-100 text-[9px] font-bold text-slate-900 px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">FID</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-900">{values.bobbin_fid}</span>
                   </div>
                 )}
 
                 {/* Optical Length display — beside FID */}
                 {values.optical_length && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-cyan-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.optical_length}</span>
+                    <span className="bg-cyan-100 text-[9px] font-bold text-slate-900 px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">OPT LEN</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-900">{values.optical_length}</span>
                   </div>
                 )}
 
                 {/* PT Length display — beside FID */}
                 {values.fiber_length && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="bg-purple-100 text-[9px] font-bold px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">PT LEN</span>
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-700">{values.fiber_length}</span>
+                    <span className="bg-purple-100 text-[9px] font-bold text-slate-900 px-2 py-1.5 border-r border-slate-200 whitespace-nowrap">PT LEN</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-900">{values.fiber_length}</span>
                   </div>
                 )}
 
                 {/* Product Type display */}
                 {values.product_type && (
                   <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-800">{values.product_type}</span>
+                    <span className="px-2 py-1 text-xs font-bold font-mono text-slate-900">{values.product_type}</span>
                   </div>
                 )}
 
                 {/* Existing Temp Grade badge */}
                 {existingTempGrade && (
-                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-blue-50 text-blue-900 border-blue-200">
                     Temp: {existingTempGrade}
                   </span>
                 )}
 
                 {/* Existing Final Grade badge */}
                 {existingFinalGrade && (
-                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">
+                  <span className="text-[9px] font-bold px-2 py-1 rounded border bg-emerald-50 text-emerald-900 border-emerald-200">
                     Final: {existingFinalGrade}
                   </span>
                 )}
@@ -1227,20 +1230,38 @@ console.log("res:", res)
               {/* ── 5-column data grid ── */}
               <div className="flex gap-1 flex-1 min-h-0 overflow-hidden px-1.5 py-1">
 
-                {/* ── COL 1 ── */}
-                <Col>
+                {/* ── SECTION 1 (single column) ── */}
+                <Col cols={1}>
                   {fi('Avg LSA 1310', 'avg_lsa_atn_1310')}
                   {fi('Avg LSA 1550', 'avg_lsa_atn_1550')}
                   {fi('Avg LSA 1625', 'avg_lsa_atn_1625')}
                   {fi('Avg LSA 1383', 'avg_lsa_atn_1383')}
+                  {fi('Max LSA 1310', 'max_lsa_atn_1310')}
+                  {fi('Max LSA 1550', 'max_lsa_atn_1550')}
+                  {fi('Max LSA 1625', 'max_lsa_atn_1625')}
+                  {fi('Max LSA 1383', 'max_lsa_atn_1383')}
+                  {fi('Min LSA 1310', 'min_lsa_atn_1310')}
+                  {fi('Min LSA 1550', 'min_lsa_atn_1550')}
+                  {fi('Min LSA 1625', 'min_lsa_atn_1625')}
+                  {fi('Min LSA 1383', 'min_lsa_atn_1383')}
                   {fi('MFD Uni 1310', 'mfd_uniformity_1310')}
                   {fi('MFD Uni 1550', 'mfd_uniformity_1550')}
-                  {fi('Cutoff T', 'cut_off_top')}
-                  {fi('Cutoff B', 'cut_off_bottom')}
+                  {fi('MFD Uni 1625', 'mfd_uniformity_1625')}
+                  {fi('MFD Uni 1383', 'mfd_uniformity_1383')}
                   {fi('MFD 1310 T', 'mfd_1310_top')}
                   {fi('MFD 1310 B', 'mfd_1310_bottom')}
                   {fi('MFD 1550 T', 'mfd_1550_top')}
                   {fi('MFD 1550 B', 'mfd_1550_bottom')}
+                  {fi('Cutoff T', 'cut_off_top')}
+                  {fi('Cutoff B', 'cut_off_bottom')}
+                  {fi('Cable Cut', 'cable_cut_off')}
+                </Col>
+
+                {/* ── SECTION 2 (single column) ── */}
+                <Col cols={1}>
+                  {fi('MAC Value', 'mac_value')}
+                  {fi('Eff Area 1310', 'effective_area_1310')}
+                  {fi('Eff Area 1550', 'effective_area_1550')}
                   {fi('Clad Dia T', 'clad_dia_top')}
                   {fi('Clad Dia B', 'clad_dia_bottom')}
                   {fi('Core Dia T', 'core_dia_top')}
@@ -1251,11 +1272,6 @@ console.log("res:", res)
                   {fi('Clad Oval B', 'clad_ovality_bottom')}
                   {fi('Core Oval T', 'core_ovality_top')}
                   {fi('Core Oval B', 'core_ovality_bottom')}
-                  
-                  </Col>
-
-                {/* ── COL 2 ── */}
-                <Col>
                   {fi('Pri Coat T', 'primary_coating_dia_top')}
                   {fi('Pri Coat B', 'primary_coating_dia_bottom')}
                   {fi('Sec Coat T', 'secondary_coating_dia_top')}
@@ -1266,6 +1282,10 @@ console.log("res:", res)
                   {fi('Sec Conc B', 'secondary_coating_concentricity_bottom')}
                   {fi('Coat Oval T', 'coating_ovality_top')}
                   {fi('Coat Oval B', 'coating_ovality_bottom')}
+                </Col>
+
+                {/* ── SECTION 3 (single column) ── */}
+                <Col cols={1}>
                   {fi('Fiber Curl T', 'fiber_curl_top')}
                   {fi('Fiber Curl B', 'fiber_curl_bottom')}
                   {fi('Zero Disp', 'zero_disp_wave')}
@@ -1276,59 +1296,38 @@ console.log("res:", res)
                   {fi('Disp 1575', 'disp_1575')}
                   {fi('Disp 1570', 'disp_1570')}
                   {fi('Disp 1625', 'disp_1625')}
-                  {fi('Cable Cut', 'cable_cut_off')}
-                  {fi('MAC Value', 'mac_value')}
-                  {fi('Eff Area 1310', 'effective_area_1310')}
-                  {fi('Eff Area 1550', 'effective_area_1550')}
+                  {fi('PMD Coee', 'pmd_1550')}
+                  {fi('Spec 1285', 'spec_1285_1330')}
+                  {fi('Spec 1310', 'spec_1310')}
+                  {fi('Spec 1550', 'spec_1550')}
+                  {fi('Step 1310', 'step_1310_size')}
+                  {fi('Step 1550', 'step_1550_size')}
+                  {fi('Spike 1310', 'spike_1310_size')}
+                  {fi('Spike 1550', 'spike_1550_size')}
+                  {fi('Max ATN 1310 T', 'max_atn_1310_top')}
+                  {fi('Max ATN 1310 B', 'max_atn_1310_bottom')}
+                  {fi('Max ATN 1550 T', 'max_atn_1550_top')}
+                  {fi('Max ATN 1550 B', 'max_atn_1550_bottom')}
+                  {fi('Max ATN 1625 T', 'max_atn_1625_top')}
+                </Col>
 
-                  </Col>
-
-                {/* ── COL 3 ── */}
-                <Col>
-                {fi('PMD Coee', 'pmd_1550')}
-                {fi('Spec 1285', 'spec_1285_1330')}
-                {fi('Step 1310', 'step_1310_size')}
-                {fi('Step 1550', 'step_1550_size')}
-                {fi('Spike 1310', 'spike_1310_size')}
-                {fi('Spike 1550', 'spike_1550_size')}
-                {fi('Spec 1310', 'spec_1310')}
-                {fi('Spec 1550', 'spec_1550')}
-                {fi('Max ATN 1310 T', 'max_atn_1310_top')}
-                {fi('Max ATN 1310 B', 'max_atn_1310_bottom')}
-                {fi('Max ATN 1550 T', 'max_atn_1550_top')}
-                {fi('Max ATN 1550 B', 'max_atn_1550_bottom')}
-                {fi('Max ATN 1625 T', 'max_atn_1625_top')}
-                {fi('Max ATN 1625 B', 'max_atn_1625_bottom')}
-                {fi('Max ATN 1383 T', 'max_atn_1383_top')}
-                {fi('Max ATN 1383 B', 'max_atn_1383_bottom')}
-                {fi('ATN TB 1310', 'atn_1310_tb')}
-                {fi('ATN TB 1550', 'atn_1550_tb')}
-                {fi('ATN TB 1625', 'atn_1625_tb')}
-                {fi('ATN TB 1383', 'atn_1383_tb')}
-                {fi('Max TB 1310', 'max_tb_1310')}
-                {fi('Max TB 1550', 'max_tb_1550')}
-                {fi('Max TB 1625', 'max_tb_1625')}
-                {fi('Max TB 1383', 'max_tb_1383')}
-                            
-                  
-                                  </Col>
-
-                {/* ── COL 4 ── */}
-                <Col>
-                  <GridDivider label="TB / Uniformity" />
+                {/* ── SECTION 4 (single column) ── */}
+                <Col cols={1}>
+                  {fi('Max ATN 1625 B', 'max_atn_1625_bottom')}
+                  {fi('Max ATN 1383 T', 'max_atn_1383_top')}
+                  {fi('Max ATN 1383 B', 'max_atn_1383_bottom')}
+                  {fi('ATN TB 1310', 'atn_1310_tb')}
+                  {fi('ATN TB 1550', 'atn_1550_tb')}
+                  {fi('ATN TB 1625', 'atn_1625_tb')}
+                  {fi('ATN TB 1383', 'atn_1383_tb')}
+                  {fi('Max TB 1310', 'max_tb_1310')}
+                  {fi('Max TB 1550', 'max_tb_1550')}
+                  {fi('Max TB 1625', 'max_tb_1625')}
+                  {fi('Max TB 1383', 'max_tb_1383')}
                   {fi('ATN Uni 1310', 'atn_uniformity_1310')}
                   {fi('ATN Uni 1550', 'atn_uniformity_1550')}
                   {fi('ATN Uni 1625', 'atn_uniformity_1625')}
                   {fi('ATN Uni 1383', 'atn_uniformity_1383')}
-                  {fi('Max LSA 1310', 'max_lsa_atn_1310')}
-                  {fi('Max LSA 1550', 'max_lsa_atn_1550')}
-                  {fi('Max LSA 1625', 'max_lsa_atn_1625')}
-                  {fi('Max LSA 1383', 'max_lsa_atn_1383')}
-                  {fi('Min LSA 1310', 'min_lsa_atn_1310')}
-                  {fi('Min LSA 1550', 'min_lsa_atn_1550')}
-                  {fi('Min LSA 1625', 'min_lsa_atn_1625')}
-                  {fi('Min LSA 1383', 'min_lsa_atn_1383')}
-                  
                   {fi('ATN 1310 T', 'atn_1310_top')}
                   {fi('ATN 1550 T', 'atn_1550_top')}
                   {fi('ATN 1625 T', 'atn_1625_top')}
@@ -1337,12 +1336,9 @@ console.log("res:", res)
                   {fi('ATN 1550 B', 'atn_1550_bottom')}
                   {fi('ATN 1625 B', 'atn_1625_bottom')}
                   {fi('ATN 1383 B', 'atn_1383_bottom')}
-                  {fi('MFD Uni 1625', 'mfd_uniformity_1625')}
-                  {fi('MFD Uni 1383', 'mfd_uniformity_1383')}
-                  
-                  </Col>
+                </Col>
 
-                {/* ── COL 5: Microbend + Step/Spike ── */}
+                {/* ── SECTION 5: Microbend (Step/Spike) table + Preform Traceability & other data ── */}
                 <Col>
                   <GridDivider label="Step / Spike" />
                   {/* Microbend table */}
@@ -1350,19 +1346,19 @@ console.log("res:", res)
                     <table className="w-full text-[8px] border-collapse border border-slate-200 rounded overflow-hidden">
                       <thead className="bg-slate-700 text-white">
                         <tr>
-                          <th className="border border-slate-500 py-0.5 font-normal px-1 text-left">Spec</th>
-                          <th className="border border-slate-500 py-0.5 font-normal">1550</th>
-                          <th className="border border-slate-500 py-0.5 font-normal">1310</th>
-                          <th className="border border-slate-500 py-0.5 font-normal">1625</th>
+                          <th className="border border-slate-500 py-1 font-normal px-1 text-left w-[45%]">Spec</th>
+                          <th className="border border-slate-500 py-1 font-normal">1550</th>
+                          <th className="border border-slate-500 py-1 font-normal">1310</th>
+                          <th className="border border-slate-500 py-1 font-normal">1625</th>
                         </tr>
                       </thead>
                       <tbody>
                         {MB_ROWS.map(({ label, s1550, s1310, s1625 }) => (
                           <tr key={label} className="bg-white">
-                            <td className="border border-slate-200 px-1 text-[7px] font-bold bg-slate-50 whitespace-nowrap text-slate-800">{label}</td>
-                            <td className="border border-slate-200 h-5"><TCell name={s1550} disabled={locked} highlight={failedParam === s1550} /></td>
-                            <td className="border border-slate-200 h-5"><TCell name={s1310} disabled={locked} highlight={failedParam === s1310} /></td>
-                            <td className="border border-slate-200 h-5"><TCell name={s1625} disabled={locked} highlight={failedParam === s1625} /></td>
+                            <td className="border border-slate-200 px-1 text-[11px] font-bold bg-slate-50 whitespace-nowrap text-slate-900 w-[45%]">{label}</td>
+                            <td className="border border-slate-200 h-7"><TCell name={s1550} disabled={locked} highlight={failedParam === s1550} /></td>
+                            <td className="border border-slate-200 h-7"><TCell name={s1310} disabled={locked} highlight={failedParam === s1310} /></td>
+                            <td className="border border-slate-200 h-7"><TCell name={s1625} disabled={locked} highlight={failedParam === s1625} /></td>
                           </tr>
                         ))}
                       </tbody>
@@ -1422,6 +1418,10 @@ console.log("res:", res)
                   {/* Test dates / OTDR operator — below process status */}
                   {values.bobbin_no && <TestInfoPanel values={values} />}
 
+                </Col>
+
+                {/* ── SECTION 6: reserved (temporarily blank) ── */}
+                <Col>
                 </Col>
 
               </div>
