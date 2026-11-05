@@ -64,16 +64,24 @@ export const FormikInput = ({
   compact = false,
   readOnly = false,
   className = "",
+  horizontal = false,
+  labelClassName = "",
   onChange: customOnChange,
   ...props
 }) => {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div
+      className={
+        horizontal
+          ? "flex flex-row items-center gap-1.5"
+          : "flex flex-col gap-0.5"
+      }
+    >
       {label && (
         <label
-          className={`font-bold text-slate-800 uppercase ml-0.5 ${
-            compact ? "text-[9px]" : "text-[10px]"
-          }`}
+          className={`font-bold text-slate-800 uppercase ${
+            horizontal ? "flex-shrink-0 text-right" : "ml-0.5"
+          } ${compact ? "text-[9px]" : "text-[10px]"} ${labelClassName}`}
         >
           {label}
         </label>
