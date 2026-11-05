@@ -23,6 +23,7 @@ import {
 } from '../controller/functionReports.slice';
 import { exportFunctionReportExcel, exportFunctionReportCSV, fetchFunctionReportById } from '../services/functionReports.api';
 import { showError, showSuccess } from '../../../utils/toastService';
+import { trimValues } from '../../../utils/trimValues';
 import {
   REPORT_TYPES, REPORT_TYPE_LABELS, getReportType, isMultiType, getFunctionLabel,
 } from '../utils/reportType';
@@ -244,7 +245,8 @@ const normalizeDefaultValue = (value) => {
  * Empty strings and NULL-placeholder strings become actual JavaScript null
  * so the backend passes NULL to the PostgreSQL function.
  */
-const normalizeParamForExecution = (value) => {
+const normalizeParamForExecution = (rawValue) => {
+  const value = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
   if (
     value === '' ||
     value === '—' ||
@@ -310,7 +312,7 @@ const ReportExecutionPanel = ({ report, onBack }) => {
   const handleExecute = () => {
     // Validate required params
     for (const p of paramConfig) {
-      if (p.is_required && !paramValues[p.param_name]) {
+      if (p.is_required && !String(paramValues[p.param_name] ?? '').trim()) {
         showError(`"${p.display_label || p.param_name}" is required`);
         return;
       }
@@ -329,7 +331,7 @@ const ReportExecutionPanel = ({ report, onBack }) => {
   const handleExportExcel = async () => {
     setExporting(true);
     try {
-      const blob = await exportFunctionReportExcel(report.id, paramValues);
+      const blob = await exportFunctionReportExcel(report.id, trimValues(paramValues));
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
@@ -348,7 +350,7 @@ const ReportExecutionPanel = ({ report, onBack }) => {
   const handleExportCSV = async () => {
     setExporting(true);
     try {
-      const blob = await exportFunctionReportCSV(report.id, paramValues);
+      const blob = await exportFunctionReportCSV(report.id, trimValues(paramValues));
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;

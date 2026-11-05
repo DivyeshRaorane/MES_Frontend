@@ -7,6 +7,7 @@ import * as Yup from 'yup';
 import { FormikInput } from '../../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../../utils/toastService';
+import { trimValues } from '../../../../../utils/trimValues';
 import {
   getAllConfigs,
   createConfig,
@@ -168,9 +169,9 @@ const ConfigFormModal = ({ item, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const schema = Yup.object({
-    config_key: Yup.string().required('Config key is required').max(100, 'Max 100 characters'),
-    config_value: Yup.string().required('Config value is required').max(255, 'Max 255 characters'),
-    description: Yup.string().max(500, 'Max 500 characters'),
+    config_key: Yup.string().trim().required('Config key is required').max(100, 'Max 100 characters'),
+    config_value: Yup.string().trim().required('Config value is required').max(255, 'Max 255 characters'),
+    description: Yup.string().trim().max(500, 'Max 500 characters'),
   });
 
   const initVals = {
@@ -179,7 +180,8 @@ const ConfigFormModal = ({ item, onClose, onSaved }) => {
     description: item?.description || '',
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;

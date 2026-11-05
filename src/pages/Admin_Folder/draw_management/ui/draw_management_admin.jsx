@@ -6,6 +6,7 @@ import {
 import { ModuleCard, FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -67,9 +68,9 @@ const ADMIN_CARDS = [
     color: 'text-orange-600 bg-orange-100',
     api: {
       getAll: () => axios.get(`${API}/fiber-cut-indication`, { headers: authHeaders() }).then(r => r.data),
-      create: (data) => axios.post(`${API}/fiber-cut-indication`, data, { headers: authHeaders() }).then(r => r.data),
-      update: (id, data) => axios.put(`${API}/fiber-cut-indication/${id}`, data, { headers: authHeaders() }).then(r => r.data),
-      delete: (id) => axios.delete(`${API}/fiber-cut-indication/${id}`, { headers: authHeaders() }).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/fibercutindications`, data, { headers: authHeaders() }).then(r => r.data),
+      update: (id, data) => axios.put(`${API}/admin/fibercutindications/${id}`, data, { headers: authHeaders() }).then(r => r.data),
+      delete: (id) => axios.delete(`${API}/admin/fibercutindications/${id}`, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [
       { name: 'indication_name', label: 'Indication Name', required: true },
@@ -389,7 +390,7 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
 
   const schema = Yup.object(
     config.fields.reduce((acc, f) => {
-      if (f.required) acc[f.name] = Yup.string().required(`${f.label} is required`);
+      if (f.required) acc[f.name] = Yup.string().trim().required(`${f.label} is required`);
       else acc[f.name] = Yup.string();
       return acc;
     }, {})
@@ -404,7 +405,7 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
     setSubmitting(true);
     try {
       // Convert select fields with numeric IDs back to numbers
-      const payload = { ...values };
+      const payload = trimValues(values);
       config.fields.forEach(f => {
         if (f.type === 'select' && payload[f.name]) {
           payload[f.name] = Number(payload[f.name]) || payload[f.name];

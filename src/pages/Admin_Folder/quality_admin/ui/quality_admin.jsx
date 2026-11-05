@@ -6,6 +6,7 @@ import {
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -62,7 +63,7 @@ const ADMIN_CARDS = [
     color: 'text-emerald-600 bg-emerald-100',
     api: {
       getAll: () => axios.get(`${API}/geth2chambers?is_active=true`, { headers: authHeaders() }).then(r => r.data),
-      create: (data) => axios.post(`${API}/createh2chamber`, data, { headers: authHeaders() }).then(r => r.data),
+      create: (data) => axios.post(`${API}/admin/h2chambers`, data, { headers: authHeaders() }).then(r => r.data),
       update: (id, data) => axios.put(`${API}/admin/h2chambers/${id}`, data, { headers: authHeaders() }).then(r => r.data),
     },
     fields: [{ name: 'h2_chamber_no', label: 'Chamber Number', required: true, type: 'number' }],
@@ -286,7 +287,7 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
 
   const schema = Yup.object(
     config.fields.reduce((acc, f) => {
-      if (f.required) acc[f.name] = Yup.string().required(`${f.label} is required`);
+      if (f.required) acc[f.name] = Yup.string().trim().required(`${f.label} is required`);
       else acc[f.name] = Yup.string();
       return acc;
     }, {})
@@ -297,7 +298,8 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
     return acc;
   }, {});
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       let res;
@@ -343,4 +345,5 @@ const CrudFormModal = ({ config, item, onClose, onSaved }) => {
   );
 };
 
+export { CrudPanel };
 export default QualityAdmin;

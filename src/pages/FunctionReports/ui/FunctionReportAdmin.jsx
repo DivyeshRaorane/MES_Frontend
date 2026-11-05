@@ -19,6 +19,7 @@ import {
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { showSuccess, showError } from '../../../utils/toastService';
+import { trimValues } from '../../../utils/trimValues';
 import {
   fetchAllFunctionReports,
   fetchAvailableFunctions,
@@ -384,7 +385,7 @@ const FunctionReportAdmin = () => {
    FORM MODAL — Register / Edit Function Report
    ══════════════════════════════════════════════════════════ */
 const validationSchema = Yup.object().shape({
-  report_name: Yup.string().required('Report name is required'),
+  report_name: Yup.string().trim().required('Report name is required'),
 });
 
 const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, onSaved }) => {
@@ -630,16 +631,17 @@ const FunctionReportFormModal = ({ item, availableFunctions, sections, onClose, 
         param_config: paramConfig,
       };
 
+      const cleanPayload = trimValues(payload);
       let res;
       if (isEdit) {
-        res = await updateFunctionReport(item.id, payload);
+        res = await updateFunctionReport(item.id, cleanPayload);
       } else {
-        res = await createFunctionReport(payload);
+        res = await createFunctionReport(cleanPayload);
       }
 
       if (res?.success) {
         showSuccess(isEdit ? 'Report updated' : 'Report registered successfully');
-        onSaved(payload);
+        onSaved(cleanPayload);
       } else {
         setServerError(res?.message || 'Operation failed');
       }

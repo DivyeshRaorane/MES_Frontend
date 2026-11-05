@@ -9,7 +9,7 @@ const authHeaders = () => ({
 
 /**
  * Add stock (KG) to an existing preform.
- * POST /preform-stock-add
+ * POST /admin/preform-stock-add
  * payload: { preform_id: string, adding_weight: number (> 0) }
  *
  * Success (200): { success: true, message, preform_id, adding_weight, is_active,
@@ -25,7 +25,21 @@ const authHeaders = () => ({
  * automatically and must prevent double submit.
  */
 export const addPreformStock = async (payload) => {
-  const res = await axios.post(`${API}/preform-stock-add`, payload, { headers: authHeaders() });
+  const res = await axios.post(`${API}/admin/preform-stock-add`, payload, { headers: authHeaders() });
+  return res.data;
+};
+
+/**
+ * Reverse a DRAW GRN entry (SAP + MES) for one spool.
+ * TODO: URL, payload and response are PLACEHOLDERS until the backend is ready.
+ * POST /admin/reversal/grn/draw
+ * payload: { spool_id: string (exactly 10 chars) }
+ * Assumed response: { success: boolean, message?, error? }
+ *
+ * NOTE: a reversal must not be retried automatically; callers must block double submit.
+ */
+export const reverseDrawGrn = async (payload) => {
+  const res = await axios.post(`${API}/admin/reversal/grn/draw`, payload, { headers: authHeaders() });
   return res.data;
 };
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft, ClipboardList, PackagePlus } from 'lucide-react';
+import { ArrowLeft, ClipboardList, PackagePlus, Undo2 } from 'lucide-react';
 import IncreaseStockTab from './IncreaseStockTab';
+import TransactionReversalTab from './TransactionReversalTab';
 
 /**
  * Tab registry. To add a new entry service (e.g. "Reverse Entry"), create its
@@ -8,7 +9,7 @@ import IncreaseStockTab from './IncreaseStockTab';
  */
 const ENTRY_TABS = [
   { key: 'increase_stock', label: 'Increase Stock', icon: PackagePlus, component: IncreaseStockTab },
-  // { key: 'reverse_entry', label: 'Reverse Entry', icon: Undo2, component: ReverseEntryTab },
+  { key: 'transaction_reversal', label: 'Transaction Reversal', icon: Undo2, component: TransactionReversalTab },
 ];
 
 /* ══════════════════════════════════════════════════════════

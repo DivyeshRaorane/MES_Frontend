@@ -5,6 +5,7 @@ import * as Yup from 'yup';
 import { ModuleCard, FormikInput, FormikSelect } from '../../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../../utils/toastService';
+import { trimValues } from '../../../../../utils/trimValues';
 import { getAllUsers, getDepartments, createUser, updateUser, changeUserStatus } from '../service/user_management.api';
 
 const ROLES = [
@@ -204,10 +205,10 @@ const UserFormModal = ({ user, departments, onClose, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
 
   const validationSchema = Yup.object({
-    emp_id: Yup.string().required('Employee ID is required'),
-    emp_name: Yup.string().required('Name is required'),
-    emp_mail_id: Yup.string().email('Invalid email').required('Email is required'),
-    mobile_no: Yup.string().required('Mobile is required'),
+    emp_id: Yup.string().trim().required('Employee ID is required'),
+    emp_name: Yup.string().trim().required('Name is required'),
+    emp_mail_id: Yup.string().trim().email('Invalid email').required('Email is required'),
+    mobile_no: Yup.string().trim().required('Mobile is required'),
     role: Yup.string().required('Role is required'),
     password: isEdit ? Yup.string() : Yup.string().min(6, 'Min 6 chars').required('Password is required'),
     selectedDepts: Yup.array().min(1, 'Select at least one department'),
@@ -224,7 +225,9 @@ const UserFormModal = ({ user, departments, onClose, onSaved }) => {
     selectedDepts: user?.departments?.map(d => d.id) || [],
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    // Password is left as typed: spaces in a password can be intentional.
+    const values = trimValues(rawValues, { skipKeys: ['password'] });
     setSubmitting(true);
     try {
       const payload = {

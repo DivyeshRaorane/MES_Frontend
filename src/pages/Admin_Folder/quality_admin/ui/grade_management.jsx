@@ -5,6 +5,7 @@ import * as Yup from 'yup';
 import { FormikInput } from '../../../../components/common_fields';
 import { SubmitButton, ResetButton } from '../../../../components/common_buttons';
 import { showSuccess, showError } from '../../../../utils/toastService';
+import { trimValues } from '../../../../utils/trimValues';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL;
@@ -288,7 +289,8 @@ const GradeForm = ({ data, allGrades = [], onBack, onSaved }) => {
     setMandatoryLoading(false);
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (rawValues) => {
+    const values = trimValues(rawValues);
     setSubmitting(true);
     try {
       // Build payload with only non-empty numeric fields

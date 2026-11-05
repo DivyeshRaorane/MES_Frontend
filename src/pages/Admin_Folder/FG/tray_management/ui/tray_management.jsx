@@ -149,7 +149,7 @@ const CreateTrayModal = ({ onClose, onCreated }) => {
     if (!totalPositions || Number(totalPositions) < 1) { showError('Minimum 1 position'); return; }
     setSubmitting(true);
     try {
-      const res = await createTray({ tray_no: Number(trayNo), tray_name: trayName, total_positions: Number(totalPositions) });
+      const res = await createTray({ tray_no: Number(trayNo), tray_name: trayName.trim(), total_positions: Number(totalPositions) });
       if (res?.success) { showSuccess('Tray created successfully'); onCreated(); }
       else showError(res?.message || 'Failed');
     } catch (e) { showError(e?.response?.data?.message || 'Failed'); }

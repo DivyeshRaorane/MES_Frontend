@@ -21,7 +21,7 @@ export const getPreformVendors = async () => {
 
 export const createPreformVendor = async (data) => {
   try {
-    const response = await axios.post(`${API}/createpreformvendor`, data, {
+    const response = await axios.post(`${API}/admin/preformvendor`, data, {
       headers: authHeaders(),
     });
     return response.data;

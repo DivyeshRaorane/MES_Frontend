@@ -8,6 +8,7 @@ import OrderActionModal from './OrderActionModal';
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import { showSuccess, showError, showWarning } from '../../../../../utils/toastService';
+import { trimValues } from '../../../../../utils/trimValues';
 import {
   getAllOrders,
   getOrderByNo,
@@ -502,12 +503,12 @@ const emptyToNull = (value, originalValue) =>
 
 const orderSchema = Yup.object({
   order_no: Yup.string().trim().required('Order No is required').max(10, 'Max 10 chars'),
-  material_code: Yup.string().max(40, 'Max 40 chars').nullable(),
+  material_code: Yup.string().trim().max(40, 'Max 40 chars').nullable(),
   order_qty: Yup.number().transform(emptyToNull).typeError('Must be a number').min(0, 'Cannot be negative').nullable(),
   gr_qty: Yup.number().transform(emptyToNull).typeError('Must be a number').min(0, 'Cannot be negative').nullable(),
   components: Yup.array().of(
     Yup.object({
-      material_code: Yup.string().max(40, 'Max 40 chars').nullable(),
+      material_code: Yup.string().trim().max(40, 'Max 40 chars').nullable(),
       qty: Yup.number().transform(emptyToNull).typeError('Must be a number').min(0, 'Cannot be negative').nullable(),
       movement_type: Yup.number().transform(emptyToNull).typeError('Must be a number').integer('Whole number').nullable(),
     })
@@ -515,7 +516,7 @@ const orderSchema = Yup.object({
   operations: Yup.array().of(
     Yup.object({
       operation_no: Yup.number().transform(emptyToNull).typeError('Must be a number').integer('Whole number').nullable(),
-      workcenter: Yup.string().max(10, 'Max 10 chars').nullable(),
+      workcenter: Yup.string().trim().max(10, 'Max 10 chars').nullable(),
       operation_qty: Yup.number().transform(emptyToNull).typeError('Must be a number').min(0, 'Cannot be negative').nullable(),
     })
   ),
@@ -637,7 +638,8 @@ const OrderForm = ({ orderNo, onBack, onSaved }) => {
           })),
       };
 
-      const res = isEdit ? await updateOrder(orderNo, payload) : await createOrder(payload);
+      const cleanPayload = trimValues(payload);
+      const res = isEdit ? await updateOrder(orderNo, cleanPayload) : await createOrder(cleanPayload);
       if (res?.success) {
         showSuccess(isEdit ? 'Order updated successfully' : 'Order created successfully');
         onSaved();

@@ -2,7 +2,7 @@ import { Loader2, Search } from 'lucide-react';
 import LabelRenderer from '../components/LabelRenderer';
 
 /**
- * Stack sticker body (150×150 mm consignee address label, no barcodes).
+ * Stack sticker body (100×150 mm consignee address label, no barcodes).
  * Rendered inside BobbinBarcodePrinting when the sticker type is "Stack".
  * Printing is triggered by that page's header Print button.
  *

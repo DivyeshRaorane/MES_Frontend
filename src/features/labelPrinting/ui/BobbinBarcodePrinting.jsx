@@ -18,9 +18,9 @@ import '../templates'; // ensure templates are registered
 
 /* Sticker types — add more here later. */
 const STICKER_TYPES = [
-  { value: 'bobbin', label: 'Bobbin Sticker (85×40mm)' },
+  { value: 'bobbin', label: 'Bobbin Sticker (70×40mm)' },
   { value: 'box', label: 'Box Sticker (100×150mm)' },
-  { value: 'stack', label: 'Stack Sticker (150×150mm)' },
+  { value: 'stack', label: 'Stack Sticker (100×150mm)' },
 ];
 
 const PATTERN_OPTIONS = getBobbinPatternOptions();

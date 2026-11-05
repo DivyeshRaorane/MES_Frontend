@@ -3,7 +3,7 @@ import { FileText, Download, Printer, Package, Loader2, Search, Plus, Eye, Arrow
 import { ModuleCard } from './common_fields';
 import { SubmitButton, ResetButton } from './common_buttons';
 import { showSuccess, showError } from '../utils/toastService';
-import { getPackingOrders, loadTCData, saveTC, getAllTCs, getTCById } from '../pages/tc_generation/services/tc_generation.api';
+import { getPackingOrders, loadTCData, saveTC, getAllTCs, getTCById, getActiveFGUsers } from '../pages/tc_generation/services/tc_generation.api';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -298,6 +298,17 @@ const TCCreateForm = ({ onBack, onSaved }) => {
     SPEC_SECTIONS.forEach(s => s.rows.forEach(r => { init[r.key] = r.default; }));
     return init;
   });
+  const [fgUsers, setFgUsers] = useState([]);
+
+  // Active FG users for the Inspection By / Approved By dropdowns
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getActiveFGUsers();
+        setFgUsers((res?.data || []).filter(u => u.is_active !== false));
+      } catch (e) { showError('Failed to load FG users'); }
+    })();
+  }, []);
 
   const fetchPackingOrders = async () => {
     try { const res = await getPackingOrders(); setPackingOrders(res?.data || []); } catch(e){ showError('Failed to load orders'); }
@@ -385,11 +396,21 @@ const TCCreateForm = ({ onBack, onSaved }) => {
               <p className="text-[7px] font-bold text-indigo-700 uppercase tracking-wider mb-1">TC Information</p>
               <div className="grid grid-cols-9 gap-1.5">
                 {[{l:'TC Number *',k:'tc_number',p:'TR-2024-0001'},{l:'TC Date',k:'tc_date',t:'date'},{l:'Customer Ref',k:'customer_ref',p:'Ref...'},
-                  {l:'Inspection Date',k:'inspection_date',t:'date'},{l:'Inspection By',k:'inspection_by',p:'Name...'},
-                  {l:'Approved By',k:'approved_by',p:'Name...'},{l:'Remarks',k:'remarks',p:'...'},{l:'Revision',k:'revision'},{l:'Version',k:'version'}
-                ].map(({l,k,t,p})=>(<div key={k} className="flex flex-col"><label className="text-[7px] font-bold text-slate-700 uppercase leading-tight">{l}</label>
+                  {l:'Inspection Date',k:'inspection_date',t:'date'},{l:'Inspection By',k:'inspection_by',sel:true},
+                  {l:'Approved By',k:'approved_by',sel:true},{l:'Remarks',k:'remarks',p:'...'},{l:'Revision',k:'revision'},{l:'Version',k:'version'}
+                ].map(({l,k,t,p,sel})=>(<div key={k} className="flex flex-col"><label className="text-[7px] font-bold text-slate-700 uppercase leading-tight">{l}</label>
+                  {sel ? (
+                    <select value={tcForm[k]} onChange={e=>setTcForm(f=>({...f,[k]:e.target.value}))}
+                      className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[9px] text-slate-900 outline-none focus:ring-1 focus:ring-blue-300">
+                      <option value="">{fgUsers.length ? 'Select...' : 'No FG users'}</option>
+                      {fgUsers.map(u => (
+                        <option key={u.fg_user_id} value={u.fg_user_name}>{u.fg_user_name}</option>
+                      ))}
+                    </select>
+                  ) : (
                   <input type={t||'text'} value={tcForm[k]} onChange={e=>setTcForm(f=>({...f,[k]:e.target.value}))} placeholder={p}
-                    className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[9px] text-slate-900 outline-none focus:ring-1 focus:ring-blue-300" /></div>))}
+                    className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[9px] text-slate-900 outline-none focus:ring-1 focus:ring-blue-300" />
+                  )}</div>))}
               </div>
             </div>
           )}
