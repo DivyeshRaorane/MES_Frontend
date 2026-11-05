@@ -30,6 +30,20 @@ export const addPreformStock = async (payload) => {
 };
 
 /**
+ * Reverse a DRAW GRN entry (SAP + MES) for one spool.
+ * TODO: URL, payload and response are PLACEHOLDERS until the backend is ready.
+ * POST /admin/reversal/grn/draw
+ * payload: { spool_id: string (exactly 10 chars) }
+ * Assumed response: { success: boolean, message?, error? }
+ *
+ * NOTE: a reversal must not be retried automatically; callers must block double submit.
+ */
+export const reverseDrawGrn = async (payload) => {
+  const res = await axios.post(`${API}/admin/reversal/grn/draw`, payload, { headers: authHeaders() });
+  return res.data;
+};
+
+/**
  * Pull the text to show the user out of an axios error from the endpoints above.
  * Prefers the backend `error` field, then `message`, then a generic fallback.
  */
