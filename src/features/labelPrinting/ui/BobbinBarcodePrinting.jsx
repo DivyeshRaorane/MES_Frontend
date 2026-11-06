@@ -377,7 +377,7 @@ const BobbinBarcodePrinting = () => {
           {/* Right: live preview */}
           <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-100 flex flex-col items-center justify-start gap-3">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Preview · 40 × 40 mm {previewRow ? `· ${previewRow.bobbin_no}` : ''}
+              Preview · 70 × 40 mm {previewRow ? `· ${previewRow.bobbin_no}` : ''}
             </span>
             {previewRow
               ? <LabelRenderer templateKey="bobbin" data={previewRow} zoom={6} />

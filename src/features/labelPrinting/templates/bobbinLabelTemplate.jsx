@@ -20,6 +20,10 @@ import { getBobbinPattern } from './bobbinPatterns';
 
 const mono = { fontFamily: "'Courier New', Courier, monospace", color: '#111' };
 
+/** Shorten a colour name to its first 3 letters, uppercase (e.g. "Natural" -> "NAT"). */
+export const shortColor = (color) =>
+  String(color ?? '').trim().slice(0, 3).toUpperCase();
+
 const BobbinLabel = (d) => {
   const pattern = getBobbinPattern(d.pattern);
 
@@ -47,40 +51,46 @@ const BobbinLabel = (d) => {
         fontWeight: 800,
       }}
     >
-      {/* Heading: fiber_info */}
-      <div style={{ fontSize: '10.5px', fontWeight: 800, lineHeight: 1.8, textAlign: 'center', textTransform: 'uppercase' }}>
-        {d.fiber_info}
-      </div>
-
-      {/* Colour: fiber_color */}
-      <div style={{ fontSize: '10.2px', fontWeight: 800, lineHeight: 1.8, textAlign: 'center' }}>
-        {d.fiber_color}
+      {/* Heading: fiber_info + short colour (3 letters) on one line */}
+      <div
+        style={{
+          fontSize: '10.5px',
+          fontWeight: 750,
+          lineHeight: 1.1,
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {[d.fiber_info, shortColor(d.fiber_color)].filter(Boolean).join(' ')}
       </div>
 
       {/* Fibre ID barcode (bobbin_no) + human-readable */}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5mm' }}>
         {barcode && <img src={barcode} alt="bobbin barcode" style={{ height: '7mm', width: '55%', objectFit: 'fill' }} />}
       </div>
-      <div style={{ fontSize: '11.5px', fontWeight: 800, textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1.8 }}>
+      <div style={{ fontSize: '11.8px', fontWeight: 800, textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1.1 }}>
         {d.bobbin_no}
       </div>
 
       {/* Billed length */}
-      <div style={{ fontSize: '10.5px', fontWeight: 800, textAlign: 'center', lineHeight: 1.8 }}>
+      <div style={{ fontSize: '10.5px', fontWeight: 800, textAlign: 'center', lineHeight: 1.1 }}>
         BILLED LENGTH: {d.length} {d.lengthUnit}
       </div>
 
       {/* Dynamic parameter block — sits directly below billed length */}
       <div
         style={{
-          borderTop: '0.4mm solid #111',
-          paddingTop: '0.8mm',
+          borderTop: '0.3mm solid #111',
+          paddingTop: '0.7mm',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.3mm',
           fontSize: '10.5px',
           fontWeight: 800,
-          lineHeight: 1.8,
+          lineHeight: 1.1,
         }}
       >
         {pattern.rows.map((row) => (
