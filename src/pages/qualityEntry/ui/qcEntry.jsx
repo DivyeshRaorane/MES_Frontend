@@ -10,11 +10,10 @@ import { fetchBobbinQC, checkBobbinInPtEntry, gradeBobbin, checkProcessStatus, s
 import { submitRewindRequest } from '../../fg_fiber_rejection/services/fg_rejection.api';
 
 /* ── Compact table-cell input ── */
-const TCell = ({ name, disabled, highlight }) => (
-  <Field name={name} disabled={disabled}
-    className={`w-full h-full px-1 py-0 text-[13px] font-extrabold text-black outline-none text-center transition-all
-      ${highlight ? 'bg-red-100 border-red-400 ring-1 ring-red-300' : ''}
-      ${disabled ? 'bg-slate-100 !text-slate-700 cursor-not-allowed' : 'bg-transparent focus:bg-blue-50'}`} />
+const TCell = ({ name, highlight }) => (
+  <Field name={name} readOnly
+    className={`w-full h-full px-1 py-0 text-[13px] font-extrabold text-black outline-none text-center cursor-default
+      ${highlight ? 'bg-red-100 border-red-400 ring-1 ring-red-300' : 'bg-slate-100'}`} />
 );
 const GridDivider = ({ label }) => (
   <div className="col-span-2 pt-0.5 border-t border-slate-200">
@@ -1092,9 +1091,9 @@ console.log("res:", res)
      horizontal: label sits in front of the value (fixed-width label, input fills the rest)
      so every row reads "PARAM NAME  [ value ]". */
   const fi = (label, name) => (
-    <FormikInput compact horizontal label={label} name={name} disabled={locked}
+    <FormikInput compact horizontal readOnly label={label} name={name}
       labelClassName="basis-1/2 flex-shrink-0 text-left !ml-0 pl-0 pr-2 whitespace-nowrap truncate !text-[11px] !text-slate-900"
-      className={`basis-1/2 !w-auto min-w-0 ml-auto py-0.5 px-1 text-center !text-[13px] !font-extrabold !text-black ${failedParam === name ? 'bg-red-50 border-red-400 ring-1 ring-red-300' : ''}`} />
+      className={`basis-1/2 !w-auto min-w-0 ml-auto py-0.5 px-1 text-center !text-[13px] !font-extrabold !text-black ${failedParam === name ? '!bg-red-100 !border-red-400 ring-1 ring-red-300' : ''}`} />
   );
 
   /* ── Color Dia (read-only) ──
