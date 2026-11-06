@@ -122,6 +122,10 @@ const TestInfoPanel = ({ values }) => {
     ['Spectral Date', formatTestDate(values.spectral_date)],
     ['OTDR Date', formatTestDate(values.otdr_test_date)],
     ['OTDR Operator', values.otdr_operator || '—'],
+    ['OTDR Machine', values.otdr_machine || '—'],
+    ['PT Machine', values.pt_machine_no || '—'],
+    ['Draw Tower', values.draw_tower_no || '—'],
+    ['Coating', values.coating_type || '—'],
   ];
   return (
     <div className="col-span-2 mt-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-3 space-y-2">
@@ -191,6 +195,7 @@ const buildInitialValues = () => {
     bobbin_no: '', bobbin_fid: '', matcode: '', product_type: '', optical_length: '', fiber_length: '', fiber_color: '',
     // Display-only test info (not part of MEASUREMENT_FIELDS, so never submitted)
     cd_date: '', spectral_date: '', otdr_test_date: '', otdr_operator: '',
+    otdr_machine: '', pt_machine_no: '', draw_tower_no: '', coating_type: '',
   };
   MEASUREMENT_FIELDS.forEach(f => { vals[f] = ''; });
   return vals;
@@ -1092,6 +1097,25 @@ console.log("res:", res)
       className={`basis-1/2 !w-auto min-w-0 ml-auto py-0.5 px-1 text-center !text-[13px] !font-extrabold !text-black ${failedParam === name ? 'bg-red-50 border-red-400 ring-1 ring-red-300' : ''}`} />
   );
 
+  /* ── Color Dia (read-only) ──
+     Shown only when fiber_color is present and is not "Natural". Value is the secondary
+     coating diameter: top if available, otherwise bottom. Not a Formik field, so it is
+     never submitted. */
+  const colorDiaRow = (values) => {
+    const color = String(values.fiber_color ?? '').trim();
+    if (!color || color.toLowerCase() === 'natural') return null;
+    const has = (v) => v !== '' && v !== null && v !== undefined;
+    const val = has(values.secondary_coating_dia_top)
+      ? values.secondary_coating_dia_top
+      : has(values.secondary_coating_dia_bottom) ? values.secondary_coating_dia_bottom : '';
+    return (
+      <div className="flex flex-row items-center gap-1.5">
+        <label className="basis-1/2 flex-shrink-0 text-left font-bold uppercase pr-2 whitespace-nowrap truncate text-[11px] text-slate-900">Color Dia</label>
+        <input readOnly value={val} className="basis-1/2 w-auto min-w-0 ml-auto border rounded py-0.5 px-1 text-center text-[13px] font-extrabold text-black bg-slate-200 border-slate-200 outline-none cursor-default" />
+      </div>
+    );
+  };
+
   return (
     <div className="h-full bg-slate-50 font-sans text-slate-900 flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 bg-white rounded-xl shadow border border-slate-200 overflow-hidden m-2">
@@ -1264,6 +1288,7 @@ console.log("res:", res)
                   {fi('Eff Area 1550', 'effective_area_1550')}
                   {fi('Clad Dia T', 'clad_dia_top')}
                   {fi('Clad Dia B', 'clad_dia_bottom')}
+                  {colorDiaRow(values)}
                   {fi('Core Dia T', 'core_dia_top')}
                   {fi('Core Dia B', 'core_dia_bottom')}
                   {fi('Core Clad T', 'core_clad_concentricity_top')}
@@ -1415,13 +1440,11 @@ console.log("res:", res)
                   {/* Process status bar — bottom-right, below source badge */}
                   <StatusBar stages={stages} />
 
-                  {/* Test dates / OTDR operator — below process status */}
-                  {values.bobbin_no && <TestInfoPanel values={values} />}
-
                 </Col>
 
-                {/* ── SECTION 6: reserved (temporarily blank) ── */}
+                {/* ── SECTION 6: test dates / OTDR / PT machine / draw tower / coating ── */}
                 <Col>
+                  {values.bobbin_no && <TestInfoPanel values={values} />}
                 </Col>
 
               </div>
