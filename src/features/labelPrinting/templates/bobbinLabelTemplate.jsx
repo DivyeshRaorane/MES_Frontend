@@ -44,43 +44,43 @@ const BobbinLabel = (d) => {
         flexDirection: 'column',
         gap: '0.6mm',
         overflow: 'hidden',
-        fontWeight: 700,
+        fontWeight: 800,
       }}
     >
       {/* Heading: fiber_info */}
-      <div style={{ fontSize: '9.5px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '10.5px', fontWeight: 800, lineHeight: 1.8, textAlign: 'center', textTransform: 'uppercase' }}>
         {d.fiber_info}
       </div>
 
       {/* Colour: fiber_color */}
-      <div style={{ fontSize: '9px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center' }}>
+      <div style={{ fontSize: '10.2px', fontWeight: 800, lineHeight: 1.8, textAlign: 'center' }}>
         {d.fiber_color}
       </div>
 
       {/* Fibre ID barcode (bobbin_no) + human-readable */}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5mm' }}>
-        {barcode && <img src={barcode} alt="bobbin barcode" style={{ height: '7mm', width: '75%', objectFit: 'fill' }} />}
+        {barcode && <img src={barcode} alt="bobbin barcode" style={{ height: '7mm', width: '55%', objectFit: 'fill' }} />}
       </div>
-      <div style={{ fontSize: '10.5px', fontWeight: 800, textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1 }}>
+      <div style={{ fontSize: '11.5px', fontWeight: 800, textAlign: 'center', letterSpacing: '0.3px', lineHeight: 1.8 }}>
         {d.bobbin_no}
       </div>
 
       {/* Billed length */}
-      <div style={{ fontSize: '9.5px', fontWeight: 800, textAlign: 'center', lineHeight: 1.1 }}>
+      <div style={{ fontSize: '10.5px', fontWeight: 800, textAlign: 'center', lineHeight: 1.8 }}>
         BILLED LENGTH: {d.length} {d.lengthUnit}
       </div>
 
       {/* Dynamic parameter block — sits directly below billed length */}
       <div
         style={{
-          borderTop: '0.3mm solid #111',
-          paddingTop: '0.6mm',
+          borderTop: '0.4mm solid #111',
+          paddingTop: '0.8mm',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.2mm',
-          fontSize: '9px',
+          gap: '0.3mm',
+          fontSize: '10.5px',
           fontWeight: 800,
-          lineHeight: 1.2,
+          lineHeight: 1.8,
         }}
       >
         {pattern.rows.map((row) => (
@@ -94,7 +94,7 @@ const BobbinLabel = (d) => {
 registerTemplate({
   key: 'bobbin',
   name: 'Bobbin Sticker (70×40mm)',
-  size: { width: 85, height: 40, unit: 'mm' },
+  size: { width: 70, height: 40, unit: 'mm' },
   defaults: {
     pattern: 1,
     fiber_info: 'Single Mode Optical Fiber',
